@@ -13,7 +13,6 @@ import Material.Typography as Typography
 import Material.Elevation as Elevation
 import Bootstrap.Grid as Grid
 import Bootstrap.Utilities.Spacing as Spacing
-import Maybe exposing (withDefault)
 import Recipes exposing (RecipeListEntry)
 import Result exposing (map)
 
@@ -70,7 +69,7 @@ update msg model =
 
 spracuj: Result Http.Error Recipe -> RecipeListEntry
 spracuj res = case res of
-                Ok value -> {name = withDefault "" value.name , style_type = withDefault "" value.style.type_, style_name = withDefault "" value.style.name, id = value.id}
+                Ok value -> {name = value.name , style_type = value.style.type_, style_name = value.style.name, id = value.id}
                 Err msg -> {name = "", id = "", style_name = "", style_type = ""}
 
 niecoserrorom: Result Http.Error Recipe -> Msg
