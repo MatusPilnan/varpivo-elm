@@ -1,6 +1,23 @@
 <html lang="en">
 <head>
   <title>Var:Pivo</title>
+  <link href="/assets/icon/apple-icon-57x57.png" rel="apple-touch-icon" sizes="57x57">
+  <link href="/assets/icon/apple-icon-60x60.png" rel="apple-touch-icon" sizes="60x60">
+  <link href="/assets/icon/apple-icon-72x72.png" rel="apple-touch-icon" sizes="72x72">
+  <link href="/assets/icon/apple-icon-76x76.png" rel="apple-touch-icon" sizes="76x76">
+  <link href="/assets/icon/apple-icon-114x114.png" rel="apple-touch-icon" sizes="114x114">
+  <link href="/assets/icon/apple-icon-120x120.png" rel="apple-touch-icon" sizes="120x120">
+  <link href="/assets/icon/apple-icon-144x144.png" rel="apple-touch-icon" sizes="144x144">
+  <link href="/assets/icon/apple-icon-152x152.png" rel="apple-touch-icon" sizes="152x152">
+  <link href="/assets/icon/apple-icon-180x180.png" rel="apple-touch-icon" sizes="180x180">
+  <link href="/assets/icon/android-icon-192x192.png" rel="icon" sizes="192x192" type="image/png">
+  <link href="/assets/icon/favicon-32x32.png" rel="icon" sizes="32x32" type="image/png">
+  <link href="/assets/icon/favicon-96x96.png" rel="icon" sizes="96x96" type="image/png">
+  <link href="/assets/icon/favicon-16x16.png" rel="icon" sizes="16x16" type="image/png">
+  <link href="/assets/icon/manifest.json" rel="manifest">
+  <meta content="#ffffff" name="msapplication-TileColor">
+  <meta content="/ms-icon-144x144.png" name="msapplication-TileImage">
+  <meta content="#ffffff" name="theme-color">
   <link href="https://fonts.googleapis.com/css?family=Roboto:300,400,500|Material+Icons" rel="stylesheet">
   <link href="https://unpkg.com/material-components-web-elm@6.0.0/dist/material-components-web-elm.min.css"
         rel="stylesheet">
@@ -24,9 +41,10 @@
 
   // When a command goes to the `sendMessage` port, we pass the message
   // along to the WebSocket.
-  // app.ports.sendMessage.subscribe(function(message) {
-  //   socket.send(message);
-  // });
+
+  app.ports.sendMessage.subscribe(function (message) {
+    socket.send(message);
+  });
 
   // When a message comes into our WebSocket, we pass the message along
   // to the `messageReceiver` port.

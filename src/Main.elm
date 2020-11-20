@@ -4,6 +4,7 @@ import Api exposing (send)
 import Api.Data exposing (Recipe, RecipeList, recipeStepDecoder, wSKegDecoder)
 import Api.Request.Default as Api
 import Browser
+import Dialog exposing (dialog)
 import Html exposing (Html, text)
 import Html.Attributes as Attributes
 import Http
@@ -49,10 +50,11 @@ port messageReceiver : (String -> msg) -> Sub msg
 
 type alias Model =
     { title : String
-    , value : Int
+    , value : Float
     , availableRecipes : List RecipeListEntry
     , loading : Bool
     , snackbarQueue : Snackbar.Queue Msg
+    , dialogOpen : Bool
     }
 
 init : Int -> ( Model, Cmd Msg )
@@ -62,6 +64,7 @@ init _ =
   , availableRecipes = []
   , loading = True
   , snackbarQueue = Snackbar.initialQueue
+  , dialogOpen = False
   }, fetchRecipes)
 
 
@@ -73,6 +76,9 @@ type Msg = Increment
   | ListAppend (List RecipeListEntry)
   | Recv String
   | SnackbarClosed Snackbar.MessageId
+  | Send
+  | ShowDialog
+  | CloseDialog
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
@@ -100,33 +106,29 @@ update msg model =
                   ({ model | title = step.name}, Cmd.none)
 
                 Result.Err e ->
-                  case e of
-                    Field string _ ->
-                       ({model | snackbarQueue = (Snackbar.addMessage (Snackbar.message string) model.snackbarQueue) }, Cmd.none)
+                  handleJsonDecodeError e model
+            "weight" ->
+              case Json.Decode.decodeString Json.Decode.float value.payload of
+                Result.Ok weight ->
+                  ({model | value = weight}, Cmd.none)
 
-                    Index int _ ->
-                       ({model | snackbarQueue = (Snackbar.addMessage (Snackbar.message (String.fromInt int)) model.snackbarQueue) }, Cmd.none)
+                Result.Err e ->
+                  handleJsonDecodeError e model
 
-                    OneOf _ ->
-                       ({model | snackbarQueue = (Snackbar.addMessage (Snackbar.message "oneof errors") model.snackbarQueue) }, Cmd.none)
-
-                    Failure string _ ->
-                       ({model | snackbarQueue = (Snackbar.addMessage (Snackbar.message string) model.snackbarQueue) }, Cmd.none)
             _ ->
               ({model | snackbarQueue = (Snackbar.addMessage (Snackbar.message value.payload) model.snackbarQueue) }, Cmd.none)
         Result.Err e ->
-          case e of
-            Field string _ ->
-               ({model | snackbarQueue = (Snackbar.addMessage (Snackbar.message string) model.snackbarQueue) }, Cmd.none)
+          handleJsonDecodeError e model
 
-            Index int _ ->
-               ({model | snackbarQueue = (Snackbar.addMessage (Snackbar.message (String.fromInt int)) model.snackbarQueue) }, Cmd.none)
+    Send ->
+      ( model, sendMessage "message" )
 
-            OneOf _ ->
-               ({model | snackbarQueue = (Snackbar.addMessage (Snackbar.message "oneof errors") model.snackbarQueue) }, Cmd.none)
+    ShowDialog ->
+      ( { model | dialogOpen = True }, Cmd.none )
 
-            Failure string _ ->
-               ({model | snackbarQueue = (Snackbar.addMessage (Snackbar.message string) model.snackbarQueue) }, Cmd.none)
+    CloseDialog ->
+      ( { model | dialogOpen = False }, Cmd.none )
+
 
 
 
@@ -147,12 +149,29 @@ handleRecipes res = case res of
 fetchRecipes: Cmd Msg
 fetchRecipes = send (\msg -> ListAppend (handleRecipes msg)) (Api.getRecipeList)
 
+
+handleJsonDecodeError e model =
+  case e of
+    Field string _ ->
+       ({model | snackbarQueue = (Snackbar.addMessage (Snackbar.message string) model.snackbarQueue) }, Cmd.none)
+
+    Index int _ ->
+       ({model | snackbarQueue = (Snackbar.addMessage (Snackbar.message (String.fromInt int)) model.snackbarQueue) }, Cmd.none)
+
+    OneOf _ ->
+       ({model | snackbarQueue = (Snackbar.addMessage (Snackbar.message "oneof errors") model.snackbarQueue) }, Cmd.none)
+
+    Failure string _ ->
+       ({model | snackbarQueue = (Snackbar.addMessage (Snackbar.message string) model.snackbarQueue) }, Cmd.none)
+
+
 -- VIEW
 
 view : Model -> Html Msg
 view model =
   Html.div [ Typography.typography ]
     [ navbar model.title
+    , dialog model.value model.dialogOpen CloseDialog
     , Grid.container [ Size.h100, Spacing.pt5 ]
       [ Grid.row [ Row.attrs [ Size.h100, Spacing.pt4 ] ]
         [ Grid.col [ Col.attrs [ Size.h100 ] ]
@@ -172,7 +191,7 @@ navbar title =
       [ TopAppBar.section [ TopAppBar.alignStart ]
         [  Html.span [ TopAppBar.title ] [ text title ] ]
       , TopAppBar.section [ TopAppBar.alignEnd ]
-        [ IconButton.iconButton (IconButton.config |> IconButton.setOnClick Increment )
+        [ IconButton.iconButton (IconButton.config |> IconButton.setOnClick ShowDialog )
                                 (IconButton.icon "whatshot")
         , IconButton.iconButton
           (IconButton.config
@@ -196,7 +215,7 @@ viewRecipeListEntry: RecipeListEntry -> Html Msg
 viewRecipeListEntry recipeListEntry =
     ListItem.text []
       { primary = [ text recipeListEntry.name ]
-      , secondary = [ text recipeListEntry.id ]
+      , secondary = [ text (recipeListEntry.style_name ++ " - " ++ recipeListEntry.style_type) ]
       }
 
 
@@ -208,16 +227,19 @@ recipeSelection recipes =
           List.map viewRecipeListEntry recipes
   in
   Html.div []
-  [ Grid.row [Row.topXs]
+  [ Grid.row [ Row.attrs [ Spacing.pt2 ] ]
     [ Grid.col []
       [ Html.h4 [Typography.headline4 ] [text "What are we brewing?"]]
     ]
   , Grid.row []
-    [ Grid.col []
+    [ Grid.col [ Col.attrs [ Spacing.pt3 ] ]
       [ case recipeListItems of
         [] -> noRecipes
         first :: rest ->
-          MatList.list MatList.config
+          MatList.list
+            (MatList.config
+              |> MatList.setTwoLine True
+              |> MatList.setAttributes [ Attributes.style "max-width" "600px", Attributes.style "border" "1px solid rgba(0,0,0,.1)" ])
             (ListItem.listItem ListItem.config
                 [ first ]
             )
@@ -238,7 +260,7 @@ loading =
 
 noRecipes: Html Msg
 noRecipes =
-  Html.div [Attributes.align "center"]
+  Html.div [ Attributes.align "center", Size.h75, Flex.block, Flex.col, Flex.alignItemsCenter, Flex.justifyCenter ]
   [ Html.h4 [ Typography.headline4, Spacing.p2 ] [ text "We couldn't find any recipes!" ]
   , Html.h4 [ Typography.headline4, Spacing.p2 ] [ text "\u{1F631} \u{1F625}" ]
   ]
