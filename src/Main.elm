@@ -5,24 +5,18 @@ import Api.Data exposing (Recipe, RecipeList, recipeStepDecoder, wSKegDecoder)
 import Api.Request.Default as Api
 import Browser
 import Dialog exposing (dialog)
-import Html exposing (Html, text)
-import Html.Attributes as Attributes
+import Html exposing (Html)
 import Http
 import Json.Decode exposing (Error(..))
-import Material.IconButton as IconButton
-import Material.List.Item as ListItem
-import Material.TopAppBar as TopAppBar
 import Material.Typography as Typography
-import Material.Elevation as Elevation
-import Material.CircularProgress as CircularProgress
-import Material.List as MatList
 import Material.Snackbar as Snackbar
 import Bootstrap.Grid as Grid
 import Bootstrap.Utilities.Spacing as Spacing
 import Bootstrap.Utilities.Size as Size
-import Bootstrap.Utilities.Flex as Flex
 import Bootstrap.Grid.Col as Col
 import Bootstrap.Grid.Row as Row
+import Navbar exposing (navbar)
+import Page exposing (page)
 import Recipes exposing (RecipeListEntry)
 import Result
 
@@ -170,7 +164,7 @@ handleJsonDecodeError e model =
 view : Model -> Html Msg
 view model =
   Html.div [ Typography.typography ]
-    [ navbar model.title
+    [ navbar model.title ShowDialog ToggleLoading
     , dialog model.value model.dialogOpen CloseDialog
     , Grid.container [ Size.h100, Spacing.pt5 ]
       [ Grid.row [ Row.attrs [ Size.h100, Spacing.pt4 ] ]
@@ -182,85 +176,3 @@ view model =
               (Snackbar.config { onClosed = SnackbarClosed })
               model.snackbarQueue
     ]
-
-
-navbar : String -> Html Msg
-navbar title =
-  TopAppBar.regular TopAppBar.config
-    [ TopAppBar.row [ Elevation.z8 ]
-      [ TopAppBar.section [ TopAppBar.alignStart ]
-        [  Html.span [ TopAppBar.title ] [ text title ] ]
-      , TopAppBar.section [ TopAppBar.alignEnd ]
-        [ IconButton.iconButton (IconButton.config |> IconButton.setOnClick ShowDialog )
-                                (IconButton.icon "whatshot")
-        , IconButton.iconButton
-          (IconButton.config
-            |> IconButton.setAttributes
-              [ TopAppBar.navigationIcon ]
-            |> IconButton.setOnClick ToggleLoading
-          )
-            (IconButton.icon "menu")
-        ]
-      ]
-    ]
-
-
-page: Model -> Html Msg
-page model =
-  if model.loading then loading else
-    if List.isEmpty model.availableRecipes then noRecipes else recipeSelection model.availableRecipes
-
-
-viewRecipeListEntry: RecipeListEntry -> Html Msg
-viewRecipeListEntry recipeListEntry =
-    ListItem.text []
-      { primary = [ text recipeListEntry.name ]
-      , secondary = [ text (recipeListEntry.style_name ++ " - " ++ recipeListEntry.style_type) ]
-      }
-
-
-
-recipeSelection: List RecipeListEntry -> Html Msg
-recipeSelection recipes =
-  let
-      recipeListItems =
-          List.map viewRecipeListEntry recipes
-  in
-  Html.div []
-  [ Grid.row [ Row.attrs [ Spacing.pt2 ] ]
-    [ Grid.col []
-      [ Html.h4 [Typography.headline4 ] [text "What are we brewing?"]]
-    ]
-  , Grid.row []
-    [ Grid.col [ Col.attrs [ Spacing.pt3 ] ]
-      [ case recipeListItems of
-        [] -> noRecipes
-        first :: rest ->
-          MatList.list
-            (MatList.config
-              |> MatList.setTwoLine True
-              |> MatList.setAttributes [ Attributes.style "max-width" "600px", Attributes.style "border" "1px solid rgba(0,0,0,.1)" ])
-            (ListItem.listItem ListItem.config
-                [ first ]
-            )
-            [ ListItem.listItem ListItem.config
-                rest
-            ]
-      ]
-    ]
-  ]
-
-
-loading: Html Msg
-loading =
-  Html.div [ Size.h50, Flex.block, Flex.col, Flex.alignItemsCenter, Flex.justifyAround ]
-    [ Html.h4 [ Typography.headline4 ] [ text "Loading recipes" ]
-    , CircularProgress.indeterminate (CircularProgress.config |> CircularProgress.setFourColored True)
-    ]
-
-noRecipes: Html Msg
-noRecipes =
-  Html.div [ Attributes.align "center", Size.h75, Flex.block, Flex.col, Flex.alignItemsCenter, Flex.justifyCenter ]
-  [ Html.h4 [ Typography.headline4, Spacing.p2 ] [ text "We couldn't find any recipes!" ]
-  , Html.h4 [ Typography.headline4, Spacing.p2 ] [ text "\u{1F631} \u{1F625}" ]
-  ]
