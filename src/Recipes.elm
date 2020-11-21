@@ -1,4 +1,4 @@
-module Recipes exposing (RecipeListEntry, recipeSelection)
+module Recipes exposing (recipeSelection)
 
 
 
@@ -12,19 +12,17 @@ import Html.Attributes as Attributes
 import Material.List as MatList
 import Material.List.Item as ListItem
 import Material.Typography as Typography
-type alias RecipeListEntry = {
-    name: String,
-    id: String,
-    style_type: String,
-    style_name: String
-    }
+import Messages exposing (DialogVariant(..), Msg(..))
+
 
 
 viewRecipeListEntry recipeListEntry =
-    ListItem.text []
+  ListItem.listItem (ListItem.config |> ListItem.setOnClick (ShowDialog (Confirm ("You are about to start brewing " ++ recipeListEntry.name, SelectRecipe recipeListEntry.id))))
+    [ ListItem.text []
       { primary = [ Html.text recipeListEntry.name ]
       , secondary = [ Html.text (recipeListEntry.style_name ++ " - " ++ recipeListEntry.style_type) ]
       }
+    ]
 
 recipeSelection recipes =
   let
@@ -45,12 +43,7 @@ recipeSelection recipes =
             (MatList.config
               |> MatList.setTwoLine True
               |> MatList.setAttributes [ Attributes.style "max-width" "600px", Attributes.style "border" "1px solid rgba(0,0,0,.1)" ])
-            (ListItem.listItem ListItem.config
-                [ first ]
-            )
-            [ ListItem.listItem ListItem.config
-                rest
-            ]
+            ( first )  rest
       ]
     ]
   ]
