@@ -23,4 +23,5 @@ type Msg = Increment
   | ApiError String
   | ShowRecipeDetail RecipeListEntry
   | LinkClicked Browser.UrlRequest
+  | NavigateTo String
   | UrlChanged Url.Url

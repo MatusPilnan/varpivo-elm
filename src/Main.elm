@@ -119,11 +119,19 @@ update msg model =
     ShowRecipeDetail recipeListEntry ->
       ( { model | selectedRecipe = Just recipeListEntry} , Navigation.pushUrl model.key (Url.Builder.absolute ["recipe"] []))
 
-    LinkClicked _ ->
-      ( model, Cmd.none )
+    LinkClicked urlRequest ->
+      case urlRequest of
+        Browser.Internal url ->
+          ( model, Navigation.pushUrl model.key (Url.toString url) )
+
+        Browser.External href ->
+          ( model, Navigation.load href )
 
     UrlChanged url ->
       route url model
+
+    NavigateTo string ->
+      ( model, Navigation.pushUrl model.key string )
 
 
 

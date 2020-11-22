@@ -15,6 +15,7 @@ import Material.DataTable as DataTable exposing (Cell)
 import Material.Fab.Extended as ExtendedFab
 import Material.List as MatList
 import Material.List.Item as ListItem
+import Material.Theme as Theme
 import Material.Typography as Typography
 import Messages exposing (DialogVariant(..), Msg(..))
 import Round
@@ -85,6 +86,7 @@ recipeDetail recipe =
       [ style "position" "fixed"
       , style "bottom" "2rem"
       , style "right" "2rem"
+      , Theme.primaryBg
       ]
     |> ExtendedFab.setOnClick (ShowDialog (Confirm ("You are about to start brewing " ++ recipe.name, SelectRecipe recipe))))  "Brew!"
   ]
