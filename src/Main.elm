@@ -4,7 +4,8 @@ import Api exposing (send)
 import Api.Data exposing (Recipe, RecipeList, StepsList)
 import Api.Request.Default as Api
 import ApiErrorMessage exposing (apiErrorMessage)
-import Browser
+import Browser exposing (Document)
+import Browser.Navigation as Navigation exposing (Key)
 import Data.Step exposing (RecipeStep)
 import Dialog exposing (confirmDialogContent, dialog, dialogActions, scaleDialogContent)
 import Html exposing (Html)
@@ -14,14 +15,15 @@ import Material.Typography as Typography
 import Material.Snackbar as Snackbar
 import Bootstrap.Grid as Grid
 import Bootstrap.Utilities.Spacing as Spacing
-import Bootstrap.Utilities.Size as Size
-import Bootstrap.Grid.Col as Col
 import Bootstrap.Grid.Row as Row
 import Messages exposing (..)
 import Navbar exposing (navbar)
 import Page exposing (page)
 import Data.Recipe exposing (RecipeListEntry)
 import Result
+import Router exposing (route)
+import Url exposing (Url)
+import Url.Builder
 
 
 
@@ -29,7 +31,14 @@ import Result
 -- MAIN
 
 
-main = Browser.element {init = init, view = view, update = update, subscriptions = subscriptions}
+main = Browser.application
+  { init = init
+  , view = view
+  , update = update
+  , subscriptions = subscriptions
+  , onUrlChange = UrlChanged
+  , onUrlRequest = LinkClicked
+  }
 
 subscriptions : Model -> Sub Msg
 subscriptions _ =
@@ -46,24 +55,30 @@ port messageReceiver : (String -> msg) -> Sub msg
 -- MODEL
 
 type alias Model =
-    { title : String
+    { key : Key
+    , url : Url
+    ,title : String
     , value : Float
     , availableRecipes : List RecipeListEntry
     , loading : Bool
     , snackbarQueue : Snackbar.Queue Msg
     , dialogVariant : Maybe DialogVariant
     , recipeSteps : List RecipeStep
+    , selectedRecipe : Maybe RecipeListEntry
     }
 
-init : Int -> ( Model, Cmd Msg )
-init _ =
-  ({ title = "Var:Pivo"
+init : Int -> Url -> Key -> ( Model, Cmd Msg )
+init _ url key = (
+  { url = url
+  , key = key
+  , title = "Var:Pivo"
   , value = 0
   , availableRecipes = []
   , loading = True
   , snackbarQueue = Snackbar.initialQueue
   , dialogVariant = Nothing
   , recipeSteps = []
+  , selectedRecipe = Nothing
   }, fetchRecipes)
 
 
@@ -94,12 +109,23 @@ update msg model =
           ( { model | dialogVariant = Nothing }, Cmd.none )
         Just a ->
           update a { model | dialogVariant = Nothing }
-    SelectRecipe string ->
-      ( { model | loading = True} , fetchRecipeSteps string)
+    SelectRecipe recipe ->
+      ( { model | loading = True, selectedRecipe = Just recipe} , fetchRecipeSteps recipe.id)
     SetSteps recipeSteps ->
-      ( { model | recipeSteps = recipeSteps, loading = False }, Cmd.none )
+      ( { model | recipeSteps = recipeSteps, loading = False }, Navigation.pushUrl model.key (Url.Builder.absolute ["brew-session"] []) )
     ApiError string ->
       ({model | snackbarQueue = (Snackbar.addMessage (apiErrorMessage string) model.snackbarQueue), loading = False }, Cmd.none)
+
+    ShowRecipeDetail recipeListEntry ->
+      ( { model | selectedRecipe = Just recipeListEntry} , Navigation.pushUrl model.key (Url.Builder.absolute ["recipe"] []))
+
+    LinkClicked _ ->
+      ( model, Cmd.none )
+
+    UrlChanged url ->
+      route url model
+
+
 
 
 
@@ -121,7 +147,12 @@ handleSteps res = case res of
 
 handleRecipes: Result Http.Error RecipeList -> List RecipeListEntry
 handleRecipes res = case res of
-                Ok value -> List.map  (\a -> {name = a.name , style_type = a.style.type_, style_name = a.style.name, id = a.id}) value.recipes
+                Ok value -> List.map  (\a ->
+                  { name = a.name
+                  , style_type = a.style.type_
+                  , style_name = a.style.name
+                  , id = a.id
+                  , ingredients = List.map (\i -> {name = i.name, unit = i.unit, amount = i.amount}) a.ingredients}) value.recipes
                 Err _ -> []
 
 
@@ -140,28 +171,31 @@ fetchRecipes = send (\msg -> ListAppend (handleRecipes msg)) (Api.getRecipeList)
 
 -- VIEW
 
-view : Model -> Html Msg
+view : Model -> Document Msg
 view model =
-  Html.div [ Typography.typography ]
-    [ navbar model.title (ShowDialog Scale) ToggleLoading
-    , case model.dialogVariant of
-        Nothing ->
-          Html.div [] []
+  { title = model.title
+  , body =
+    [ Html.div [ Typography.typography ]
+      [ navbar model.title (ShowDialog Scale) ToggleLoading
+      , case model.dialogVariant of
+          Nothing ->
+            Html.div [] []
 
-        Just Scale ->
-          dialog (scaleDialogContent model.value) (Just "Scale") Nothing
+          Just Scale ->
+            dialog (scaleDialogContent model.value) (Just "Scale") Nothing
 
-        Just (Confirm (prompt, action)) ->
-          dialog (confirmDialogContent prompt) (Just "Confirm") (Just ( dialogActions ( Just action ) (Just ( CloseDialog Nothing ))))
+          Just (Confirm (prompt, action)) ->
+            dialog (confirmDialogContent prompt) (Just "Confirm") (Just ( dialogActions ( Just action ) (Just ( CloseDialog Nothing ))))
 
-    , Grid.container [ Size.h100, Spacing.pt5 ]
-      [ Grid.row [ Row.attrs [ Size.h100, Spacing.pt4 ] ]
-        [ Grid.col [ Col.attrs [ Size.h100 ] ]
-          [ page model ]
+      , Grid.container [ Spacing.py5 ]
+        [ Grid.row [ Row.attrs [ Spacing.pt4 ] ]
+          [ Grid.col []
+            [ page model ]
+          ]
         ]
+      , Snackbar.snackbar
+                (Snackbar.config { onClosed = SnackbarClosed })
+                model.snackbarQueue
       ]
-    , Snackbar.snackbar
-              (Snackbar.config { onClosed = SnackbarClosed })
-              model.snackbarQueue
-    , Html.p [] [Html.text (Debug.toString model.recipeSteps)]
     ]
+  }
