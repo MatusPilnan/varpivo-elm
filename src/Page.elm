@@ -10,6 +10,7 @@ import Material.CircularProgress as CircularProgress
 import Material.Typography as Typography
 import Recipes exposing (recipeDetail, recipeSelection)
 import Router exposing (routeParser)
+import Steps exposing (stepsListView)
 import Url.Parser as Parser
 
 
@@ -19,19 +20,17 @@ page model =
       home model
 
     Just currentPage ->
-      case currentPage of
-        Router.Recipe ->
-          case model.selectedRecipe of
-            Nothing ->
-              home model
-            Just r ->
-              recipeDetail r
-
-        Router.Home ->
+      case ( currentPage, model.selectedRecipe ) of
+        ( Router.Recipe, Nothing ) ->
           home model
-
-        Router.BrewSession ->
-          steps model.recipeSteps
+        ( Router.Recipe, Just r ) ->
+          recipeDetail r
+        ( Router.Home, _) ->
+          home model
+        ( Router.BrewSession, Nothing ) ->
+          home model
+        ( Router.BrewSession, Just r ) ->
+          stepsListView r model.recipeSteps model.timezone
 
 
 
@@ -51,8 +50,5 @@ noRecipes =
   [ Html.h4 [ Typography.headline4, Spacing.p2 ] [ text "We couldn't find any recipes!" ]
   , Html.h4 [ Typography.headline4, Spacing.p2 ] [ text "\u{1F631} \u{1F625}" ]
   ]
-
-steps recipeSteps =
-  Html.p [] [Html.text (Debug.toString recipeSteps)]
 
 

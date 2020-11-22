@@ -22,6 +22,8 @@ import Page exposing (page)
 import Data.Recipe exposing (RecipeListEntry)
 import Result
 import Router exposing (route)
+import Task
+import Time exposing (Zone)
 import Url exposing (Url)
 import Url.Builder
 
@@ -65,6 +67,7 @@ type alias Model =
     , dialogVariant : Maybe DialogVariant
     , recipeSteps : List RecipeStep
     , selectedRecipe : Maybe RecipeListEntry
+    , timezone : Maybe Zone
     }
 
 init : Int -> Url -> Key -> ( Model, Cmd Msg )
@@ -79,6 +82,7 @@ init _ url key = (
   , dialogVariant = Nothing
   , recipeSteps = []
   , selectedRecipe = Nothing
+  , timezone = Nothing
   }, fetchRecipes)
 
 
@@ -95,7 +99,7 @@ update msg model =
       ({ model | value = model.value - 1, availableRecipes = List.drop 1 model.availableRecipes }, Cmd.none)
     ToggleLoading ->
       ({ model | loading = True}, fetchRecipes)
-    ListAppend list ->
+    SetAvailableRecipes list ->
       ({ model | value = model.value + 1, availableRecipes = list, loading = False }, Cmd.none)
     Recv data ->
       handleKegMessage data model
@@ -112,7 +116,8 @@ update msg model =
     SelectRecipe recipe ->
       ( { model | loading = True, selectedRecipe = Just recipe} , fetchRecipeSteps recipe.id)
     SetSteps recipeSteps ->
-      ( { model | recipeSteps = recipeSteps, loading = False }, Navigation.pushUrl model.key (Url.Builder.absolute ["brew-session"] []) )
+      ( { model | recipeSteps = recipeSteps, loading = False },
+      Cmd.batch [Navigation.pushUrl model.key (Url.Builder.absolute ["brew-session"] []), Task.perform SetTimeZone Time.here])
     ApiError string ->
       ({model | snackbarQueue = (Snackbar.addMessage (apiErrorMessage string) model.snackbarQueue), loading = False }, Cmd.none)
 
@@ -132,6 +137,12 @@ update msg model =
 
     NavigateTo string ->
       ( model, Navigation.pushUrl model.key string )
+
+    RequestTimeZone ->
+      ( model, Task.perform SetTimeZone Time.here )
+
+    SetTimeZone zone ->
+      ( { model | timezone = Just zone}, Cmd.none)
 
 
 
@@ -174,7 +185,7 @@ fetchRecipeSteps recipeId = send ( \msg ->
                                      ) (Api.postRecipe recipeId)
 
 fetchRecipes: Cmd Msg
-fetchRecipes = send (\msg -> ListAppend (handleRecipes msg)) (Api.getRecipeList)
+fetchRecipes = send (\msg -> SetAvailableRecipes (handleRecipes msg)) (Api.getRecipeList)
 
 
 -- VIEW

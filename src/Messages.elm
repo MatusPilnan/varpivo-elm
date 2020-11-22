@@ -4,6 +4,7 @@ import Browser
 import Data.Recipe exposing (RecipeListEntry)
 import Data.Step exposing (RecipeStep)
 import Material.Snackbar as Snackbar
+import Time exposing (Zone)
 import Url
 
 
@@ -12,7 +13,7 @@ type DialogVariant = Scale | Confirm ( String, Msg)
 type Msg = Increment
   | Decrement
   | ToggleLoading
-  | ListAppend (List RecipeListEntry)
+  | SetAvailableRecipes (List RecipeListEntry)
   | Recv String
   | SnackbarClosed Snackbar.MessageId
   | Send
@@ -25,3 +26,5 @@ type Msg = Increment
   | LinkClicked Browser.UrlRequest
   | NavigateTo String
   | UrlChanged Url.Url
+  | RequestTimeZone
+  | SetTimeZone Zone
