@@ -4,6 +4,7 @@ import Api exposing (send)
 import Api.Data exposing (Recipe, RecipeList, StepsList)
 import Api.Request.Default as Api
 import ApiErrorMessage exposing (apiErrorMessage)
+import BottomToolbar exposing (bottomToolbar)
 import Browser exposing (Document)
 import Browser.Navigation as Navigation exposing (Key)
 import Data.Step exposing (RecipeStep)
@@ -215,6 +216,9 @@ view model =
       , Snackbar.snackbar
                 (Snackbar.config { onClosed = SnackbarClosed })
                 model.snackbarQueue
+      , if not (List.isEmpty model.recipeSteps) then
+          bottomToolbar model.value model.value
+        else Html.div [] []
       ]
     ]
   }
