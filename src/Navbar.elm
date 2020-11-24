@@ -12,7 +12,7 @@ import Material.TopAppBar as TopAppBar
 import Messages exposing (DialogVariant(..), Msg(..))
 
 
-navbar title showRecipeButton menuOpen onTemperatureButtonClick =
+navbar title showRecipeButton menuOpen =
   TopAppBar.regular TopAppBar.config
     [ TopAppBar.row [ Elevation.z8 ]
       [ TopAppBar.section [ TopAppBar.alignStart, TopAppBar.title ]
@@ -23,7 +23,7 @@ navbar title showRecipeButton menuOpen onTemperatureButtonClick =
         ]
       , TopAppBar.section [ TopAppBar.alignEnd ]
         [ if showRecipeButton then
-            IconButton.iconButton (IconButton.config |> IconButton.setOnClick onTemperatureButtonClick )
+            IconButton.iconButton (IconButton.config |> IconButton.setOnClick (NavigateTo "recipe") )
                                 (IconButton.icon "menu_book")
           else Html.div [] []
         , IconButton.iconButton
