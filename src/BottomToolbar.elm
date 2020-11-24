@@ -20,7 +20,7 @@ bottomToolbar temperature boilTime =
       ]
     , Grid.col []
       [ Html.p [Typography.caption, Theme.textSecondaryOnBackground, Spacing.m0, Spacing.mt1] [Html.text "Remaining boil time"]
-      , Html.p [Typography.headline6, Spacing.m0 ] [Html.text (String.fromFloat boilTime ++ " min")]
+      , Html.p [Typography.headline6, Spacing.m0 ] [Html.text (String.fromInt boilTime ++ " min")]
       ]
     ]
   ]

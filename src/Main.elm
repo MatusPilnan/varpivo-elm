@@ -63,6 +63,9 @@ type alias Model =
     , url : Url
     , title : String
     , value : Float
+    , weight : Float
+    , temperature : Float
+    , remainingBoilTime : Int
     , availableRecipes : List RecipeListEntry
     , loading : Bool
     , snackbarQueue : Snackbar.Queue Msg
@@ -78,6 +81,9 @@ init _ url key = (
   , key = key
   , title = "Var:Pivo"
   , value = 0
+  , weight = 0
+  , temperature = 0
+  , remainingBoilTime = 0
   , availableRecipes = []
   , loading = True
   , snackbarQueue = Snackbar.initialQueue
@@ -232,7 +238,7 @@ view model =
             Html.div [] []
 
           Just Scale ->
-            dialog (scaleDialogContent model.value) (Just "Scale") Nothing
+            dialog (scaleDialogContent model.weight) (Just "Scale") Nothing
 
           Just (Confirm (prompt, action)) ->
             dialog (confirmDialogContent prompt) (Just "Confirm") (Just ( dialogActions ( Just action ) (Just ( CloseDialog Nothing ))))
@@ -247,7 +253,7 @@ view model =
                 (Snackbar.config { onClosed = SnackbarClosed })
                 model.snackbarQueue
       , if not (List.isEmpty model.recipeSteps) then
-          bottomToolbar model.value model.value
+          bottomToolbar model.temperature model.remainingBoilTime
         else Html.div [] []
       ]
     ]

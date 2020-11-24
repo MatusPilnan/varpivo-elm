@@ -20,8 +20,22 @@ handleKegMessage data model =
         "weight" ->
           case Json.Decode.decodeString Json.Decode.float value.payload of
             Result.Ok weight ->
-              ({model | value = weight}, Cmd.none)
+              ({model | weight = weight}, Cmd.none)
 
+            Result.Err e ->
+              handleJsonDecodeError e model
+
+        "temperature" ->
+          case Json.Decode.decodeString Json.Decode.float value.payload of
+            Result.Ok temp ->
+              ({model | temperature = temp}, Cmd.none)
+            Result.Err e ->
+              handleJsonDecodeError e model
+
+        "boilTime" ->
+          case Json.Decode.decodeString Json.Decode.int value.payload of
+            Result.Ok boil ->
+              ({model | remainingBoilTime = boil}, Cmd.none)
             Result.Err e ->
               handleJsonDecodeError e model
 
