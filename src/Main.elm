@@ -1,7 +1,7 @@
 port module Main exposing (..)
 
 import Api exposing (send)
-import Api.Data exposing (Recipe, RecipeList, StepsList)
+import Api.Data exposing (BrewSession, Recipe, RecipeList, StepsList)
 import Api.Request.Default as Api
 import ApiErrorMessage exposing (apiErrorMessage)
 import BottomToolbar exposing (bottomToolbar)
@@ -52,6 +52,7 @@ subscriptions _ =
 
 
 port sendMessage : String -> Cmd msg
+port console : String -> Cmd msg
 port messageReceiver : (String -> msg) -> Sub msg
 
 
@@ -60,7 +61,7 @@ port messageReceiver : (String -> msg) -> Sub msg
 type alias Model =
     { key : Key
     , url : Url
-    ,title : String
+    , title : String
     , value : Float
     , availableRecipes : List RecipeListEntry
     , loading : Bool
@@ -84,7 +85,7 @@ init _ url key = (
   , recipeSteps = []
   , selectedRecipe = Nothing
   , timezone = Nothing
-  }, fetchRecipes)
+  }, Cmd.batch [fetchBrewSession, Task.perform SetTimeZone Time.here] )
 
 
 -- UPDATE
@@ -98,7 +99,7 @@ update msg model =
       ({ model | value = model.value + 1}, Cmd.none)
     Decrement ->
       ({ model | value = model.value - 1, availableRecipes = List.drop 1 model.availableRecipes }, Cmd.none)
-    ToggleLoading ->
+    FetchRecipes ->
       ({ model | loading = True}, fetchRecipes)
     SetAvailableRecipes list ->
       ({ model | value = model.value + 1, availableRecipes = list, loading = False }, Cmd.none)
@@ -117,13 +118,12 @@ update msg model =
     SelectRecipe recipe ->
       ( { model | loading = True, selectedRecipe = Just recipe} , fetchRecipeSteps recipe.id)
     SetSteps recipeSteps ->
-      ( { model | recipeSteps = recipeSteps, loading = False },
-      Cmd.batch [Navigation.pushUrl model.key (Url.Builder.absolute ["brew-session"] []), Task.perform SetTimeZone Time.here])
+      ( { model | recipeSteps = recipeSteps, loading = False }, Navigation.pushUrl model.key (Url.Builder.absolute ["brew-session"] []))
     ApiError string ->
       ({model | snackbarQueue = (Snackbar.addMessage (apiErrorMessage string) model.snackbarQueue), loading = False }, Cmd.none)
 
     ShowRecipeDetail recipeListEntry ->
-      ( { model | selectedRecipe = Just recipeListEntry} , Navigation.pushUrl model.key (Url.Builder.absolute ["recipe"] []))
+      ( { model | selectedRecipe = Just recipeListEntry}, Navigation.pushUrl model.key (Url.Builder.absolute ["recipe"] []))
 
     LinkClicked urlRequest ->
       case urlRequest of
@@ -134,10 +134,10 @@ update msg model =
           ( model, Navigation.load href )
 
     UrlChanged url ->
-      route url model
+      route url model console
 
     NavigateTo string ->
-      ( model, Navigation.pushUrl model.key string )
+      ( model, Cmd.batch [Navigation.pushUrl model.key string, sendMessage string ])
 
     RequestTimeZone ->
       ( model, Task.perform SetTimeZone Time.here )
@@ -145,36 +145,48 @@ update msg model =
     SetTimeZone zone ->
       ( { model | timezone = Just zone}, Cmd.none)
 
+    SetBrewSession (recipeListEntry, recipeSteps) ->
+      ( { model | selectedRecipe = Just recipeListEntry, recipeSteps = recipeSteps, loading = False}
+      , Navigation.pushUrl model.key (Url.toString model.url)
+      )
 
 
+apiStepToRecipeStep : Api.Data.RecipeStep -> RecipeStep
+apiStepToRecipeStep entry =
+  { started = entry.started
+  , finished = entry.finished
+  , progress = entry.progress
+  , estimation = entry.estimation
+  , description = entry.description
+  , duration = entry.durationMins
+  , name = entry.name
+  , available = entry.available
+  }
 
+apiStepListToStepList : StepsList -> List RecipeStep
+apiStepListToStepList value =
+  List.map apiStepToRecipeStep value.steps
 
 handleSteps: Result Http.Error StepsList -> List RecipeStep
 handleSteps res = case res of
                 Ok value ->
-                  List.map ( \entry ->
-                    { started = entry.started
-                    , finished = entry.finished
-                    , progress = entry.progress
-                    , estimation = entry.estimation
-                    , description = entry.description
-                    , duration = entry.durationMins
-                    , name = entry.name
-                    , available = entry.available
-                    }) value.steps
+                  apiStepListToStepList value
                 Err _ ->
                   []
 
 handleRecipes: Result Http.Error RecipeList -> List RecipeListEntry
 handleRecipes res = case res of
-                Ok value -> List.map  (\a ->
-                  { name = a.name
-                  , style_type = a.style.type_
-                  , style_name = a.style.name
-                  , id = a.id
-                  , ingredients = List.map (\i -> {name = i.name, unit = i.unit, amount = i.amount}) a.ingredients}) value.recipes
+                Ok value -> List.map apiRecipeToRecipe value.recipes
                 Err _ -> []
 
+
+apiRecipeToRecipe a =
+  { name = a.name
+  , style_type = a.style.type_
+  , style_name = a.style.name
+  , id = a.id
+  , ingredients = List.map (\i -> {name = i.name, unit = i.unit, amount = i.amount}) a.ingredients
+  }
 
 fetchRecipeSteps: String -> Cmd Msg
 fetchRecipeSteps recipeId = send ( \msg ->
@@ -189,6 +201,24 @@ fetchRecipes: Cmd Msg
 fetchRecipes = send (\msg -> SetAvailableRecipes (handleRecipes msg)) (Api.getRecipeList)
 
 
+handleBrewSession: Result Http.Error BrewSession -> Maybe (RecipeListEntry, List RecipeStep)
+handleBrewSession response =
+  case response of
+    Ok value ->
+      Just (apiRecipeToRecipe value.recipe, List.map apiStepToRecipeStep value.steps)
+    Err _ ->
+      Nothing
+
+
+fetchBrewSession =
+  send (\response -> case (handleBrewSession response) of
+                       Nothing ->
+                         FetchRecipes
+                       Just result ->
+                         SetBrewSession result
+                     ) Api.getBrewStatus
+
+
 -- VIEW
 
 view : Model -> Document Msg
@@ -196,7 +226,7 @@ view model =
   { title = model.title
   , body =
     [ Html.div [ Typography.typography ]
-      [ navbar model.title (ShowDialog Scale) ToggleLoading
+      [ navbar model.title (ShowDialog Scale) FetchRecipes
       , case model.dialogVariant of
           Nothing ->
             Html.div [] []

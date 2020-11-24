@@ -1,8 +1,9 @@
 module Router exposing (..)
 
 import Browser.Navigation as Navigation
+import Url
 import Url.Builder
-import Url.Parser as Parser exposing (Parser, map, oneOf, s)
+import Url.Parser as Parser exposing (Parser, map, oneOf, s, top)
 
 
 type Route = Recipe | Home | BrewSession
@@ -12,32 +13,32 @@ routeParser =
   oneOf
     [ map Recipe (s "recipe")
     , map BrewSession (s "brew-session")
-    , map Home (s "")
+    , map Home top
     ]
 
 
-route url model =
+route url model console =
   case Parser.parse routeParser url of
     Nothing ->
-      ( { model | url = url }, Cmd.none)
+      ( { model | url = url }, console (Url.toString url))
 
     Just currentPage ->
       case currentPage of
         Recipe ->
           case model.selectedRecipe of
             Nothing ->
-              ( model, Navigation.replaceUrl model.key (Url.Builder.absolute [""] []))
+              ( model, Navigation.pushUrl model.key (Url.Builder.absolute [""] []))
             Just _ ->
-              ( { model | url = url }, Cmd.none)
+              ( { model | url = url }, console ("recipe " ++ Url.toString url))
 
         Home ->
           if List.isEmpty model.recipeSteps then
-            ( { model | url = url, selectedRecipe = Nothing }, Cmd.none)
+            ( { model | url = url, selectedRecipe = Nothing }, console ("home " ++ Url.toString url))
           else
-            ( model, Navigation.replaceUrl model.key (Url.Builder.absolute ["brew-session"] []) )
+            ( model, Navigation.pushUrl model.key (Url.Builder.absolute ["brew-session"] []) )
 
         BrewSession ->
           if List.isEmpty model.recipeSteps then
-            ( model, Navigation.replaceUrl model.key (Url.Builder.absolute [""] []) )
+            ( model, Navigation.pushUrl model.key (Url.Builder.absolute [""] []) )
           else
-            ( { model | url = url }, Cmd.none)
+            ( { model | url = url }, console ("bs " ++ Url.toString url))

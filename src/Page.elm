@@ -23,7 +23,7 @@ page model =
         ( Router.Recipe, Nothing ) ->
           home model
         ( Router.Recipe, Just r ) ->
-          recipeDetail r
+          recipeDetail r (List.isEmpty model.recipeSteps)
         ( Router.Home, _) ->
           home model
         ( Router.BrewSession, Nothing ) ->

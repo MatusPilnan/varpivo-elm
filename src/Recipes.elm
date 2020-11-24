@@ -54,7 +54,7 @@ recipeSelection recipes =
     ]
   ]
 
-recipeDetail recipe =
+recipeDetail recipe brewable =
   Html.div [ Spacing.pb5 ]
   [ Grid.row []
     [ Grid.col []
@@ -81,14 +81,15 @@ recipeDetail recipe =
         }
       ]
     ]
-  , ExtendedFab.fab (ExtendedFab.config
-    |> ExtendedFab.setAttributes
-      [ style "position" "fixed"
-      , style "bottom" "2rem"
-      , style "right" "2rem"
-      , Theme.primaryBg
-      ]
-    |> ExtendedFab.setOnClick (ShowDialog (Confirm ("You are about to start brewing " ++ recipe.name, SelectRecipe recipe))))  "Brew!"
+  , if brewable then ExtendedFab.fab (ExtendedFab.config
+      |> ExtendedFab.setAttributes
+        [ style "position" "fixed"
+        , style "bottom" "2rem"
+        , style "right" "2rem"
+        , Theme.primaryBg
+        ]
+      |> ExtendedFab.setOnClick (ShowDialog (Confirm ("You are about to start brewing " ++ recipe.name, SelectRecipe recipe))))  "Brew!"
+    else Html.div [] []
   ]
 
 --ingredientView : {name: string, unit: string, amount: float} -> Cell msg

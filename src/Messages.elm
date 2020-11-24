@@ -12,7 +12,7 @@ type DialogVariant = Scale | Confirm ( String, Msg)
 
 type Msg = Increment
   | Decrement
-  | ToggleLoading
+  | FetchRecipes
   | SetAvailableRecipes (List RecipeListEntry)
   | Recv String
   | SnackbarClosed Snackbar.MessageId
@@ -28,3 +28,4 @@ type Msg = Increment
   | UrlChanged Url.Url
   | RequestTimeZone
   | SetTimeZone Zone
+  | SetBrewSession (RecipeListEntry, List RecipeStep)
