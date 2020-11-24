@@ -4,3 +4,11 @@ div.varpivo-bottom-toolbar {
     left: 0;
     right: 0;
 }
+
+div.varpivo-centered-page {
+    position: fixed;
+    height: 100vh;
+    width: 100vw;
+    top: 0;
+    left: 0;
+}

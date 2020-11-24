@@ -2,7 +2,6 @@ module Page exposing (page)
 
 
 import Bootstrap.Utilities.Flex as Flex
-import Bootstrap.Utilities.Size as Size
 import Bootstrap.Utilities.Spacing as Spacing
 import Html exposing (text)
 import Html.Attributes as Attributes
@@ -40,15 +39,18 @@ home model =
 
 
 loading =
-  Html.div [ Size.h50, Flex.block, Flex.col, Flex.alignItemsCenter, Flex.justifyAround ]
+  Html.div [ Flex.block, Flex.col, Flex.alignItemsCenter, Flex.justifyCenter, center ]
     [ Html.h4 [ Typography.headline4 ] [ text "Loading recipes" ]
     , CircularProgress.indeterminate (CircularProgress.config |> CircularProgress.setFourColored True)
     ]
 
 noRecipes =
-  Html.div [ Attributes.align "center", Size.h75, Flex.block, Flex.col, Flex.alignItemsCenter, Flex.justifyCenter, Flex.alignSelfCenter ]
+  Html.div [ center, Attributes.align "center", Flex.block, Flex.col, Flex.alignItemsCenter, Flex.justifyCenter ]
   [ Html.h4 [ Typography.headline4, Spacing.p2 ] [ text "We couldn't find any recipes!" ]
   , Html.h4 [ Typography.headline4, Spacing.p2 ] [ text "\u{1F631} \u{1F625}" ]
   ]
 
+
+center =
+  Attributes.class "varpivo-centered-page"
 
