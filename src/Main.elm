@@ -73,6 +73,7 @@ type alias Model =
     , recipeSteps : List RecipeStep
     , selectedRecipe : Maybe RecipeListEntry
     , timezone : Maybe Zone
+    , menuOpened : Bool
     }
 
 init : Int -> Url -> Key -> ( Model, Cmd Msg )
@@ -91,6 +92,7 @@ init _ url key = (
   , recipeSteps = []
   , selectedRecipe = Nothing
   , timezone = Nothing
+  , menuOpened = False
   }, Cmd.batch [fetchBrewSession, Task.perform SetTimeZone Time.here] )
 
 
@@ -155,6 +157,12 @@ update msg model =
       ( { model | selectedRecipe = Just recipeListEntry, recipeSteps = recipeSteps, loading = False}
       , Navigation.pushUrl model.key (Url.toString model.url)
       )
+
+    MenuOpened ->
+      ( { model | menuOpened = True}, Cmd.none)
+
+    MenuClosed ->
+      ( { model | menuOpened = False}, Cmd.none)
 
 
 apiStepToRecipeStep : Api.Data.RecipeStep -> RecipeStep
@@ -232,7 +240,7 @@ view model =
   { title = model.title
   , body =
     [ Html.div [ Typography.typography ]
-      [ navbar model.title (ShowDialog Scale) FetchRecipes
+      [ navbar model.title (isRecipeSelected model) model.menuOpened (NavigateTo "recipe")
       , case model.dialogVariant of
           Nothing ->
             Html.div [] []
@@ -258,3 +266,12 @@ view model =
       ]
     ]
   }
+
+
+isRecipeSelected : Model -> Bool
+isRecipeSelected model =
+  case model.selectedRecipe of
+    Just _ ->
+      True
+    Nothing ->
+       False

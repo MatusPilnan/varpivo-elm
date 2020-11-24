@@ -20,7 +20,7 @@ routeParser =
 route url model console =
   case Parser.parse routeParser url of
     Nothing ->
-      ( { model | url = url }, console (Url.toString url))
+      ( { model | url = url }, Cmd.batch [console (Url.toString url), Navigation.pushUrl model.key (Url.Builder.absolute [""] [])])
 
     Just currentPage ->
       case currentPage of

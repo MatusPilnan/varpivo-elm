@@ -29,3 +29,5 @@ type Msg = Increment
   | RequestTimeZone
   | SetTimeZone Zone
   | SetBrewSession (RecipeListEntry, List RecipeStep)
+  | MenuOpened
+  | MenuClosed
