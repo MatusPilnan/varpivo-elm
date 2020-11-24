@@ -3,6 +3,7 @@ module Page exposing (page)
 
 import Bootstrap.Utilities.Flex as Flex
 import Bootstrap.Utilities.Spacing as Spacing
+import Dict
 import Html exposing (text)
 import Html.Attributes as Attributes
 import Material.CircularProgress as CircularProgress
@@ -23,7 +24,7 @@ page model =
         ( Router.Recipe, Nothing ) ->
           home model
         ( Router.Recipe, Just r ) ->
-          recipeDetail r (List.isEmpty model.recipeSteps)
+          recipeDetail r (Dict.isEmpty model.recipeSteps)
         ( Router.Home, _) ->
           home model
         ( Router.BrewSession, Nothing ) ->

@@ -9,6 +9,7 @@ import Browser exposing (Document)
 import Browser.Navigation as Navigation exposing (Key)
 import Data.Step exposing (RecipeStep)
 import Dialog exposing (confirmDialogContent, dialog, dialogActions, scaleDialogContent)
+import Dict exposing (Dict)
 import Html exposing (Html)
 import Http
 import KegMessage exposing (handleKegMessage)
@@ -70,7 +71,7 @@ type alias Model =
     , loading : Bool
     , snackbarQueue : Snackbar.Queue Msg
     , dialogVariant : Maybe DialogVariant
-    , recipeSteps : List RecipeStep
+    , recipeSteps : Dict String RecipeStep
     , selectedRecipe : Maybe RecipeListEntry
     , timezone : Maybe Zone
     , menuOpened : Bool
@@ -89,7 +90,7 @@ init _ url key = (
   , loading = True
   , snackbarQueue = Snackbar.initialQueue
   , dialogVariant = Nothing
-  , recipeSteps = []
+  , recipeSteps = Dict.empty
   , selectedRecipe = Nothing
   , timezone = Nothing
   , menuOpened = False
@@ -177,16 +178,16 @@ apiStepToRecipeStep entry =
   , available = entry.available
   }
 
-apiStepListToStepList : StepsList -> List RecipeStep
+apiStepListToStepList : StepsList -> Dict String RecipeStep
 apiStepListToStepList value =
-  List.map apiStepToRecipeStep value.steps
+  Dict.fromList (List.map (\step -> (step.id, apiStepToRecipeStep step)) value.steps)
 
-handleSteps: Result Http.Error StepsList -> List RecipeStep
+handleSteps: Result Http.Error StepsList -> Dict String RecipeStep
 handleSteps res = case res of
                 Ok value ->
                   apiStepListToStepList value
                 Err _ ->
-                  []
+                  Dict.empty
 
 handleRecipes: Result Http.Error RecipeList -> List RecipeListEntry
 handleRecipes res = case res of
@@ -204,22 +205,24 @@ apiRecipeToRecipe a =
 
 fetchRecipeSteps: String -> Cmd Msg
 fetchRecipeSteps recipeId = send ( \msg ->
-                                     case (handleSteps msg) of
-                                        [] ->
-                                          ApiError "Couldn't get recipe steps!"
-                                        first :: rest ->
-                                          SetSteps (first :: rest)
-                                     ) (Api.postRecipe recipeId)
+  let
+      steps =
+          handleSteps msg
+  in
+    if Dict.isEmpty steps then
+      ApiError "Couldn't get recipe steps!"
+    else
+      SetSteps steps) (Api.postRecipe recipeId)
 
 fetchRecipes: Cmd Msg
 fetchRecipes = send (\msg -> SetAvailableRecipes (handleRecipes msg)) (Api.getRecipeList)
 
 
-handleBrewSession: Result Http.Error BrewSession -> Maybe (RecipeListEntry, List RecipeStep)
+handleBrewSession: Result Http.Error BrewSession -> Maybe (RecipeListEntry, Dict String RecipeStep)
 handleBrewSession response =
   case response of
     Ok value ->
-      Just (apiRecipeToRecipe value.recipe, List.map apiStepToRecipeStep value.steps)
+      Just (apiRecipeToRecipe value.recipe, Dict.fromList (List.map (\step -> (step.id, apiStepToRecipeStep step)) value.steps))
     Err _ ->
       Nothing
 
@@ -240,7 +243,7 @@ view model =
   { title = model.title
   , body =
     [ Html.div [ Typography.typography ]
-      [ navbar model.title (isRecipeSelected model) model.menuOpened (NavigateTo "recipe")
+      [ navbar model.title (isRecipeSelected model) model.menuOpened
       , case model.dialogVariant of
           Nothing ->
             Html.div [] []
@@ -260,7 +263,7 @@ view model =
       , Snackbar.snackbar
                 (Snackbar.config { onClosed = SnackbarClosed })
                 model.snackbarQueue
-      , if not (List.isEmpty model.recipeSteps) then
+      , if not (Dict.isEmpty model.recipeSteps) then
           bottomToolbar model.temperature model.remainingBoilTime
         else Html.div [] []
       ]

@@ -7,6 +7,7 @@ import Bootstrap.Grid.Row as Row
 import Bootstrap.Utilities.Flex as Flex
 import Bootstrap.Utilities.Spacing as Spacing
 import Data.Step exposing (RecipeStep)
+import Dict
 import Html exposing (text)
 import Html.Attributes exposing (style)
 import Material.Button as Button
@@ -31,7 +32,11 @@ stepView step timezone =
   ]
 
 
-stepsListView recipe steps timezone =
+stepsListView recipe stepsDict timezone =
+  let
+      steps =
+          List.sortBy .name (Dict.values stepsDict)
+  in
   Html.div [ Spacing.pb5 ]
     [ Grid.row []
       [ Grid.col []

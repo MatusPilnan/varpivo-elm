@@ -1,6 +1,7 @@
 module Router exposing (..)
 
 import Browser.Navigation as Navigation
+import Dict
 import Url
 import Url.Builder
 import Url.Parser as Parser exposing (Parser, map, oneOf, s, top)
@@ -32,13 +33,13 @@ route url model console =
               ( { model | url = url }, console ("recipe " ++ Url.toString url))
 
         Home ->
-          if List.isEmpty model.recipeSteps then
+          if Dict.isEmpty model.recipeSteps then
             ( { model | url = url, selectedRecipe = Nothing }, console ("home " ++ Url.toString url))
           else
             ( model, Navigation.pushUrl model.key (Url.Builder.absolute ["brew-session"] []) )
 
         BrewSession ->
-          if List.isEmpty model.recipeSteps then
+          if Dict.isEmpty model.recipeSteps then
             ( model, Navigation.pushUrl model.key (Url.Builder.absolute [""] []) )
           else
             ( { model | url = url }, console ("bs " ++ Url.toString url))
