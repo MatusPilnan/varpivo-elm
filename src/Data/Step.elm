@@ -9,4 +9,5 @@ type alias RecipeStep =
   , duration : Maybe Float
   , name : String
   , available : Bool
+  , id : String
   }

@@ -9,6 +9,7 @@ import Bootstrap.Utilities.Spacing as Spacing
 import Data.Step exposing (RecipeStep)
 import Html exposing (text)
 import Html.Attributes exposing (style)
+import Html.Events
 import Material.Button as Button
 import Material.Card as Card exposing (Block)
 import Material.LinearProgress as LinearProgress
@@ -16,15 +17,17 @@ import Material.Theme as Theme
 import Material.Typography as Typography
 import Messages exposing (Msg(..))
 import Time exposing (Zone)
+import Url.Builder as Builder exposing (string)
 
 
+stepView : RecipeStep -> Maybe Zone -> Html.Html Msg
 stepView step timezone =
   Grid.row [ Row.attrs [ Spacing.mt2 ] ]
   [ Grid.col []
     [ Card.card
       (Card.config |> Card.setOutlined True |> Card.setAttributes ( stepCardBackground step ))
       { blocks =
-        Card.primaryAction [] [ stepHeading step, stepInformation step timezone ]
+        Card.primaryAction [ Html.Events.onClick (NavigateTo (Builder.absolute ["scale"] [string "step" step.id])) ] [ stepHeading step, stepInformation step timezone ]
       , actions = stepActions step
       }
     ]

@@ -175,6 +175,7 @@ apiStepToRecipeStep entry =
   , duration = entry.durationMins
   , name = entry.name
   , available = entry.available
+  , id = entry.id
   }
 
 apiStepListToStepList : StepsList -> List RecipeStep
@@ -240,7 +241,7 @@ view model =
   { title = model.title
   , body =
     [ Html.div [ Typography.typography ]
-      [ navbar model.title (isRecipeSelected model) model.menuOpened (NavigateTo "recipe")
+      [ navbar model.title (isRecipeSelected model) model.menuOpened
       , case model.dialogVariant of
           Nothing ->
             Html.div [] []
