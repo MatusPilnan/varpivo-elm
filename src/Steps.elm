@@ -7,6 +7,7 @@ import Bootstrap.Grid.Row as Row
 import Bootstrap.Utilities.Flex as Flex
 import Bootstrap.Utilities.Spacing as Spacing
 import Data.Step exposing (RecipeStep)
+import Helpers exposing (availableSteps, timeOfDay)
 import Html exposing (text)
 import Html.Attributes exposing (style)
 import Html.Events
@@ -39,7 +40,7 @@ stepsListView recipe steps timezone =
     [ Grid.row []
       [ Grid.col []
         [ Html.h4 [ Typography.headline4 ] [ Html.text ("Brewing " ++ recipe.name) ]
-        , Html.p [ Typography.subtitle1 ] [ Html.text ((String.fromInt (List.length steps)) ++ " steps")]
+        , stepsSummary steps
         ]
       ]
     , Html.div [] (List.map (\step -> stepView step timezone) steps)
@@ -136,19 +137,31 @@ finishStepButton =
   Button.outlined Button.config "Finish"
 
 
-timeOfDay : Float -> Maybe Zone -> String
-timeOfDay timestamp timezone =
+stepsSummary : List RecipeStep -> Html.Html msg
+stepsSummary steps =
   let
-      time =
-          Time.millisToPosix (Basics.round (timestamp * 1000))
-      zone =
-        case timezone of
-          Nothing ->
-            Time.utc
-          Just tz ->
-            tz
+    inProgress =
+      List.filter (\entry -> case (entry.started, entry.finished) of
+                               (Just _, Nothing) ->
+                                 True
+                               (_, _) ->
+                                 False
+                  ) steps
+    finished =
+      List.filter (\entry -> case (entry.started, entry.finished) of
+                               (Just _, Just _) ->
+                                 True
+                               (_, _) ->
+                                 False
+                  ) steps
   in
-    String.fromInt (Time.toHour zone time) ++ ":" ++ (if (Time.toMinute zone time) < 10 then
-                                                        ("0" ++ (String.fromInt (Time.toMinute zone time)))
-                                                      else (String.fromInt (Time.toMinute zone time)))
+
+  Html.p [ Typography.subtitle1 ]
+  [ Html.text (
+    ( String.fromInt (List.length steps)) ++ " steps, " ++
+      String.fromInt (List.length inProgress) ++ " in progress, " ++
+      String.fromInt (availableSteps steps) ++ " available, " ++
+      String.fromInt (List.length finished) ++ " finished, "
+    )
+  ]
 
