@@ -28,7 +28,7 @@ stepView step timezone =
     [ Card.card
       (Card.config |> Card.setOutlined True |> Card.setAttributes ( stepCardBackground step ))
       { blocks =
-        Card.primaryAction [ Html.Events.onClick (NavigateTo (Builder.absolute ["scale"] [string "step" step.id])) ] [ stepHeading step, stepInformation step timezone ]
+        Card.primaryAction (stepPrimaryActions step) [ stepHeading step, stepInformation step timezone ]
       , actions = stepActions step
       }
     ]
@@ -80,6 +80,24 @@ stepIcon stepKind =
     Misc ->
       Html.i [ Attributes.class "fas", Attributes.class "fa-flask" ] []
 
+
+stepPrimaryActions : RecipeStep -> List (Html.Attribute Msg)
+stepPrimaryActions step =
+  case step.kind of
+    Generic ->
+      []
+    Water ->
+      []
+    Weight ->
+      [ Html.Events.onClick (NavigateTo (Builder.absolute ["scale"] [string "step" step.id])) ]
+    KeepTemperature ->
+      []
+    SetTemperature ->
+      []
+    Hop ->
+      []
+    Misc ->
+      []
 
 
 availableStepActions step =
