@@ -7,7 +7,7 @@ import ApiErrorMessage exposing (apiErrorMessage)
 import BottomToolbar exposing (bottomToolbar)
 import Browser exposing (Document)
 import Browser.Navigation as Navigation exposing (Key)
-import Data.Step exposing (RecipeStep)
+import Data.Step exposing (RecipeStep, StepKind(..))
 import Dialog exposing (confirmDialogContent, dialog, dialogActions, scaleDialogContent)
 import Html exposing (Html)
 import Http
@@ -176,6 +176,26 @@ apiStepToRecipeStep entry =
   , name = entry.name
   , available = entry.available
   , id = entry.id
+  , target = entry.target
+  , kind = (case entry.kind of
+               "generic" ->
+                 Generic
+               "hop" ->
+                 Hop
+               "misc" ->
+                 Misc
+               "set_temperature" ->
+                 SetTemperature
+               "keep_temperature" ->
+                 KeepTemperature
+               "water" ->
+                 Water
+               "weight" ->
+                 Weight
+               _ ->
+                 Generic
+
+             )
   }
 
 apiStepListToStepList : StepsList -> List RecipeStep

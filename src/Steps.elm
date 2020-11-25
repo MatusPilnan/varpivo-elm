@@ -6,10 +6,10 @@ import Bootstrap.Grid.Col as Col
 import Bootstrap.Grid.Row as Row
 import Bootstrap.Utilities.Flex as Flex
 import Bootstrap.Utilities.Spacing as Spacing
-import Data.Step exposing (RecipeStep)
+import Data.Step exposing (RecipeStep, StepKind(..))
 import Helpers exposing (availableSteps, timeOfDay)
-import Html exposing (text)
-import Html.Attributes exposing (style)
+import Html exposing (Html, text)
+import Html.Attributes as Attributes exposing (style)
 import Html.Events
 import Material.Button as Button
 import Material.Card as Card exposing (Block)
@@ -49,19 +49,38 @@ stepsListView recipe steps timezone =
 stepHeading : RecipeStep -> Block msg
 stepHeading step =
   Card.block <|
-    Html.div
-      [ style "padding" "1rem" ]
-      [ Html.h2
-        [ Typography.headline6
-        , style "margin" "0"
-        ]
+    Grid.row [ Row.attrs [ style "padding" "1rem" ]]
+    [ Grid.col [ Col.attrs [ Spacing.pr0 ] ]
+      [ Html.h2 [ Typography.headline6, style "margin" "0" ]
         [ text step.name ]
-      , Html.h3
-        [ Typography.subtitle2
-        , style "margin" "0"
-        ]
+      , Html.h3 [ Typography.subtitle2, style "margin" "0" ]
         [ text step.description ]
       ]
+    , Grid.col [ Col.xsAuto, Col.attrs [ Spacing.p0, Spacing.pr3, Attributes.align "center", Typography.headline6 ], Col.middleXs ]
+      [ stepIcon step.kind
+      ]
+    ]
+
+
+stepIcon : StepKind -> Html msg
+stepIcon stepKind =
+  case stepKind of
+    Generic ->
+      Html.i [ Attributes.class "fas", Attributes.class "fa-shoe-prints" ] []
+    Water ->
+      Html.i [ Attributes.class "fas", Attributes.class "fa-faucet" ] []
+    Weight ->
+      Html.i [ Attributes.class "fas", Attributes.class "fa-balance-scale" ] []
+    KeepTemperature ->
+      Html.i [ Attributes.class "fas", Attributes.class "fa-stopwatch" ] []
+    SetTemperature ->
+      Html.i [ Attributes.class "fas", Attributes.class "fa-temperature-high" ] []
+    Hop ->
+      Html.i [ Attributes.class "fab", Attributes.class "fa-raspberry-pi" ] []
+    Misc ->
+      Html.i [ Attributes.class "fas", Attributes.class "fa-flask" ] []
+
+
 
 availableStepActions step =
   Just <|
