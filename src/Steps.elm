@@ -8,6 +8,7 @@ import Bootstrap.Utilities.Flex as Flex
 import Bootstrap.Utilities.Spacing as Spacing
 import Data.Step exposing (RecipeStep, StepKind(..))
 import Helpers exposing (availableSteps, timeOfDay)
+import Dict
 import Html exposing (Html, text)
 import Html.Attributes as Attributes exposing (style)
 import Html.Events
@@ -35,7 +36,11 @@ stepView step timezone =
   ]
 
 
-stepsListView recipe steps timezone =
+stepsListView recipe stepsDict stepsOrder timezone =
+  let
+      steps =
+          List.filterMap (\stepId -> Dict.get stepId stepsDict) stepsOrder
+  in
   Html.div [ Spacing.pb5 ]
     [ Grid.row []
       [ Grid.col []

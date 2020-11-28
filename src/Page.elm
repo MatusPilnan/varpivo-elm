@@ -3,6 +3,7 @@ module Page exposing (page)
 
 import Bootstrap.Utilities.Flex as Flex
 import Bootstrap.Utilities.Spacing as Spacing
+import Dict
 import Helpers exposing (center)
 import Html exposing (text)
 import Html.Attributes as Attributes
@@ -26,13 +27,13 @@ page model =
         ( Router.Recipe, Nothing ) ->
           home model
         ( Router.Recipe, Just r ) ->
-          recipeDetail r (List.isEmpty model.recipeSteps)
+          recipeDetail r (Dict.isEmpty model.recipeSteps)
         ( Router.Home, _) ->
           home model
         ( Router.BrewSession, Nothing ) ->
           home model
         ( Router.BrewSession, Just r ) ->
-          stepsListView r model.recipeSteps model.timezone
+          stepsListView r model.recipeSteps model.stepsOrder model.timezone
         ( Router.Scale stepId, _ ) ->
           scale model stepId
 

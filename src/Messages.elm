@@ -3,6 +3,7 @@ module Messages exposing (..)
 import Browser
 import Data.Recipe exposing (RecipeListEntry)
 import Data.Step exposing (RecipeStep)
+import Dict exposing (Dict)
 import Material.Snackbar as Snackbar
 import Time exposing (Zone)
 import Url
@@ -20,7 +21,7 @@ type Msg = Increment
   | ShowDialog DialogVariant
   | CloseDialog (Maybe Msg)
   | SelectRecipe RecipeListEntry
-  | SetSteps ( List RecipeStep )
+  | SetSteps (Dict String RecipeStep , List String)
   | ApiError String
   | ShowRecipeDetail RecipeListEntry
   | LinkClicked Browser.UrlRequest
@@ -28,6 +29,6 @@ type Msg = Increment
   | UrlChanged Url.Url
   | RequestTimeZone
   | SetTimeZone Zone
-  | SetBrewSession (RecipeListEntry, List RecipeStep)
+  | SetBrewSession (RecipeListEntry, Dict String RecipeStep, List String)
   | MenuOpened
   | MenuClosed
