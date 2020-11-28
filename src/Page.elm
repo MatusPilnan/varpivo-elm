@@ -30,7 +30,7 @@ page model =
         ( Router.BrewSession, Nothing ) ->
           home model
         ( Router.BrewSession, Just r ) ->
-          stepsListView r model.recipeSteps model.timezone
+          stepsListView r model.recipeSteps model.stepsOrder model.timezone
 
 
 

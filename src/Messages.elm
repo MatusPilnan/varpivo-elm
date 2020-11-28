@@ -21,7 +21,7 @@ type Msg = Increment
   | ShowDialog DialogVariant
   | CloseDialog (Maybe Msg)
   | SelectRecipe RecipeListEntry
-  | SetSteps ( Dict String RecipeStep )
+  | SetSteps (Dict String RecipeStep , List String)
   | ApiError String
   | ShowRecipeDetail RecipeListEntry
   | LinkClicked Browser.UrlRequest
@@ -29,6 +29,6 @@ type Msg = Increment
   | UrlChanged Url.Url
   | RequestTimeZone
   | SetTimeZone Zone
-  | SetBrewSession (RecipeListEntry, Dict String RecipeStep)
+  | SetBrewSession (RecipeListEntry, Dict String RecipeStep, List String)
   | MenuOpened
   | MenuClosed

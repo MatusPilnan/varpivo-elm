@@ -72,6 +72,7 @@ type alias Model =
     , snackbarQueue : Snackbar.Queue Msg
     , dialogVariant : Maybe DialogVariant
     , recipeSteps : Dict String RecipeStep
+    , stepsOrder : List String
     , selectedRecipe : Maybe RecipeListEntry
     , timezone : Maybe Zone
     , menuOpened : Bool
@@ -91,6 +92,7 @@ init _ url key = (
   , snackbarQueue = Snackbar.initialQueue
   , dialogVariant = Nothing
   , recipeSteps = Dict.empty
+  , stepsOrder = []
   , selectedRecipe = Nothing
   , timezone = Nothing
   , menuOpened = False
@@ -126,8 +128,8 @@ update msg model =
           update a { model | dialogVariant = Nothing }
     SelectRecipe recipe ->
       ( { model | loading = True, selectedRecipe = Just recipe} , fetchRecipeSteps recipe.id)
-    SetSteps recipeSteps ->
-      ( { model | recipeSteps = recipeSteps, loading = False }, Navigation.pushUrl model.key (Url.Builder.absolute ["brew-session"] []))
+    SetSteps (recipeSteps, stepOrder) ->
+      ( { model | recipeSteps = recipeSteps, stepsOrder = stepOrder,loading = False }, Navigation.pushUrl model.key (Url.Builder.absolute ["brew-session"] []))
     ApiError string ->
       ({model | snackbarQueue = (Snackbar.addMessage (apiErrorMessage string) model.snackbarQueue), loading = False }, Cmd.none)
 
@@ -154,8 +156,8 @@ update msg model =
     SetTimeZone zone ->
       ( { model | timezone = Just zone}, Cmd.none)
 
-    SetBrewSession (recipeListEntry, recipeSteps) ->
-      ( { model | selectedRecipe = Just recipeListEntry, recipeSteps = recipeSteps, loading = False}
+    SetBrewSession (recipeListEntry, recipeSteps, stepsOrder) ->
+      ( { model | selectedRecipe = Just recipeListEntry, recipeSteps = recipeSteps, stepsOrder = stepsOrder, loading = False}
       , Navigation.pushUrl model.key (Url.toString model.url)
       )
 
@@ -178,16 +180,16 @@ apiStepToRecipeStep entry =
   , available = entry.available
   }
 
-apiStepListToStepList : StepsList -> Dict String RecipeStep
+apiStepListToStepList : StepsList -> (Dict String RecipeStep, List String)
 apiStepListToStepList value =
-  Dict.fromList (List.map (\step -> (step.id, apiStepToRecipeStep step)) value.steps)
+  (Dict.fromList (List.map (\step -> (step.id, apiStepToRecipeStep step)) value.steps), List.map (\step -> step.id) value.steps)
 
-handleSteps: Result Http.Error StepsList -> Dict String RecipeStep
+handleSteps: Result Http.Error StepsList -> (Dict String RecipeStep, List String)
 handleSteps res = case res of
                 Ok value ->
                   apiStepListToStepList value
                 Err _ ->
-                  Dict.empty
+                  (Dict.empty, [])
 
 handleRecipes: Result Http.Error RecipeList -> List RecipeListEntry
 handleRecipes res = case res of
@@ -206,23 +208,26 @@ apiRecipeToRecipe a =
 fetchRecipeSteps: String -> Cmd Msg
 fetchRecipeSteps recipeId = send ( \msg ->
   let
-      steps =
+      (steps, order) =
           handleSteps msg
   in
     if Dict.isEmpty steps then
       ApiError "Couldn't get recipe steps!"
     else
-      SetSteps steps) (Api.postRecipe recipeId)
+      SetSteps (steps, order)) (Api.postRecipe recipeId)
 
 fetchRecipes: Cmd Msg
 fetchRecipes = send (\msg -> SetAvailableRecipes (handleRecipes msg)) (Api.getRecipeList)
 
 
-handleBrewSession: Result Http.Error BrewSession -> Maybe (RecipeListEntry, Dict String RecipeStep)
+handleBrewSession: Result Http.Error BrewSession -> Maybe (RecipeListEntry, Dict String RecipeStep, List String)
 handleBrewSession response =
   case response of
     Ok value ->
-      Just (apiRecipeToRecipe value.recipe, Dict.fromList (List.map (\step -> (step.id, apiStepToRecipeStep step)) value.steps))
+      Just (apiRecipeToRecipe value.recipe
+           , Dict.fromList (List.map (\step -> (step.id, apiStepToRecipeStep step)) value.steps)
+           , List.map (\step -> step.id) value.steps
+           )
     Err _ ->
       Nothing
 

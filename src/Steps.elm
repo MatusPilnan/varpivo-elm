@@ -32,10 +32,10 @@ stepView step timezone =
   ]
 
 
-stepsListView recipe stepsDict timezone =
+stepsListView recipe stepsDict stepsOrder timezone =
   let
       steps =
-          List.sortBy .name (Dict.values stepsDict)
+          List.filterMap (\stepId -> Dict.get stepId stepsDict) stepsOrder
   in
   Html.div [ Spacing.pb5 ]
     [ Grid.row []
