@@ -6,10 +6,12 @@ import Bootstrap.Grid.Col as Col
 import Bootstrap.Grid.Row as Row
 import Bootstrap.Utilities.Flex as Flex
 import Bootstrap.Utilities.Spacing as Spacing
-import Data.Step exposing (RecipeStep)
+import Data.Step exposing (RecipeStep, StepKind(..))
+import Helpers exposing (availableSteps, timeOfDay)
 import Dict
-import Html exposing (text)
-import Html.Attributes exposing (style)
+import Html exposing (Html, text)
+import Html.Attributes as Attributes exposing (style)
+import Html.Events
 import Material.Button as Button
 import Material.Card as Card exposing (Block)
 import Material.LinearProgress as LinearProgress
@@ -17,15 +19,17 @@ import Material.Theme as Theme
 import Material.Typography as Typography
 import Messages exposing (Msg(..))
 import Time exposing (Zone)
+import Url.Builder as Builder exposing (string)
 
 
+stepView : RecipeStep -> Maybe Zone -> Html.Html Msg
 stepView step timezone =
   Grid.row [ Row.attrs [ Spacing.mt2 ] ]
   [ Grid.col []
     [ Card.card
       (Card.config |> Card.setOutlined True |> Card.setAttributes ( stepCardBackground step ))
       { blocks =
-        Card.primaryAction [] [ stepHeading step, stepInformation step timezone ]
+        Card.primaryAction (stepPrimaryActions step) [ stepHeading step, stepInformation step timezone ]
       , actions = stepActions step
       }
     ]
@@ -41,7 +45,7 @@ stepsListView recipe stepsDict stepsOrder timezone =
     [ Grid.row []
       [ Grid.col []
         [ Html.h4 [ Typography.headline4 ] [ Html.text ("Brewing " ++ recipe.name) ]
-        , Html.p [ Typography.subtitle1 ] [ Html.text ((String.fromInt (List.length steps)) ++ " steps")]
+        , stepsSummary steps
         ]
       ]
     , Html.div [] (List.map (\step -> stepView step timezone) steps)
@@ -50,19 +54,56 @@ stepsListView recipe stepsDict stepsOrder timezone =
 stepHeading : RecipeStep -> Block msg
 stepHeading step =
   Card.block <|
-    Html.div
-      [ style "padding" "1rem" ]
-      [ Html.h2
-        [ Typography.headline6
-        , style "margin" "0"
-        ]
+    Grid.row [ Row.attrs [ style "padding" "1rem" ]]
+    [ Grid.col [ Col.attrs [ Spacing.pr0 ] ]
+      [ Html.h2 [ Typography.headline6, style "margin" "0" ]
         [ text step.name ]
-      , Html.h3
-        [ Typography.subtitle2
-        , style "margin" "0"
-        ]
+      , Html.h3 [ Typography.subtitle2, style "margin" "0" ]
         [ text step.description ]
       ]
+    , Grid.col [ Col.xsAuto, Col.attrs [ Spacing.p0, Spacing.pr3, Attributes.align "center", Typography.headline6 ], Col.middleXs ]
+      [ stepIcon step.kind
+      ]
+    ]
+
+
+stepIcon : StepKind -> Html msg
+stepIcon stepKind =
+  case stepKind of
+    Generic ->
+      Html.i [ Attributes.class "fas", Attributes.class "fa-shoe-prints" ] []
+    Water ->
+      Html.i [ Attributes.class "fas", Attributes.class "fa-faucet" ] []
+    Weight ->
+      Html.i [ Attributes.class "fas", Attributes.class "fa-balance-scale" ] []
+    KeepTemperature ->
+      Html.i [ Attributes.class "fas", Attributes.class "fa-stopwatch" ] []
+    SetTemperature ->
+      Html.i [ Attributes.class "fas", Attributes.class "fa-temperature-high" ] []
+    Hop ->
+      Html.i [ Attributes.class "fab", Attributes.class "fa-raspberry-pi" ] []
+    Misc ->
+      Html.i [ Attributes.class "fas", Attributes.class "fa-flask" ] []
+
+
+stepPrimaryActions : RecipeStep -> List (Html.Attribute Msg)
+stepPrimaryActions step =
+  case step.kind of
+    Generic ->
+      []
+    Water ->
+      []
+    Weight ->
+      [ Html.Events.onClick (NavigateTo (Builder.absolute ["scale"] [string "step" step.id])) ]
+    KeepTemperature ->
+      []
+    SetTemperature ->
+      []
+    Hop ->
+      []
+    Misc ->
+      []
+
 
 availableStepActions step =
   Just <|
@@ -138,19 +179,31 @@ finishStepButton =
   Button.outlined Button.config "Finish"
 
 
-timeOfDay : Float -> Maybe Zone -> String
-timeOfDay timestamp timezone =
+stepsSummary : List RecipeStep -> Html.Html msg
+stepsSummary steps =
   let
-      time =
-          Time.millisToPosix (Basics.round (timestamp * 1000))
-      zone =
-        case timezone of
-          Nothing ->
-            Time.utc
-          Just tz ->
-            tz
+    inProgress =
+      List.filter (\entry -> case (entry.started, entry.finished) of
+                               (Just _, Nothing) ->
+                                 True
+                               (_, _) ->
+                                 False
+                  ) steps
+    finished =
+      List.filter (\entry -> case (entry.started, entry.finished) of
+                               (Just _, Just _) ->
+                                 True
+                               (_, _) ->
+                                 False
+                  ) steps
   in
-    String.fromInt (Time.toHour zone time) ++ ":" ++ (if (Time.toMinute zone time) < 10 then
-                                                        ("0" ++ (String.fromInt (Time.toMinute zone time)))
-                                                      else (String.fromInt (Time.toMinute zone time)))
+
+  Html.p [ Typography.subtitle1 ]
+  [ Html.text (
+    ( String.fromInt (List.length steps)) ++ " steps, " ++
+      String.fromInt (List.length inProgress) ++ " in progress, " ++
+      String.fromInt (availableSteps steps) ++ " available, " ++
+      String.fromInt (List.length finished) ++ " finished, "
+    )
+  ]
 

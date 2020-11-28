@@ -4,12 +4,15 @@ module Page exposing (page)
 import Bootstrap.Utilities.Flex as Flex
 import Bootstrap.Utilities.Spacing as Spacing
 import Dict
+import Helpers exposing (center)
 import Html exposing (text)
 import Html.Attributes as Attributes
 import Material.CircularProgress as CircularProgress
 import Material.Typography as Typography
+import Maybe
 import Recipes exposing (recipeDetail, recipeSelection)
 import Router exposing (routeParser)
+import Scale exposing (scale)
 import Steps exposing (stepsListView)
 import Url.Parser as Parser
 
@@ -31,6 +34,8 @@ page model =
           home model
         ( Router.BrewSession, Just r ) ->
           stepsListView r model.recipeSteps model.stepsOrder model.timezone
+        ( Router.Scale stepId, _ ) ->
+          scale model stepId
 
 
 
@@ -51,7 +56,4 @@ noRecipes =
   , Html.h4 [ Typography.headline4, Spacing.p2 ] [ text "\u{1F631} \u{1F625}" ]
   ]
 
-
-center =
-  Attributes.class "varpivo-centered-page"
 

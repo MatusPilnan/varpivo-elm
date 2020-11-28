@@ -7,7 +7,7 @@ import ApiErrorMessage exposing (apiErrorMessage)
 import BottomToolbar exposing (bottomToolbar)
 import Browser exposing (Document)
 import Browser.Navigation as Navigation exposing (Key)
-import Data.Step exposing (RecipeStep)
+import Data.Step exposing (RecipeStep, StepKind(..))
 import Dialog exposing (confirmDialogContent, dialog, dialogActions, scaleDialogContent)
 import Dict exposing (Dict)
 import Html exposing (Html)
@@ -62,6 +62,7 @@ port messageReceiver : (String -> msg) -> Sub msg
 type alias Model =
     { key : Key
     , url : Url
+    , apiBaseUrl : String
     , title : String
     , value : Float
     , weight : Float
@@ -78,10 +79,11 @@ type alias Model =
     , menuOpened : Bool
     }
 
-init : Int -> Url -> Key -> ( Model, Cmd Msg )
-init _ url key = (
+init : String -> Url -> Key -> ( Model, Cmd Msg )
+init apiBaseUrl url key = (
   { url = url
   , key = key
+  , apiBaseUrl = apiBaseUrl
   , title = "Var:Pivo"
   , value = 0
   , weight = 0
@@ -96,7 +98,7 @@ init _ url key = (
   , selectedRecipe = Nothing
   , timezone = Nothing
   , menuOpened = False
-  }, Cmd.batch [fetchBrewSession, Task.perform SetTimeZone Time.here] )
+  }, Cmd.batch [fetchBrewSession apiBaseUrl, Task.perform SetTimeZone Time.here] )
 
 
 -- UPDATE
@@ -111,7 +113,7 @@ update msg model =
     Decrement ->
       ({ model | value = model.value - 1, availableRecipes = List.drop 1 model.availableRecipes }, Cmd.none)
     FetchRecipes ->
-      ({ model | loading = True}, fetchRecipes)
+      ({ model | loading = True}, fetchRecipes model.apiBaseUrl)
     SetAvailableRecipes list ->
       ({ model | value = model.value + 1, availableRecipes = list, loading = False }, Cmd.none)
     Recv data ->
@@ -127,7 +129,7 @@ update msg model =
         Just a ->
           update a { model | dialogVariant = Nothing }
     SelectRecipe recipe ->
-      ( { model | loading = True, selectedRecipe = Just recipe} , fetchRecipeSteps recipe.id)
+      ( { model | loading = True, selectedRecipe = Just recipe} , fetchRecipeSteps recipe.id model.apiBaseUrl)
     SetSteps (recipeSteps, stepOrder) ->
       ( { model | recipeSteps = recipeSteps, stepsOrder = stepOrder,loading = False }, Navigation.pushUrl model.key (Url.Builder.absolute ["brew-session"] []))
     ApiError string ->
@@ -178,6 +180,27 @@ apiStepToRecipeStep entry =
   , duration = entry.durationMins
   , name = entry.name
   , available = entry.available
+  , id = entry.id
+  , target = entry.target
+  , kind = (case entry.kind of
+               "generic" ->
+                 Generic
+               "hop" ->
+                 Hop
+               "misc" ->
+                 Misc
+               "set_temperature" ->
+                 SetTemperature
+               "keep_temperature" ->
+                 KeepTemperature
+               "water" ->
+                 Water
+               "weight" ->
+                 Weight
+               _ ->
+                 Generic
+
+             )
   }
 
 apiStepListToStepList : StepsList -> (Dict String RecipeStep, List String)
@@ -205,8 +228,8 @@ apiRecipeToRecipe a =
   , ingredients = List.map (\i -> {name = i.name, unit = i.unit, amount = i.amount}) a.ingredients
   }
 
-fetchRecipeSteps: String -> Cmd Msg
-fetchRecipeSteps recipeId = send ( \msg ->
+fetchRecipeSteps: String -> String -> Cmd Msg
+fetchRecipeSteps recipeId basePath = send ( \msg ->
   let
       (steps, order) =
           handleSteps msg
@@ -214,10 +237,10 @@ fetchRecipeSteps recipeId = send ( \msg ->
     if Dict.isEmpty steps then
       ApiError "Couldn't get recipe steps!"
     else
-      SetSteps (steps, order)) (Api.postRecipe recipeId)
+      SetSteps (steps, order)) (Api.withBasePath basePath (Api.postRecipe recipeId))
 
-fetchRecipes: Cmd Msg
-fetchRecipes = send (\msg -> SetAvailableRecipes (handleRecipes msg)) (Api.getRecipeList)
+fetchRecipes: String -> Cmd Msg
+fetchRecipes basePath = send (\msg -> SetAvailableRecipes (handleRecipes msg)) (Api.withBasePath basePath Api.getRecipeList)
 
 
 handleBrewSession: Result Http.Error BrewSession -> Maybe (RecipeListEntry, Dict String RecipeStep, List String)
@@ -232,13 +255,13 @@ handleBrewSession response =
       Nothing
 
 
-fetchBrewSession =
+fetchBrewSession basePath =
   send (\response -> case (handleBrewSession response) of
                        Nothing ->
                          FetchRecipes
                        Just result ->
                          SetBrewSession result
-                     ) Api.getBrewStatus
+                     ) (Api.withBasePath basePath Api.getBrewStatus)
 
 
 -- VIEW

@@ -4,10 +4,11 @@ import Browser.Navigation as Navigation
 import Dict
 import Url
 import Url.Builder
-import Url.Parser as Parser exposing (Parser, map, oneOf, s, top)
+import Url.Parser as Parser exposing ((<?>), Parser, map, oneOf, s, top)
+import Url.Parser.Query as Query
 
 
-type Route = Recipe | Home | BrewSession
+type Route = Recipe | Home | BrewSession | Scale (Maybe String)
 
 routeParser : Parser (Route -> a) a
 routeParser =
@@ -15,6 +16,7 @@ routeParser =
     [ map Recipe (s "recipe")
     , map BrewSession (s "brew-session")
     , map Home top
+    , map Scale (s "scale" <?> Query.string "step")
     ]
 
 
@@ -43,3 +45,7 @@ route url model console =
             ( model, Navigation.pushUrl model.key (Url.Builder.absolute [""] []) )
           else
             ( { model | url = url }, console ("bs " ++ Url.toString url))
+
+        Scale stepId ->
+          ( { model | url = url}, console (Debug.toString stepId) )
+
