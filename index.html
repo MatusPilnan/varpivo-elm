@@ -51,10 +51,10 @@
 <main></main>
 <script src="elm.js"></script>
 <script>
-  var app = Elm.Main.init({node: document.querySelector('main'), flags: 1})
+  var app = Elm.Main.init({node: document.querySelector('main'), flags: "http://192.168.1.13:5000"})
 
   // Create your WebSocket.
-  var socket = new WebSocket('ws://127.0.0.1:5000/tap');
+  var socket = new WebSocket('ws://192.168.1.13:5000/tap');
 
   // When a command goes to the `sendMessage` port, we pass the message
   // along to the WebSocket.

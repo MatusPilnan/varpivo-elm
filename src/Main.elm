@@ -61,6 +61,7 @@ port messageReceiver : (String -> msg) -> Sub msg
 type alias Model =
     { key : Key
     , url : Url
+    , apiBaseUrl : String
     , title : String
     , value : Float
     , weight : Float
@@ -76,10 +77,11 @@ type alias Model =
     , menuOpened : Bool
     }
 
-init : Int -> Url -> Key -> ( Model, Cmd Msg )
-init _ url key = (
+init : String -> Url -> Key -> ( Model, Cmd Msg )
+init apiBaseUrl url key = (
   { url = url
   , key = key
+  , apiBaseUrl = apiBaseUrl
   , title = "Var:Pivo"
   , value = 0
   , weight = 0
@@ -93,7 +95,7 @@ init _ url key = (
   , selectedRecipe = Nothing
   , timezone = Nothing
   , menuOpened = False
-  }, Cmd.batch [fetchBrewSession, Task.perform SetTimeZone Time.here] )
+  }, Cmd.batch [fetchBrewSession apiBaseUrl, Task.perform SetTimeZone Time.here] )
 
 
 -- UPDATE
@@ -108,7 +110,7 @@ update msg model =
     Decrement ->
       ({ model | value = model.value - 1, availableRecipes = List.drop 1 model.availableRecipes }, Cmd.none)
     FetchRecipes ->
-      ({ model | loading = True}, fetchRecipes)
+      ({ model | loading = True}, fetchRecipes model.apiBaseUrl)
     SetAvailableRecipes list ->
       ({ model | value = model.value + 1, availableRecipes = list, loading = False }, Cmd.none)
     Recv data ->
@@ -124,7 +126,7 @@ update msg model =
         Just a ->
           update a { model | dialogVariant = Nothing }
     SelectRecipe recipe ->
-      ( { model | loading = True, selectedRecipe = Just recipe} , fetchRecipeSteps recipe.id)
+      ( { model | loading = True, selectedRecipe = Just recipe} , fetchRecipeSteps recipe.id model.apiBaseUrl)
     SetSteps recipeSteps ->
       ( { model | recipeSteps = recipeSteps, loading = False }, Navigation.pushUrl model.key (Url.Builder.absolute ["brew-session"] []))
     ApiError string ->
@@ -223,17 +225,17 @@ apiRecipeToRecipe a =
   , ingredients = List.map (\i -> {name = i.name, unit = i.unit, amount = i.amount}) a.ingredients
   }
 
-fetchRecipeSteps: String -> Cmd Msg
-fetchRecipeSteps recipeId = send ( \msg ->
+fetchRecipeSteps: String -> String -> Cmd Msg
+fetchRecipeSteps recipeId basePath = send ( \msg ->
                                      case (handleSteps msg) of
                                         [] ->
                                           ApiError "Couldn't get recipe steps!"
                                         first :: rest ->
                                           SetSteps (first :: rest)
-                                     ) (Api.postRecipe recipeId)
+                                     ) (Api.withBasePath basePath (Api.postRecipe recipeId))
 
-fetchRecipes: Cmd Msg
-fetchRecipes = send (\msg -> SetAvailableRecipes (handleRecipes msg)) (Api.getRecipeList)
+fetchRecipes: String -> Cmd Msg
+fetchRecipes basePath = send (\msg -> SetAvailableRecipes (handleRecipes msg)) (Api.withBasePath basePath Api.getRecipeList)
 
 
 handleBrewSession: Result Http.Error BrewSession -> Maybe (RecipeListEntry, List RecipeStep)
@@ -245,13 +247,13 @@ handleBrewSession response =
       Nothing
 
 
-fetchBrewSession =
+fetchBrewSession basePath =
   send (\response -> case (handleBrewSession response) of
                        Nothing ->
                          FetchRecipes
                        Just result ->
                          SetBrewSession result
-                     ) Api.getBrewStatus
+                     ) (Api.withBasePath basePath Api.getBrewStatus)
 
 
 -- VIEW
