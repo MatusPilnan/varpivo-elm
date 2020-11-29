@@ -6,6 +6,8 @@ import Bootstrap.Grid.Row as Row
 import Bootstrap.Utilities.Flex as Flex
 import Bootstrap.Utilities.Size as Size
 import Bootstrap.Utilities.Spacing as Spacing
+import Data.Step exposing (RecipeStep)
+import Dict
 import Helpers exposing (center)
 import Html exposing (text)
 import Html.Attributes as Attributes
@@ -17,14 +19,16 @@ import Maybe exposing (withDefault)
 import Messages exposing (Msg(..))
 
 
+scale : { a | recipeSteps : Dict.Dict String RecipeStep, weight : Float } -> Maybe String -> Html.Html Msg
 scale model stepId =
   let
     target =
-    -- TODO get target weight from... somewhere?
-      50
+      withDefault -1 (withDefault Data.Step.empty (Dict.get (withDefault "" stepId) model.recipeSteps)).target
+    subtitle =
+      (withDefault Data.Step.empty (Dict.get (withDefault "" stepId) model.recipeSteps)).description
     (icon, targetText, hasId) =
-      case stepId of
-        Just _ ->
+      case (stepId, Dict.member (withDefault "" stepId) model.recipeSteps) of
+        (Just _, True) ->
           case (compare model.weight target) of
             LT ->
               ( Icon.icon [ Attributes.class "varpivo-scale-add" ] ("arrow_drop_up")
@@ -48,21 +52,21 @@ scale model stepId =
                 ]
               , True
               )
-        Nothing ->
+        (_, _) ->
           (Html.div [] [], Html.div [] [], False)
   in
   Html.div [ center, Attributes.align "center", Flex.block, Flex.col, Flex.alignItemsCenter, Flex.justifyBetween ]
     [ Grid.row []
       [ Grid.col []
         [ Html.h2 [ Typography.headline4, Spacing.p2 ] [ text "Scale" ]
-        , Html.p [ Typography.subtitle1, Theme.textSecondaryOnBackground ] [ text (withDefault "" stepId)]
+        , Html.p [ Typography.subtitle1, Theme.textSecondaryOnBackground ] [ text subtitle]
         ]
       ]
     , Grid.row [ Row.attrs [Size.w100] ]
       [ Grid.col []
         [ Grid.row []
-          [ Grid.col [ Col.attrs [ Size.w100 ] ]
-            [ Html.p [ Typography.headline1, Spacing.p2, Attributes.align "end" ] [ text (String.fromFloat model.weight) ]
+          [ Grid.col [ Col.xs10, Col.attrs [ Size.w100 ] ]
+            [ Html.p [ Typography.headline1, Spacing.p2, Attributes.align "end" ] [ text (String.fromFloat (max model.weight 0)) ]
             ]
           , Grid.col [ Col.xs2, Col.middleXs ]
             [ icon

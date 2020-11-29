@@ -21,3 +21,19 @@ type alias RecipeStep =
   , target : Maybe Float
   , kind : StepKind
   }
+
+
+empty : RecipeStep
+empty =
+  { started = Nothing
+  , finished = Nothing
+  , progress = Nothing
+  , estimation = Nothing
+  , description = ""
+  , duration = Nothing
+  , name = ""
+  , available = False
+  , id = ""
+  , target = Nothing
+  , kind = Generic
+  }
