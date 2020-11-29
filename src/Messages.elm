@@ -32,5 +32,6 @@ type Msg = Increment
   | SetBrewSession (RecipeListEntry, Dict String RecipeStep, List String)
   | StartStep String
   | UpdateStep RecipeStep
+  | FinishStep String
   | MenuOpened
   | MenuClosed

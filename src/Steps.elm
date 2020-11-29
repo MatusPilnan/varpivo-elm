@@ -12,6 +12,7 @@ import Dict
 import Html exposing (Html, text)
 import Html.Attributes as Attributes exposing (style)
 import Html.Events
+import Json.Decode as Decode
 import Material.Button as Button
 import Material.Card as Card exposing (Block)
 import Material.LinearProgress as LinearProgress
@@ -113,7 +114,6 @@ availableStepActions step =
 stepActions step =
   if step.available then availableStepActions step else Nothing
 
-stepInformation : RecipeStep -> Maybe Zone -> Block msg
 stepInformation step timezone =
   Card.block <|
     Html.div [] [
@@ -152,7 +152,7 @@ stepInProgress step start timezone =
     [ Grid.row [] [ Grid.col [] [stepStart start timezone]]
     , Grid.row []
       [ Grid.col [] (stepEstimation step.estimation)
-      , Grid.col [ Col.attrs [ Flex.block, Flex.justifyEnd ]] [finishStepButton]
+      , Grid.col [ Col.attrs [ Flex.block, Flex.justifyEnd ]] [finishStepButton step.id]
       ]
     ]
   ] ++
@@ -175,8 +175,9 @@ stepCardBackground step =
     Nothing ->
       []
 
-finishStepButton =
-  Button.outlined Button.config "Finish"
+finishStepButton stepId =
+  Button.outlined (Button.config |> Button.setAttributes
+    [ Html.Events.stopPropagationOn "click" (Decode.succeed (FinishStep stepId, True))]) "Finish"
 
 
 stepsSummary : List RecipeStep -> Html.Html msg

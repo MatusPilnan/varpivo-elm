@@ -7,6 +7,7 @@ import ApiErrorMessage exposing (apiErrorMessage)
 import BottomToolbar exposing (bottomToolbar)
 import Browser exposing (Document)
 import Browser.Navigation as Navigation exposing (Key)
+import Data.Conversions exposing (apiRecipeToRecipe, apiStepListToStepList, apiStepToRecipeStep)
 import Data.Step exposing (RecipeStep, StepKind(..))
 import Dialog exposing (confirmDialogContent, dialog, dialogActions, scaleDialogContent)
 import Dict exposing (Dict)
@@ -169,6 +170,9 @@ update msg model =
     UpdateStep step ->
       ( { model | recipeSteps = (Dict.insert step.id step model.recipeSteps)}, Cmd.none )
 
+    FinishStep stepId ->
+      ( model, finishStep stepId model.apiBaseUrl )
+
     MenuOpened ->
       ( { model | menuOpened = True}, Cmd.none)
 
@@ -176,42 +180,6 @@ update msg model =
       ( { model | menuOpened = False}, Cmd.none)
 
 
-apiStepToRecipeStep : Api.Data.RecipeStep -> RecipeStep
-apiStepToRecipeStep entry =
-  { started = entry.started
-  , finished = entry.finished
-  , progress = entry.progress
-  , estimation = entry.estimation
-  , description = entry.description
-  , duration = entry.durationMins
-  , name = entry.name
-  , available = entry.available
-  , id = entry.id
-  , target = entry.target
-  , kind = (case entry.kind of
-               "generic" ->
-                 Generic
-               "hop" ->
-                 Hop
-               "misc" ->
-                 Misc
-               "set_temperature" ->
-                 SetTemperature
-               "keep_temperature" ->
-                 KeepTemperature
-               "water" ->
-                 Water
-               "weight" ->
-                 Weight
-               _ ->
-                 Generic
-
-             )
-  }
-
-apiStepListToStepList : StepsList -> (Dict String RecipeStep, List String)
-apiStepListToStepList value =
-  (Dict.fromList (List.map (\step -> (step.id, apiStepToRecipeStep step)) value.steps), List.map (\step -> step.id) value.steps)
 
 handleSteps: Result Http.Error StepsList -> (Dict String RecipeStep, List String)
 handleSteps res = case res of
@@ -226,13 +194,6 @@ handleRecipes res = case res of
                 Err _ -> []
 
 
-apiRecipeToRecipe a =
-  { name = a.name
-  , style_type = a.style.type_
-  , style_name = a.style.name
-  , id = a.id
-  , ingredients = List.map (\i -> {name = i.name, unit = i.unit, amount = i.amount}) a.ingredients
-  }
 
 fetchRecipeSteps: String -> String -> Cmd Msg
 fetchRecipeSteps recipeId basePath = send ( \msg ->
@@ -269,14 +230,22 @@ fetchBrewSession basePath =
                          SetBrewSession result
                      ) (Api.withBasePath basePath Api.getBrewStatus)
 
+
+handleStep : Result.Result error Api.Data.RecipeStep -> Msg
+handleStep response =
+  case response of
+    Ok value ->
+      UpdateStep (apiStepToRecipeStep value)
+    Err e ->
+      ApiError (Debug.toString e)
+
 startStep : String -> String -> Cmd Msg
 startStep stepId basePath =
-  send (\response -> case response of
-                       Ok value ->
-                         UpdateStep (apiStepToRecipeStep value)
-                       Err e ->
-                         ApiError (Debug.toString e)
-       ) (Api.withBasePath basePath (Api.postStepStart stepId))
+  send handleStep (Api.withBasePath basePath (Api.postStepStart stepId))
+
+finishStep : String -> String -> Cmd Msg
+finishStep stepId basePath =
+    send handleStep (Api.withBasePath basePath (Api.postStepFinish stepId))
 
 -- VIEW
 

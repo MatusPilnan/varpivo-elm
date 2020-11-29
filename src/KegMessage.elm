@@ -2,6 +2,8 @@ module KegMessage exposing (handleKegMessage)
 
 
 import Api.Data exposing (recipeStepDecoder, wSKegDecoder)
+import Data.Conversions exposing (apiStepToRecipeStep)
+import Dict
 import Json.Decode exposing (Error(..))
 import Material.Snackbar as Snackbar
 
@@ -13,7 +15,7 @@ handleKegMessage data model =
         "step" ->
           case Json.Decode.decodeString recipeStepDecoder value.payload of
             Result.Ok step ->
-              ({ model | title = step.name}, Cmd.none)
+              ({ model | recipeSteps = (Dict.insert step.id ( apiStepToRecipeStep step) model.recipeSteps)}, Cmd.none)
 
             Result.Err e ->
               handleJsonDecodeError e model
