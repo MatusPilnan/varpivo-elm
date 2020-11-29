@@ -30,5 +30,7 @@ type Msg = Increment
   | RequestTimeZone
   | SetTimeZone Zone
   | SetBrewSession (RecipeListEntry, Dict String RecipeStep, List String)
+  | StartStep String
+  | UpdateStep RecipeStep
   | MenuOpened
   | MenuClosed

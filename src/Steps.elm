@@ -108,7 +108,7 @@ stepPrimaryActions step =
 availableStepActions step =
   Just <|
     Card.fullBleedActions
-      ( Card.button (Button.config |> Button.setOnClick (ApiError step.name)) "Start" )
+      ( Card.button (Button.config |> Button.setOnClick (StartStep step.id)) "Start" )
 
 stepActions step =
   if step.available then availableStepActions step else Nothing

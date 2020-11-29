@@ -163,6 +163,12 @@ update msg model =
       , Navigation.pushUrl model.key (Url.toString model.url)
       )
 
+    StartStep stepId ->
+      (model, startStep stepId model.apiBaseUrl)
+
+    UpdateStep step ->
+      ( { model | recipeSteps = (Dict.insert step.id step model.recipeSteps)}, Cmd.none )
+
     MenuOpened ->
       ( { model | menuOpened = True}, Cmd.none)
 
@@ -263,6 +269,14 @@ fetchBrewSession basePath =
                          SetBrewSession result
                      ) (Api.withBasePath basePath Api.getBrewStatus)
 
+startStep : String -> String -> Cmd Msg
+startStep stepId basePath =
+  send (\response -> case response of
+                       Ok value ->
+                         UpdateStep (apiStepToRecipeStep value)
+                       Err e ->
+                         ApiError (Debug.toString e)
+       ) (Api.withBasePath basePath (Api.postStepStart stepId))
 
 -- VIEW
 
