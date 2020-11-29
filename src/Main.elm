@@ -9,7 +9,7 @@ import Browser exposing (Document)
 import Browser.Navigation as Navigation exposing (Key)
 import Data.Conversions exposing (apiRecipeToRecipe, apiStepListToStepList, apiStepToRecipeStep)
 import Data.Step exposing (RecipeStep, StepKind(..))
-import Dialog exposing (confirmDialogContent, dialog, dialogActions, scaleDialogContent)
+import Dialog exposing (calibrationDialogContent, confirmDialogContent, dialog, dialogActions, scaleDialogContent)
 import Dict exposing (Dict)
 import Html exposing (Html)
 import Http
@@ -78,6 +78,7 @@ type alias Model =
     , selectedRecipe : Maybe RecipeListEntry
     , timezone : Maybe Zone
     , menuOpened : Bool
+    , calibrationValue : Int
     }
 
 init : String -> Url -> Key -> ( Model, Cmd Msg )
@@ -99,6 +100,7 @@ init apiBaseUrl url key = (
   , selectedRecipe = Nothing
   , timezone = Nothing
   , menuOpened = False
+  , calibrationValue = -1
   }, Cmd.batch [fetchBrewSession apiBaseUrl, Task.perform SetTimeZone Time.here] )
 
 
@@ -178,6 +180,12 @@ update msg model =
 
     MenuClosed ->
       ( { model | menuOpened = False}, Cmd.none)
+
+    CalibrationValueUpdate int ->
+      ( { model | calibrationValue = int}, Cmd.none )
+
+    StartCalibration ->
+      ( model, console (String.fromInt model.calibrationValue) )
 
 
 
@@ -264,6 +272,9 @@ view model =
 
           Just (Confirm (prompt, action)) ->
             dialog (confirmDialogContent prompt) (Just "Confirm") (Just ( dialogActions ( Just action ) (Just ( CloseDialog Nothing ))))
+
+          Just Calibration ->
+            dialog (calibrationDialogContent) (Just "Scale calibration") (Just (dialogActions (Just StartCalibration) ( Just (CloseDialog Nothing)) ))
 
       , Grid.container [ Spacing.py5 ]
         [ Grid.row [ Row.attrs [ Spacing.pt4 ] ]

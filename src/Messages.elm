@@ -9,7 +9,7 @@ import Time exposing (Zone)
 import Url
 
 
-type DialogVariant = Scale | Confirm ( String, Msg)
+type DialogVariant = Scale | Confirm ( String, Msg ) | Calibration
 
 type Msg = Increment
   | Decrement
@@ -33,5 +33,7 @@ type Msg = Increment
   | StartStep String
   | UpdateStep RecipeStep
   | FinishStep String
+  | CalibrationValueUpdate Int
+  | StartCalibration
   | MenuOpened
   | MenuClosed
