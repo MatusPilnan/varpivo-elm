@@ -1,3 +1,9 @@
+@keyframes blinker {
+    50% {
+        opacity: 40%;
+    }
+}
+
 div.varpivo-bottom-toolbar {
     position: fixed;
     bottom: 0;
@@ -19,4 +25,14 @@ div.varpivo-centered-page {
 
 .varpivo-scale-remove {
     color: red;
+}
+
+i.varpivo-heater-on {
+    color: orangered;
+    animation: blinker 2s linear infinite;
+}
+
+i.varpivo-heater-off {
+    color: lightgrey;
+    opacity: 50%;
 }

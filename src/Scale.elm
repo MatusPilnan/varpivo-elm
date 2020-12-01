@@ -16,7 +16,7 @@ import Material.Icon as Icon
 import Material.Theme as Theme
 import Material.Typography as Typography
 import Maybe exposing (withDefault)
-import Messages exposing (Msg(..))
+import Messages exposing (DialogVariant(..), Msg(..))
 
 
 scale : { a | recipeSteps : Dict.Dict String RecipeStep, weight : Float } -> Maybe String -> Html.Html Msg
@@ -80,9 +80,9 @@ scale model stepId =
         ]
       ]
     , Grid.row []
-      [ Grid.col [] [ Button.outlined (Button.config |> Button.setDisabled True) "Tare" ]
+      [ Grid.col [] [ Button.outlined (Button.config |> Button.setOnClick TareScale) "Tare" ]
       , Grid.col [] [ Button.outlined (Button.config |> Button.setOnClick (NavigateTo "/")) "Cancel" ]
       , if hasId then Grid.col [] [ Button.unelevated (Button.config |> Button.setDisabled True) "Confirm" ]
-        else Grid.col [] [ Button.outlined (Button.config |> Button.setDisabled True) "Calibrate" ]
+        else Grid.col [] [ Button.outlined (Button.config |> Button.setOnClick (ShowDialog Calibration)) "Calibrate" ]
       ]
     ]

@@ -6,9 +6,10 @@ import Data.Conversions exposing (apiStepToRecipeStep)
 import Dict
 import Json.Decode exposing (Error(..))
 import Material.Snackbar as Snackbar
+import Messages exposing (DialogVariant(..), Msg(..))
 
 
-handleKegMessage data model =
+handleKegMessage data model console =
   case Json.Decode.decodeString wSKegDecoder data of
     Result.Ok value ->
       case value.content of
@@ -40,6 +41,22 @@ handleKegMessage data model =
               ({model | remainingBoilTime = boil}, Cmd.none)
             Result.Err e ->
               handleJsonDecodeError e model
+
+        "calibration" ->
+          case value.payload of
+            "ready" ->
+              ( { model | dialogVariant = Just (Confirm ("Place calibration weight on the scale", CalibrationWeightPlaced)) }, Cmd.none )
+            "done" ->
+              ({model | snackbarQueue = (Snackbar.addMessage (Snackbar.message "Calibration done") model.snackbarQueue) }, Cmd.none)
+            _ ->
+              (model, console (Debug.toString value))
+        "heater" ->
+          case Json.Decode.decodeString Json.Decode.bool value.payload of
+            Ok heater_on ->
+              ( { model | heating = heater_on }, Cmd.none )
+
+            Err error ->
+              handleJsonDecodeError error model
 
         _ ->
           ({model | snackbarQueue = (Snackbar.addMessage (Snackbar.message value.payload) model.snackbarQueue) }, Cmd.none)
