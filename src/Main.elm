@@ -68,6 +68,7 @@ type alias Model =
     , value : Float
     , weight : Float
     , temperature : Float
+    , heating : Bool
     , remainingBoilTime : Int
     , availableRecipes : List RecipeListEntry
     , loading : Bool
@@ -90,6 +91,7 @@ init apiBaseUrl url key = (
   , value = 0
   , weight = 0
   , temperature = 0
+  , heating = False
   , remainingBoilTime = 0
   , availableRecipes = []
   , loading = True
@@ -120,7 +122,7 @@ update msg model =
     SetAvailableRecipes list ->
       ({ model | value = model.value + 1, availableRecipes = list, loading = False }, Cmd.none)
     Recv data ->
-      handleKegMessage data model
+      handleKegMessage data model console
     Send ->
       ( model, sendMessage "message" )
     ShowDialog dialog ->
@@ -135,7 +137,7 @@ update msg model =
       ( { model | loading = True, selectedRecipe = Just recipe} , fetchRecipeSteps recipe.id model.apiBaseUrl)
     SetSteps (recipeSteps, stepOrder) ->
       ( { model | recipeSteps = recipeSteps, stepsOrder = stepOrder,loading = False }, Navigation.pushUrl model.key (Url.Builder.absolute ["brew-session"] []))
-    ApiError string ->
+    ShowSnackbar string ->
       ({model | snackbarQueue = (Snackbar.addMessage (apiErrorMessage string) model.snackbarQueue), loading = False }, Cmd.none)
 
     ShowRecipeDetail recipeListEntry ->
@@ -185,7 +187,13 @@ update msg model =
       ( { model | calibrationValue = int}, Cmd.none )
 
     StartCalibration ->
-      ( model, console (String.fromInt model.calibrationValue) )
+      ( model, if model.calibrationValue == -1 then Cmd.none else startCalibration model.calibrationValue model.apiBaseUrl )
+
+    CalibrationWeightPlaced ->
+      ( model, calibrate model.apiBaseUrl )
+
+    TareScale ->
+      ( model, tareScale model.apiBaseUrl)
 
 
 
@@ -210,7 +218,7 @@ fetchRecipeSteps recipeId basePath = send ( \msg ->
           handleSteps msg
   in
     if Dict.isEmpty steps then
-      ApiError "Couldn't get recipe steps!"
+      ShowSnackbar "Couldn't get recipe steps!"
     else
       SetSteps (steps, order)) (Api.withBasePath basePath (Api.postRecipe recipeId))
 
@@ -245,7 +253,7 @@ handleStep response =
     Ok value ->
       UpdateStep (apiStepToRecipeStep value)
     Err e ->
-      ApiError (Debug.toString e)
+      ShowSnackbar (Debug.toString e)
 
 startStep : String -> String -> Cmd Msg
 startStep stepId basePath =
@@ -253,7 +261,38 @@ startStep stepId basePath =
 
 finishStep : String -> String -> Cmd Msg
 finishStep stepId basePath =
-    send handleStep (Api.withBasePath basePath (Api.postStepFinish stepId))
+    send handleStep (Api.withBasePath basePath (Api.deleteStepStart stepId))
+
+startCalibration : Int -> String -> Cmd Msg
+startCalibration grams basePath=
+  send (\response ->
+         case response of
+           Ok _ ->
+             ShowSnackbar "Scale calibration started"
+           Err e ->
+             ShowSnackbar (Debug.toString e)
+       ) (Api.withBasePath basePath (Api.patchScaleRes grams))
+
+
+calibrate basePath =
+  send (\response ->
+          case response of
+            Ok _ ->
+              ShowSnackbar "Calibration in progress. Do not move the weight."
+            Err e ->
+              ShowSnackbar (Debug.toString e)
+        ) (Api.withBasePath basePath (Api.putScaleRes))
+
+
+tareScale basePath =
+  send (\response ->
+          case response of
+            Ok _ ->
+              ShowSnackbar "Tare done"
+            Err e ->
+              ShowSnackbar (Debug.toString e)
+        ) (Api.withBasePath basePath Api.deleteScaleRes)
+
 
 -- VIEW
 
@@ -285,8 +324,8 @@ view model =
       , Snackbar.snackbar
                 (Snackbar.config { onClosed = SnackbarClosed })
                 model.snackbarQueue
-      , if not (Dict.isEmpty model.recipeSteps) then
-          bottomToolbar model.temperature model.remainingBoilTime
+      , if not False then
+          bottomToolbar model.temperature model.remainingBoilTime model.heating
         else Html.div [] []
       ]
     ]

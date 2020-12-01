@@ -22,7 +22,7 @@ type Msg = Increment
   | CloseDialog (Maybe Msg)
   | SelectRecipe RecipeListEntry
   | SetSteps (Dict String RecipeStep , List String)
-  | ApiError String
+  | ShowSnackbar String
   | ShowRecipeDetail RecipeListEntry
   | LinkClicked Browser.UrlRequest
   | NavigateTo String
@@ -35,5 +35,7 @@ type Msg = Increment
   | FinishStep String
   | CalibrationValueUpdate Int
   | StartCalibration
+  | CalibrationWeightPlaced
+  | TareScale
   | MenuOpened
   | MenuClosed
