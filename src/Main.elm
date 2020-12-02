@@ -142,17 +142,17 @@ update msg model =
     SelectRecipe recipe ->
       ( { model | loading = True, selectedRecipe = Just recipe} , fetchRecipeSteps recipe.id model.apiBaseUrl)
     SetSteps (recipeSteps, stepOrder) ->
-      ( { model | recipeSteps = recipeSteps, stepsOrder = stepOrder,loading = False }, navigate console model ["brew-session"] [])
+      ( { model | recipeSteps = recipeSteps, stepsOrder = stepOrder,loading = False }, navigate model ["brew-session"] [])
     ShowSnackbar string ->
       ({model | snackbarQueue = (Snackbar.addMessage (apiErrorMessage string) model.snackbarQueue), loading = False }, Cmd.none)
 
     ShowRecipeDetail recipeListEntry ->
-      ( { model | selectedRecipe = Just recipeListEntry}, navigate console model ["recipe"] [])
+      ( { model | selectedRecipe = Just recipeListEntry}, navigate model ["recipe"] [])
 
     LinkClicked urlRequest ->
       case urlRequest of
         Browser.Internal url ->
-          ( model, Cmd.batch [navigate console model [url.path][], console (Debug.toString url)] ) -- TODO: query parametre
+          ( model, Cmd.batch [navigate model [url.path][], console (Debug.toString url)] ) -- TODO: query parametre
 
         Browser.External href ->
           ( model, Navigation.load href )
@@ -161,7 +161,7 @@ update msg model =
       route url model console
 
     NavigateTo string ->
-      ( model, Cmd.batch [navigate console model [string][], sendMessage string ])
+      ( model, Cmd.batch [navigate model [string][], sendMessage string ])
 
     RequestTimeZone ->
       ( model, Task.perform SetTimeZone Time.here )
@@ -171,7 +171,7 @@ update msg model =
 
     SetBrewSession (recipeListEntry, recipeSteps, stepsOrder) ->
       ( { model | selectedRecipe = Just recipeListEntry, recipeSteps = recipeSteps, stepsOrder = stepsOrder, loading = False}
-      , navigate console model ["brew-session"][]
+      , navigate model ["brew-session"][]
       )
 
     StartStep stepId ->

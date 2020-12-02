@@ -1,7 +1,7 @@
 module KegMessage exposing (handleKegMessage)
 
 
-import Api.Data exposing (recipeStepDecoder, wSKegDecoder)
+import Api.Data exposing (recipeStepDecoder, temperatureDecoder, wSKegDecoder)
 import Data.Conversions exposing (apiStepToRecipeStep)
 import Dict
 import Json.Decode exposing (Error(..))
@@ -29,9 +29,9 @@ handleKegMessage data model console =
               handleJsonDecodeError e model
 
         "temperature" ->
-          case Json.Decode.decodeString Json.Decode.float value.payload of
+          case Json.Decode.decodeString temperatureDecoder value.payload of
             Result.Ok temp ->
-              ({model | temperature = temp}, Cmd.none)
+              ({model | temperature = temp.temperature, heating = temp.heating}, Cmd.none)
             Result.Err e ->
               handleJsonDecodeError e model
 
@@ -50,14 +50,6 @@ handleKegMessage data model console =
               ({model | snackbarQueue = (Snackbar.addMessage (Snackbar.message "Calibration done") model.snackbarQueue) }, Cmd.none)
             _ ->
               (model, console (Debug.toString value))
-        "heater" ->
-          case Json.Decode.decodeString Json.Decode.bool value.payload of
-            Ok heater_on ->
-              ( { model | heating = heater_on }, Cmd.none )
-
-            Err error ->
-              handleJsonDecodeError error model
-
         _ ->
           ({model | snackbarQueue = (Snackbar.addMessage (Snackbar.message value.payload) model.snackbarQueue) }, Cmd.none)
     Result.Err e ->
