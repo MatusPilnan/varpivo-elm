@@ -40,3 +40,4 @@ type Msg = Increment
   | TareScale
   | MenuOpened
   | MenuClosed
+  | Multiple (List Msg)

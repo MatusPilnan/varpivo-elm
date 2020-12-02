@@ -180,7 +180,18 @@ update msg model =
       ( { model | recipeSteps = (Dict.insert step.id step model.recipeSteps)}, Cmd.none )
 
     FinishStep stepId ->
-      ( model, finishStep stepId model.apiBaseUrl )
+      ( model
+      , case Dict.get stepId model.recipeSteps of
+          Just step ->
+            case (step.started, step.finished) of
+              (Just _, Nothing) ->
+                Cmd.batch [finishStep stepId model.apiBaseUrl, navigate model [] []]
+              (_, _) ->
+                navigate model [] []
+
+          Nothing ->
+            navigate model [] []
+      )
 
     MenuOpened ->
       ( { model | menuOpened = True}, Cmd.none)
@@ -199,6 +210,18 @@ update msg model =
 
     TareScale ->
       ( model, tareScale model.apiBaseUrl)
+
+    Multiple msgs ->
+      ( model, case List.unzip (List.map (\i -> update i model) (List.filter (\i -> case i of
+                                                                Multiple _ ->
+                                                                  False
+                                                                _ ->
+                                                                  True
+                                                       ) msgs)) of
+               (_, cmds) ->
+                 Cmd.batch cmds
+             )
+
 
 
 

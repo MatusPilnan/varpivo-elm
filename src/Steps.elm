@@ -95,7 +95,12 @@ stepPrimaryActions step =
     Water ->
       []
     Weight ->
-      [ Html.Events.onClick (NavigateTo (["scale"], [string "step" step.id])) ]
+      [ Html.Events.onClick
+        ( if step.available
+          then Multiple [ StartStep step.id, NavigateTo (["scale"], [string "step" step.id])]
+          else NavigateTo (["scale"], [string "step" step.id])
+        )
+      ]
     KeepTemperature ->
       []
     SetTemperature ->

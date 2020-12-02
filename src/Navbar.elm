@@ -49,7 +49,8 @@ menu open =
         (List.config |> List.setWrapFocus True )
         (ListItem.listItem (ListItem.config |> ListItem.setOnClick (ShowDialog Scale)) [ text "Mini scale" ]
         )
-        [ListItem.listItem (ListItem.config |> ListItem.setOnClick (ShowDialog Calibration)) [ text "Calibrate scale" ]
+        [ ListItem.listItem (ListItem.config |> ListItem.setOnClick (ShowDialog Calibration)) [ text "Calibrate scale" ]
+        , ListItem.listItem (ListItem.config |> ListItem.setOnClick (NavigateTo (["scale"], []))) [ text "Scale" ]
         ]
       ]
     ]

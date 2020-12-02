@@ -39,7 +39,7 @@ dialogActions onConfirm onClose =
   ]
 
 scaleDialogContent value =
-  [ Html.p [ Typography.headline6 ] [ Html.text ( String.fromFloat value )] ]
+  [ Html.p [ Typography.headline6 ] [ Html.text ( (String.fromFloat value) ++ " g" )] ]
 
 confirmDialogContent message =
   [ Html.text message ]

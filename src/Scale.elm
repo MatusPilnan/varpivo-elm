@@ -26,7 +26,7 @@ scale model stepId =
       withDefault -1 (withDefault Data.Step.empty (Dict.get (withDefault "" stepId) model.recipeSteps)).target
     subtitle =
       (withDefault Data.Step.empty (Dict.get (withDefault "" stepId) model.recipeSteps)).description
-    (icon, targetText, hasId) =
+    (icon, targetText) =
       case (stepId, Dict.member (withDefault "" stepId) model.recipeSteps) of
         (Just _, True) ->
           case (compare model.weight target) of
@@ -36,13 +36,11 @@ scale model stepId =
                 [ text "Target: "
                 , Html.span [ Attributes.class "varpivo-scale-add" ] [text (String.fromFloat target ++ " g") ]
                 ]
-              , True
               )
             EQ ->
               ( Icon.icon [] ("check")
               , Html.p [ Typography.headline4, Spacing.p2, Attributes.align "end" ]
                               [ text ("Target: " ++ String.fromFloat target ++ " g") ]
-              , True
               )
             GT ->
               ( Icon.icon [  Attributes.class "varpivo-scale-remove"  ] ("arrow_drop_down")
@@ -50,10 +48,9 @@ scale model stepId =
                 [ text "Target: "
                 , Html.span [ Attributes.class "varpivo-scale-remove" ] [text (String.fromFloat target ++ " g") ]
                 ]
-              , True
               )
         (_, _) ->
-          (Html.div [] [], Html.div [] [], False)
+          (Html.div [] [], Html.div [] [])
   in
   Html.div [ center, Attributes.align "center", Flex.block, Flex.col, Flex.alignItemsCenter, Flex.justifyBetween ]
     [ Grid.row []
@@ -82,7 +79,16 @@ scale model stepId =
     , Grid.row []
       [ Grid.col [] [ Button.outlined (Button.config |> Button.setOnClick TareScale) "Tare" ]
       , Grid.col [] [ Button.outlined (Button.config |> Button.setOnClick (NavigateTo ([], []))) "Cancel" ]
-      , if hasId then Grid.col [] [ Button.unelevated (Button.config |> Button.setDisabled True) "Confirm" ]
-        else Grid.col [] [ Button.outlined (Button.config |> Button.setOnClick (ShowDialog Calibration)) "Calibrate" ]
+      , case stepId of
+          Just string ->
+            Grid.col []
+            [ Button.unelevated (Button.config
+              |> Button.setOnClick (Multiple [FinishStep string, NavigateTo ([], [])]))
+              "Confirm"
+            ]
+
+
+          Nothing ->
+            Grid.col [] [ Button.outlined (Button.config |> Button.setOnClick (ShowDialog Calibration)) "Calibrate" ]
       ]
     ]
