@@ -20,7 +20,7 @@ import Material.Theme as Theme
 import Material.Typography as Typography
 import Messages exposing (Msg(..))
 import Time exposing (Zone)
-import Url.Builder as Builder exposing (string)
+import Url.Builder exposing (string)
 
 
 stepView : RecipeStep -> Maybe Zone -> Html.Html Msg
@@ -95,7 +95,7 @@ stepPrimaryActions step =
     Water ->
       []
     Weight ->
-      [ Html.Events.onClick (NavigateTo (Builder.absolute ["scale"] [string "step" step.id])) ]
+      [ Html.Events.onClick (NavigateTo (["scale"], [string "step" step.id])) ]
     KeepTemperature ->
       []
     SetTemperature ->

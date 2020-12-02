@@ -81,7 +81,7 @@ scale model stepId =
       ]
     , Grid.row []
       [ Grid.col [] [ Button.outlined (Button.config |> Button.setOnClick TareScale) "Tare" ]
-      , Grid.col [] [ Button.outlined (Button.config |> Button.setOnClick (NavigateTo "/")) "Cancel" ]
+      , Grid.col [] [ Button.outlined (Button.config |> Button.setOnClick (NavigateTo ([], []))) "Cancel" ]
       , if hasId then Grid.col [] [ Button.unelevated (Button.config |> Button.setDisabled True) "Confirm" ]
         else Grid.col [] [ Button.outlined (Button.config |> Button.setOnClick (ShowDialog Calibration)) "Calibrate" ]
       ]

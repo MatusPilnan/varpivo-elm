@@ -7,6 +7,7 @@ import Dict exposing (Dict)
 import Material.Snackbar as Snackbar
 import Time exposing (Zone)
 import Url
+import Url.Builder exposing (QueryParameter)
 
 
 type DialogVariant = Scale | Confirm ( String, Msg ) | Calibration
@@ -25,7 +26,7 @@ type Msg = Increment
   | ShowSnackbar String
   | ShowRecipeDetail RecipeListEntry
   | LinkClicked Browser.UrlRequest
-  | NavigateTo String
+  | NavigateTo (List String, List QueryParameter)
   | UrlChanged Url.Url
   | RequestTimeZone
   | SetTimeZone Zone

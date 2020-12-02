@@ -28,7 +28,6 @@ import Router exposing (Route(..), navigate, route)
 import Task
 import Time exposing (Zone)
 import Url exposing (Url)
-import Url.Builder
 
 
 
@@ -160,8 +159,8 @@ update msg model =
     UrlChanged url ->
       route url model console
 
-    NavigateTo string ->
-      ( model, Cmd.batch [navigate model [string][], sendMessage string ])
+    NavigateTo (path, query) ->
+      ( model, navigate model path query)
 
     RequestTimeZone ->
       ( model, Task.perform SetTimeZone Time.here )

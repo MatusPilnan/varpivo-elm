@@ -18,12 +18,12 @@ navbar title showRecipeButton menuOpen =
       [ TopAppBar.section [ TopAppBar.alignStart, TopAppBar.title ]
         [ Html.span []
           [ Button.text (Button.config
-            |> Button.setOnClick ( NavigateTo "" )
+            |> Button.setOnClick ( NavigateTo ([], []) )
             |> Button.setAttributes [ Theme.onPrimary ]) title ]
         ]
       , TopAppBar.section [ TopAppBar.alignEnd ]
         [ if showRecipeButton then
-            IconButton.iconButton (IconButton.config |> IconButton.setOnClick (NavigateTo "recipe") )
+            IconButton.iconButton (IconButton.config |> IconButton.setOnClick (NavigateTo (["recipe"], [])) )
                                 (IconButton.icon "menu_book")
           else Html.div [] []
         , IconButton.iconButton
