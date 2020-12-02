@@ -18,24 +18,19 @@ import Url.Parser as Parser
 
 
 page model =
-  case Parser.parse routeParser model.url of
-    Nothing ->
+  case ( model.route, model.selectedRecipe ) of
+    ( Router.Recipe, Nothing ) ->
       home model
-
-    Just currentPage ->
-      case ( currentPage, model.selectedRecipe ) of
-        ( Router.Recipe, Nothing ) ->
-          home model
-        ( Router.Recipe, Just r ) ->
-          recipeDetail r (Dict.isEmpty model.recipeSteps)
-        ( Router.Home, _) ->
-          home model
-        ( Router.BrewSession, Nothing ) ->
-          home model
-        ( Router.BrewSession, Just r ) ->
-          stepsListView r model.recipeSteps model.stepsOrder model.timezone
-        ( Router.Scale stepId, _ ) ->
-          scale model stepId
+    ( Router.Recipe, Just r ) ->
+      recipeDetail r (Dict.isEmpty model.recipeSteps)
+    ( Router.Home, _) ->
+      home model
+    ( Router.BrewSession, Nothing ) ->
+      home model
+    ( Router.BrewSession, Just r ) ->
+      stepsListView r model.recipeSteps model.stepsOrder model.timezone
+    ( Router.Scale stepId, _ ) ->
+      scale model stepId
 
 
 

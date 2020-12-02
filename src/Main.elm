@@ -24,7 +24,7 @@ import Navbar exposing (navbar)
 import Page exposing (page)
 import Data.Recipe exposing (RecipeListEntry)
 import Result
-import Router exposing (route)
+import Router exposing (Route(..), navigate, route)
 import Task
 import Time exposing (Zone)
 import Url exposing (Url)
@@ -64,6 +64,8 @@ type alias Model =
     { key : Key
     , url : Url
     , apiBaseUrl : String
+    , basePath : String
+    , basePathList : List String
     , title : String
     , value : Float
     , weight : Float
@@ -80,13 +82,16 @@ type alias Model =
     , timezone : Maybe Zone
     , menuOpened : Bool
     , calibrationValue : Int
+    , route: Route
     }
 
-init : String -> Url -> Key -> ( Model, Cmd Msg )
-init apiBaseUrl url key = (
+init : {apiBaseUrl: String, basePath: String} -> Url -> Key -> ( Model, Cmd Msg )
+init flags url key = (
   { url = url
   , key = key
-  , apiBaseUrl = apiBaseUrl
+  , apiBaseUrl = flags.apiBaseUrl
+  , basePath = flags.basePath
+  , basePathList = List.filter (\val -> not (String.isEmpty val)) (String.split "/" flags.basePath)
   , title = "Var:Pivo"
   , value = 0
   , weight = 0
@@ -103,7 +108,8 @@ init apiBaseUrl url key = (
   , timezone = Nothing
   , menuOpened = False
   , calibrationValue = -1
-  }, Cmd.batch [fetchBrewSession apiBaseUrl, Task.perform SetTimeZone Time.here] )
+  , route = Home
+  }, Cmd.batch [fetchBrewSession flags.apiBaseUrl, Task.perform SetTimeZone Time.here] )
 
 
 -- UPDATE
@@ -136,17 +142,17 @@ update msg model =
     SelectRecipe recipe ->
       ( { model | loading = True, selectedRecipe = Just recipe} , fetchRecipeSteps recipe.id model.apiBaseUrl)
     SetSteps (recipeSteps, stepOrder) ->
-      ( { model | recipeSteps = recipeSteps, stepsOrder = stepOrder,loading = False }, Navigation.pushUrl model.key (Url.Builder.absolute ["brew-session"] []))
+      ( { model | recipeSteps = recipeSteps, stepsOrder = stepOrder,loading = False }, navigate console model ["brew-session"] [])
     ShowSnackbar string ->
       ({model | snackbarQueue = (Snackbar.addMessage (apiErrorMessage string) model.snackbarQueue), loading = False }, Cmd.none)
 
     ShowRecipeDetail recipeListEntry ->
-      ( { model | selectedRecipe = Just recipeListEntry}, Navigation.pushUrl model.key (Url.Builder.absolute ["recipe"] []))
+      ( { model | selectedRecipe = Just recipeListEntry}, navigate console model ["recipe"] [])
 
     LinkClicked urlRequest ->
       case urlRequest of
         Browser.Internal url ->
-          ( model, Navigation.pushUrl model.key (Url.toString url) )
+          ( model, Cmd.batch [navigate console model [url.path][], console (Debug.toString url)] ) -- TODO: query parametre
 
         Browser.External href ->
           ( model, Navigation.load href )
@@ -155,7 +161,7 @@ update msg model =
       route url model console
 
     NavigateTo string ->
-      ( model, Cmd.batch [Navigation.pushUrl model.key string, sendMessage string ])
+      ( model, Cmd.batch [navigate console model [string][], sendMessage string ])
 
     RequestTimeZone ->
       ( model, Task.perform SetTimeZone Time.here )
@@ -165,7 +171,7 @@ update msg model =
 
     SetBrewSession (recipeListEntry, recipeSteps, stepsOrder) ->
       ( { model | selectedRecipe = Just recipeListEntry, recipeSteps = recipeSteps, stepsOrder = stepsOrder, loading = False}
-      , Navigation.pushUrl model.key (Url.toString model.url)
+      , navigate console model ["brew-session"][]
       )
 
     StartStep stepId ->
@@ -306,7 +312,7 @@ view model =
           Nothing ->
             Html.div [] []
 
-          Just Scale ->
+          Just Messages.Scale ->
             dialog (scaleDialogContent model.weight) (Just "Scale") Nothing
 
           Just (Confirm (prompt, action)) ->

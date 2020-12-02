@@ -18,7 +18,7 @@ navbar title showRecipeButton menuOpen =
       [ TopAppBar.section [ TopAppBar.alignStart, TopAppBar.title ]
         [ Html.span []
           [ Button.text (Button.config
-            |> Button.setOnClick ( NavigateTo "/" )
+            |> Button.setOnClick ( NavigateTo "" )
             |> Button.setAttributes [ Theme.onPrimary ]) title ]
         ]
       , TopAppBar.section [ TopAppBar.alignEnd ]

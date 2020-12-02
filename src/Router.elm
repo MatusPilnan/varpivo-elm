@@ -21,31 +21,36 @@ routeParser =
 
 
 route url model console =
-  case Parser.parse routeParser url of
+  case Parser.parse routeParser {url | path=String.replace model.basePath "" url.path} of
     Nothing ->
-      ( { model | url = url }, Cmd.batch [console (Url.toString url), Navigation.pushUrl model.key (Url.Builder.absolute [""] [])])
+      ( { model | url = url , route = Home}, Cmd.batch [console (Url.toString url), navigate console model [""] []])
 
     Just currentPage ->
       case currentPage of
         Recipe ->
           case model.selectedRecipe of
             Nothing ->
-              ( model, Navigation.pushUrl model.key (Url.Builder.absolute [""] []))
+              ( model, navigate console model [""] [])
             Just _ ->
-              ( { model | url = url }, console ("recipe " ++ Url.toString url))
+              ( { model | url = url , route = currentPage}, console ("recipe " ++ Url.toString url))
 
         Home ->
           if Dict.isEmpty model.recipeSteps then
-            ( { model | url = url, selectedRecipe = Nothing }, console ("home " ++ Url.toString url))
+            ( { model | url = url, selectedRecipe = Nothing  , route = Home}, console ("home " ++ Url.toString url))
           else
-            ( model, Navigation.pushUrl model.key (Url.Builder.absolute ["brew-session"] []) )
+            ( model, navigate console model ["brew-session"] [] )
 
         BrewSession ->
           if Dict.isEmpty model.recipeSteps then
-            ( model, Navigation.pushUrl model.key (Url.Builder.absolute [""] []) )
+            ( model, navigate console model [""] [] )
           else
-            ( { model | url = url }, console ("bs " ++ Url.toString url))
+            ( { model | url = url , route = currentPage}, console ("bs " ++ Url.toString url))
 
         Scale stepId ->
-          ( { model | url = url}, console (Debug.toString stepId) )
+          ( { model | url = url, route = currentPage}, console (Debug.toString stepId) )
 
+
+navigate : (String -> Cmd msg) -> { a | basePathList : List String, key : Navigation.Key } -> List String -> List Url.Builder.QueryParameter -> Cmd msg
+navigate console model target query =
+    --Cmd.batch [console (Url.Builder.absolute (model.basePathList ++ target) query)]
+    Cmd.batch [console (Url.Builder.absolute (model.basePathList ++ target) query), Navigation.pushUrl model.key (Url.Builder.absolute (model.basePathList ++ target) query)]
