@@ -169,8 +169,8 @@ update msg model =
       ( { model | timezone = Just zone}, Cmd.none)
 
     SetBrewSession (recipeListEntry, recipeSteps, stepsOrder) ->
-      ( { model | selectedRecipe = Just recipeListEntry, recipeSteps = recipeSteps, stepsOrder = stepsOrder, loading = False}
-      , navigate model ["brew-session"][]
+      ( { model | selectedRecipe = recipeListEntry, recipeSteps = recipeSteps, stepsOrder = stepsOrder, loading = False}
+      , Cmd.batch [console (Debug.toString (recipeListEntry, recipeSteps, stepsOrder)), navigate model ["brew-session"][]]
       )
 
     StartStep stepId ->
@@ -210,6 +210,9 @@ update msg model =
 
     TareScale ->
       ( model, tareScale model.apiBaseUrl)
+
+    CancelBrewSession ->
+      ( model, cancelBrewSession model.apiBaseUrl)
 
     Multiple msgs ->
       ( model, case List.unzip (List.map (\i -> update i model) (List.filter (\i -> case i of
@@ -254,11 +257,11 @@ fetchRecipes: String -> Cmd Msg
 fetchRecipes basePath = send (\msg -> SetAvailableRecipes (handleRecipes msg)) (Api.withBasePath basePath Api.getRecipeList)
 
 
-handleBrewSession: Result Http.Error BrewSession -> Maybe (RecipeListEntry, Dict String RecipeStep, List String)
+handleBrewSession: Result Http.Error BrewSession -> Maybe (Maybe RecipeListEntry, Dict String RecipeStep, List String)
 handleBrewSession response =
   case response of
     Ok value ->
-      Just (apiRecipeToRecipe value.recipe
+      Just ( Just (apiRecipeToRecipe value.recipe)
            , Dict.fromList (List.map (\step -> (step.id, apiStepToRecipeStep step)) value.steps)
            , List.map (\step -> step.id) value.steps
            )
@@ -274,6 +277,13 @@ fetchBrewSession basePath =
                          SetBrewSession result
                      ) (Api.withBasePath basePath Api.getBrewStatus)
 
+cancelBrewSession basePath =
+  send (\response -> case response of
+                              Ok _ ->
+                                SetBrewSession (Nothing, Dict.empty, [])
+                              Err e ->
+                                ShowSnackbar (Debug.toString e)
+                            ) (Api.withBasePath basePath Api.deleteBrewStatus)
 
 handleStep : Result.Result error Api.Data.RecipeStep -> Msg
 handleStep response =
@@ -329,7 +339,7 @@ view model =
   { title = model.title
   , body =
     [ Html.div [ Typography.typography ]
-      [ navbar model.title (isRecipeSelected model) model.menuOpened
+      [ navbar model.title (isRecipeSelected model) model.menuOpened ( not (Dict.isEmpty model.recipeSteps) )
       , case model.dialogVariant of
           Nothing ->
             Html.div [] []

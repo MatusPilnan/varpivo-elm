@@ -72,7 +72,7 @@ stepIcon : StepKind -> Html msg
 stepIcon stepKind =
   case stepKind of
     Generic ->
-      Html.i [ Attributes.class "fas", Attributes.class "fa-shoe-prints" ] []
+      Html.i [ Attributes.class "fas", Attributes.class "fa-shoe-prints", Attributes.class "fa-rotate-270" ] []
     Water ->
       Html.i [ Attributes.class "fas", Attributes.class "fa-faucet" ] []
     Weight ->

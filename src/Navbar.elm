@@ -12,7 +12,7 @@ import Material.TopAppBar as TopAppBar
 import Messages exposing (DialogVariant(..), Msg(..))
 
 
-navbar title showRecipeButton menuOpen =
+navbar title showRecipeButton menuOpen activeBrewSession =
   TopAppBar.regular TopAppBar.config
     [ TopAppBar.row [ Elevation.z8 ]
       [ TopAppBar.section [ TopAppBar.alignStart, TopAppBar.title ]
@@ -33,12 +33,12 @@ navbar title showRecipeButton menuOpen =
             |> IconButton.setOnClick MenuOpened
           )
             (IconButton.icon "menu")
-        , menu menuOpen
+        , menu menuOpen activeBrewSession
         ]
       ]
     ]
 
-menu open =
+menu open activeBrewSession =
   Html.div [ Menu.surfaceAnchor ]
     [ Menu.menu
       (Menu.config
@@ -48,9 +48,14 @@ menu open =
       [ List.list
         (List.config |> List.setWrapFocus True )
         (ListItem.listItem (ListItem.config |> ListItem.setOnClick (ShowDialog Scale)) [ text "Mini scale" ]
-        )
+        )(
         [ ListItem.listItem (ListItem.config |> ListItem.setOnClick (ShowDialog Calibration)) [ text "Calibrate scale" ]
         , ListItem.listItem (ListItem.config |> ListItem.setOnClick (NavigateTo (["scale"], []))) [ text "Scale" ]
-        ]
+        ] ++ if activeBrewSession
+          then [ ListItem.listItem (ListItem.config |> ListItem.setOnClick
+                 ( ShowDialog (Confirm ("Do you really want to discard current brew session? This can't be undone!", CancelBrewSession))
+                 )) [ text "Cancel brewing" ]
+               ]
+          else [])
       ]
     ]
