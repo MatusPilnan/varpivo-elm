@@ -3,20 +3,22 @@ module KegMessage exposing (handleKegMessage)
 
 import Api.Data exposing (recipeStepDecoder, temperatureDecoder, wSKegDecoder)
 import Data.Conversions exposing (apiStepToRecipeStep)
+import Data.Step exposing (RecipeStep)
 import Dict
 import Json.Decode exposing (Error(..))
 import Material.Snackbar as Snackbar
+import Maybe exposing (withDefault)
 import Messages exposing (DialogVariant(..), Msg(..))
 
 
-handleKegMessage data model console =
+handleKegMessage data model console notificationPort =
   case Json.Decode.decodeString wSKegDecoder data of
     Result.Ok value ->
       case value.content of
         "step" ->
           case Json.Decode.decodeString recipeStepDecoder value.payload of
             Result.Ok step ->
-              ({ model | recipeSteps = (Dict.insert step.id ( apiStepToRecipeStep step) model.recipeSteps)}, Cmd.none)
+              handleStepChange model (apiStepToRecipeStep step) notificationPort
 
             Result.Err e ->
               handleJsonDecodeError e model
@@ -54,6 +56,29 @@ handleKegMessage data model console =
           ({model | snackbarQueue = (Snackbar.addMessage (Snackbar.message value.payload) model.snackbarQueue) }, Cmd.none)
     Result.Err e ->
       handleJsonDecodeError e model
+
+handleStepChange model newStep notificationPort =
+  let
+      oldStep =
+          withDefault Data.Step.empty (Dict.get newStep.id model.recipeSteps)
+      newModel =
+        { model | recipeSteps = (Dict.insert newStep.id newStep model.recipeSteps)}
+  in
+    case (newStep.started, newStep.finished) of
+      (Just _, Just newFinished) ->
+        case (oldStep.finished) of
+          (Nothing) ->
+            (newModel, notificationPort {title = "Step finished", subtitle = newStep.name, time = newFinished * 1000})
+          (_) ->
+            (newModel, Cmd.none)
+      (Just newStarted, Nothing) ->
+        case (oldStep.started) of
+          (Nothing) ->
+            (newModel, notificationPort {title = newStep.name, subtitle = newStep.description, time = newStarted * 1000})
+          (Just _) ->
+            (newModel, Cmd.none)
+      (_, _) ->
+        (newModel, Cmd.none)
 
 
 

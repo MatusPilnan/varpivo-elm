@@ -57,6 +57,38 @@
     // flags: {apiBaseUrl: `http://127.0.0.1:5000`, basePath: ''}
   })
 
+  function notifyMe() {
+    // Let's check if the browser supports notifications
+    if (!("Notification" in window)) {
+      alert("This browser does not support desktop notification");
+    }
+
+    // Let's check whether notification permissions have already been granted
+    else if (Notification.permission === "granted") {
+      // If it's okay let's create a notification
+      // var notification = new Notification("Hi there!");
+    }
+
+    // Otherwise, we need to ask the user for permission
+    else if (Notification.permission !== "denied") {
+      Notification.requestPermission().then(function (permission) {
+        // If the user accepts, let's create a notification
+        if (permission === "granted") {
+          // noinspection JSUnusedLocalSymbols
+          var notification = new Notification("Hi there!", {
+            icon: 'assets/icon.png',
+            body: 'Thank you for enabling notifications!',
+          });
+        }
+      });
+    }
+
+    // At last, if the user has denied notifications, and you
+    // want to be respectful there is no need to bother them any more.
+  }
+
+  notifyMe()
+
 
   const protocol = window.location.protocol.replace('http', 'ws');
   // get location host
@@ -71,6 +103,26 @@
 
   app.ports.sendMessage.subscribe(function (message) {
     socket.send(message);
+  });
+
+  app.ports.notification.subscribe(function ({title, subtitle, time}) {
+    if (Notification.permission === 'granted') {
+      var n = new Notification(title, {
+        icon: 'assets/icon.png',
+        body: subtitle,
+        timestamp: time,
+        // image: 'assets/icon.png',
+        vibrate: [
+          100, 200, 200, 100,
+          100, 100,
+          100, 100, 100, 200,
+          200, 200, 200
+        ]
+      })
+      n.onclick = function () {
+        app.ports.notificationClick.send(['brew-session'])
+      }
+    }
   });
 
   app.ports.console.subscribe(function (message) {

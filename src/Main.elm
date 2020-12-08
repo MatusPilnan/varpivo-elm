@@ -21,6 +21,7 @@ import Bootstrap.Utilities.Spacing as Spacing
 import Bootstrap.Grid.Row as Row
 import Messages exposing (..)
 import Navbar exposing (navbar)
+import Notification exposing (Notification)
 import Page exposing (page)
 import Data.Recipe exposing (RecipeListEntry)
 import Result
@@ -46,13 +47,15 @@ main = Browser.application
 
 subscriptions : Model -> Sub Msg
 subscriptions _ =
-  messageReceiver Recv
+  Sub.batch [messageReceiver Recv, notificationClick (\path -> NavigateTo (path, []))]
 
 
 -- PORTS
 
 
 port sendMessage : String -> Cmd msg
+port notification: Notification -> Cmd msg
+port notificationClick: (List String -> msg) -> Sub msg
 port console : String -> Cmd msg
 port messageReceiver : (String -> msg) -> Sub msg
 
@@ -127,9 +130,9 @@ update msg model =
     SetAvailableRecipes list ->
       ({ model | value = model.value + 1, availableRecipes = list, loading = False }, Cmd.none)
     Recv data ->
-      handleKegMessage data model console
+      handleKegMessage data model console notification
     Send ->
-      ( model, sendMessage "message" )
+      ( model, Cmd.batch [notification {title = "Title", subtitle = "Subtitle", time = 6777}, sendMessage "msg"] )
     ShowDialog dialog ->
       ( { model | dialogVariant = Just dialog }, Cmd.none )
     CloseDialog afterClose ->
@@ -212,7 +215,7 @@ update msg model =
       ( model, tareScale model.apiBaseUrl)
 
     CancelBrewSession ->
-      ( model, cancelBrewSession model.apiBaseUrl)
+      ( model, Cmd.batch [cancelBrewSession model.apiBaseUrl, fetchRecipes model.apiBaseUrl])
 
     Multiple msgs ->
       ( model, case List.unzip (List.map (\i -> update i model) (List.filter (\i -> case i of

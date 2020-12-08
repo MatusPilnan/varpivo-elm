@@ -1,5 +1,6 @@
 module Navbar exposing (..)
 
+import Bootstrap.Utilities.Spacing as Spacing
 import Html exposing (text)
 import Material.Button as Button
 import Material.Elevation as Elevation
@@ -21,7 +22,7 @@ navbar title showRecipeButton menuOpen activeBrewSession =
             |> Button.setOnClick ( NavigateTo ([], []) )
             |> Button.setAttributes [ Theme.onPrimary ]) title ]
         ]
-      , TopAppBar.section [ TopAppBar.alignEnd ]
+      , TopAppBar.section [ TopAppBar.alignEnd, Menu.surfaceAnchor ]
         [ if showRecipeButton then
             IconButton.iconButton (IconButton.config |> IconButton.setOnClick (NavigateTo (["recipe"], [])) )
                                 (IconButton.icon "menu_book")
@@ -39,11 +40,12 @@ navbar title showRecipeButton menuOpen activeBrewSession =
     ]
 
 menu open activeBrewSession =
-  Html.div [ Menu.surfaceAnchor ]
+  Html.div []
     [ Menu.menu
       (Menu.config
         |> Menu.setOpen open
         |> Menu.setOnClose MenuClosed
+        |> Menu.setAttributes [ Spacing.mt5 ]
       )
       [ List.list
         (List.config |> List.setWrapFocus True )
