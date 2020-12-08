@@ -2,7 +2,10 @@ port module Main exposing (..)
 
 import Api exposing (send)
 import Api.Data exposing (BrewSession, Recipe, RecipeList, StepsList)
-import Api.Request.Default as Api
+import Api.Request.BrewSessionStatus as BrewStatusApi
+import Api.Request.RecipeSteps as RecipeStepsApi
+import Api.Request.Recipes as RecipesApi
+import Api.Request.Scale as ScaleApi
 import ApiErrorMessage exposing (apiErrorMessage)
 import BottomToolbar exposing (bottomToolbar)
 import Browser exposing (Document)
@@ -254,10 +257,10 @@ fetchRecipeSteps recipeId basePath = send ( \msg ->
     if Dict.isEmpty steps then
       ShowSnackbar "Couldn't get recipe steps!"
     else
-      SetSteps (steps, order)) (Api.withBasePath basePath (Api.postRecipe recipeId))
+      SetSteps (steps, order)) (Api.withBasePath basePath (RecipesApi.postRecipe recipeId))
 
 fetchRecipes: String -> Cmd Msg
-fetchRecipes basePath = send (\msg -> SetAvailableRecipes (handleRecipes msg)) (Api.withBasePath basePath Api.getRecipeList)
+fetchRecipes basePath = send (\msg -> SetAvailableRecipes (handleRecipes msg)) (Api.withBasePath basePath RecipesApi.getRecipeList)
 
 
 handleBrewSession: Result Http.Error BrewSession -> Maybe (Maybe RecipeListEntry, Dict String RecipeStep, List String)
@@ -278,7 +281,7 @@ fetchBrewSession basePath =
                          FetchRecipes
                        Just result ->
                          SetBrewSession result
-                     ) (Api.withBasePath basePath Api.getBrewStatus)
+                     ) (Api.withBasePath basePath BrewStatusApi.getBrewStatus)
 
 cancelBrewSession basePath =
   send (\response -> case response of
@@ -286,7 +289,7 @@ cancelBrewSession basePath =
                                 SetBrewSession (Nothing, Dict.empty, [])
                               Err e ->
                                 ShowSnackbar (Debug.toString e)
-                            ) (Api.withBasePath basePath Api.deleteBrewStatus)
+                            ) (Api.withBasePath basePath BrewStatusApi.deleteBrewStatus)
 
 handleStep : Result.Result error Api.Data.RecipeStep -> Msg
 handleStep response =
@@ -298,11 +301,11 @@ handleStep response =
 
 startStep : String -> String -> Cmd Msg
 startStep stepId basePath =
-  send handleStep (Api.withBasePath basePath (Api.postStepStart stepId))
+  send handleStep (Api.withBasePath basePath (RecipeStepsApi.postStepStart stepId))
 
 finishStep : String -> String -> Cmd Msg
 finishStep stepId basePath =
-    send handleStep (Api.withBasePath basePath (Api.deleteStepStart stepId))
+    send handleStep (Api.withBasePath basePath (RecipeStepsApi.deleteStepStart stepId))
 
 startCalibration : Int -> String -> Cmd Msg
 startCalibration grams basePath=
@@ -312,7 +315,7 @@ startCalibration grams basePath=
              ShowSnackbar "Scale calibration started"
            Err e ->
              ShowSnackbar (Debug.toString e)
-       ) (Api.withBasePath basePath (Api.patchScaleRes grams))
+       ) (Api.withBasePath basePath (ScaleApi.patchScaleRes grams))
 
 
 calibrate basePath =
@@ -322,7 +325,7 @@ calibrate basePath =
               ShowSnackbar "Calibration in progress. Do not move the weight."
             Err e ->
               ShowSnackbar (Debug.toString e)
-        ) (Api.withBasePath basePath (Api.putScaleRes))
+        ) (Api.withBasePath basePath (ScaleApi.putScaleRes))
 
 
 tareScale basePath =
@@ -332,7 +335,7 @@ tareScale basePath =
               ShowSnackbar "Tare done"
             Err e ->
               ShowSnackbar (Debug.toString e)
-        ) (Api.withBasePath basePath Api.deleteScaleRes)
+        ) (Api.withBasePath basePath ScaleApi.deleteScaleRes)
 
 
 -- VIEW
