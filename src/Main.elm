@@ -14,6 +14,7 @@ import Data.Conversions exposing (apiRecipeToRecipe, apiStepListToStepList, apiS
 import Data.Step exposing (RecipeStep, StepKind(..))
 import Dialog exposing (calibrationDialogContent, confirmDialogContent, dialog, dialogActions, scaleDialogContent)
 import Dict exposing (Dict)
+import Duration exposing (Duration)
 import Html exposing (Html)
 import Http
 import KegMessage exposing (handleKegMessage)
@@ -26,11 +27,11 @@ import Messages exposing (..)
 import Navbar exposing (navbar)
 import Notification exposing (Notification)
 import Page exposing (page)
-import Data.Recipe exposing (RecipeListEntry)
+import Data.Recipe exposing (BrewSessionData, RecipeListEntry)
 import Result
 import Router exposing (Route(..), navigate, route)
 import Task
-import Time exposing (Zone)
+import Time exposing (Posix, Zone)
 import Url exposing (Url)
 
 
@@ -50,7 +51,7 @@ main = Browser.application
 
 subscriptions : Model -> Sub Msg
 subscriptions _ =
-  Sub.batch [messageReceiver Recv, notificationClick (\path -> NavigateTo (path, []))]
+  Sub.batch [messageReceiver Recv, notificationClick (\path -> NavigateTo (path, [])), Time.every 1000 SetTime ]
 
 
 -- PORTS
@@ -76,7 +77,8 @@ type alias Model =
     , weight : Float
     , temperature : Float
     , heating : Bool
-    , remainingBoilTime : Int
+    , remainingBoilTime : Maybe Duration
+    , boilEndEstimation: Maybe Posix
     , availableRecipes : List RecipeListEntry
     , loading : Bool
     , snackbarQueue : Snackbar.Queue Msg
@@ -102,7 +104,7 @@ init flags url key = (
   , weight = 0
   , temperature = 0
   , heating = False
-  , remainingBoilTime = 0
+  , remainingBoilTime = Nothing
   , availableRecipes = []
   , loading = True
   , snackbarQueue = Snackbar.initialQueue
@@ -114,7 +116,8 @@ init flags url key = (
   , menuOpened = False
   , calibrationValue = -1
   , route = Home
-  }, Cmd.batch [fetchBrewSession flags.apiBaseUrl, Task.perform SetTimeZone Time.here] )
+  , boilEndEstimation = Nothing
+  }, Cmd.batch [fetchBrewSession flags.apiBaseUrl, Task.perform SetTimeZone Time.here, Task.perform SetTime Time.now] )
 
 
 -- UPDATE
@@ -174,9 +177,17 @@ update msg model =
     SetTimeZone zone ->
       ( { model | timezone = Just zone}, Cmd.none)
 
-    SetBrewSession (recipeListEntry, recipeSteps, stepsOrder) ->
-      ( { model | selectedRecipe = recipeListEntry, recipeSteps = recipeSteps, stepsOrder = stepsOrder, loading = False}
-      , Cmd.batch [console (Debug.toString (recipeListEntry, recipeSteps, stepsOrder)), navigate model ["brew-session"][]]
+    SetTime time ->
+      ( { model | remainingBoilTime =
+            case model.boilEndEstimation of
+                Nothing -> Nothing
+                Just estimation ->
+                    Maybe.Just (Duration.from time estimation)
+        }, Cmd.none )
+
+    SetBrewSession brewSessionData ->
+      ( { model | selectedRecipe = brewSessionData.recipeListEntry, recipeSteps = brewSessionData.steps, stepsOrder = brewSessionData.stepIds, loading = False, boilEndEstimation = Maybe.Just (Time.millisToPosix brewSessionData.boilFinishedAt)}
+      , Cmd.batch [console (Debug.toString (brewSessionData.recipeListEntry, brewSessionData.steps, brewSessionData.stepIds)), navigate model ["brew-session"][]]
       )
 
     StartStep stepId ->
@@ -263,14 +274,14 @@ fetchRecipes: String -> Cmd Msg
 fetchRecipes basePath = send (\msg -> SetAvailableRecipes (handleRecipes msg)) (Api.withBasePath basePath RecipesApi.getRecipeList)
 
 
-handleBrewSession: Result Http.Error BrewSession -> Maybe (Maybe RecipeListEntry, Dict String RecipeStep, List String)
+handleBrewSession: Result Http.Error BrewSession -> Maybe (BrewSessionData)
 handleBrewSession response =
   case response of
     Ok value ->
-      Just ( Just (apiRecipeToRecipe value.recipe)
-           , Dict.fromList (List.map (\step -> (step.id, apiStepToRecipeStep step)) value.steps)
-           , List.map (\step -> step.id) value.steps
-           )
+      Just ( { recipeListEntry = Just (apiRecipeToRecipe value.recipe)
+           , steps = Dict.fromList (List.map (\step -> (step.id, apiStepToRecipeStep step)) value.steps)
+           , stepIds = List.map (\step -> step.id) value.steps
+           , boilFinishedAt = round (Maybe.withDefault 0 value.boilFinishedAt)})
     Err _ ->
       Nothing
 
@@ -286,7 +297,7 @@ fetchBrewSession basePath =
 cancelBrewSession basePath =
   send (\response -> case response of
                               Ok _ ->
-                                SetBrewSession (Nothing, Dict.empty, [])
+                                SetBrewSession ({recipeListEntry = Nothing, steps = Dict.empty, stepIds = [], boilFinishedAt = 0})
                               Err e ->
                                 ShowSnackbar (Debug.toString e)
                             ) (Api.withBasePath basePath BrewStatusApi.deleteBrewStatus)

@@ -1,5 +1,7 @@
 module Data.Recipe exposing (..)
 
+import Data.Step exposing (RecipeStep)
+import Dict exposing (Dict)
 type alias RecipeListEntry = {
     name: String,
     id: String,
@@ -10,4 +12,12 @@ type alias RecipeListEntry = {
       amount: Float,
       unit: String
       }
+    }
+
+type alias BrewSessionData =
+    {
+    recipeListEntry: Maybe RecipeListEntry
+    , steps: Dict String RecipeStep
+    , stepIds: List String
+    , boilFinishedAt: Int
     }

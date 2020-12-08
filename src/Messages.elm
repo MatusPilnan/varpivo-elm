@@ -1,11 +1,11 @@
 module Messages exposing (..)
 
 import Browser
-import Data.Recipe exposing (RecipeListEntry)
+import Data.Recipe exposing (BrewSessionData, RecipeListEntry)
 import Data.Step exposing (RecipeStep)
 import Dict exposing (Dict)
 import Material.Snackbar as Snackbar
-import Time exposing (Zone)
+import Time exposing (Posix, Zone)
 import Url
 import Url.Builder exposing (QueryParameter)
 
@@ -30,7 +30,8 @@ type Msg = Increment
   | UrlChanged Url.Url
   | RequestTimeZone
   | SetTimeZone Zone
-  | SetBrewSession (Maybe RecipeListEntry, Dict String RecipeStep, List String)
+  | SetTime Posix
+  | SetBrewSession BrewSessionData
   | StartStep String
   | UpdateStep RecipeStep
   | FinishStep String
