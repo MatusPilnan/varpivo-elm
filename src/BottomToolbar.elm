@@ -36,7 +36,7 @@ bottomToolbar temperature boilTime heating =
 formattedBoilTime input =
     case input of
         Nothing -> "00:00:00"
-        Just boilTime -> (String.padLeft 2 '0' (String.fromInt (floor (Duration.inHours boilTime)))) ++ ":" ++ String.padLeft 2 '0' (String.fromInt (floor (Duration.inMinutes boilTime))) ++ ":" ++ String.padLeft 2 '0' (String.fromInt (modBy 60 (floor (Duration.inSeconds (boilTime)))))
+        Just boilTime -> (String.padLeft 2 '0' (String.fromInt (floor (Duration.inHours boilTime)))) ++ ":" ++ String.padLeft 2 '0' (String.fromInt (modBy 60(floor (Duration.inMinutes boilTime)))) ++ ":" ++ String.padLeft 2 '0' (String.fromInt (modBy 60 (floor (Duration.inSeconds (boilTime)))))
 
 heaterIndicatorClass heating =
   if heating
