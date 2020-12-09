@@ -38,10 +38,10 @@ handleKegMessage data model console notificationPort =
             Result.Err e ->
               handleJsonDecodeError e model
 
-        "boil_finished_at" ->
+        "boil_started_at" ->
           case Json.Decode.decodeString Json.Decode.int value.payload of
             Result.Ok boil ->
-              ({model | boilEndEstimation = Maybe.Just (Time.millisToPosix boil)}, Cmd.none)
+              ({model | boilStartedAt = Maybe.Just (Time.millisToPosix boil)}, Cmd.none)
             Result.Err e ->
               handleJsonDecodeError e model
 

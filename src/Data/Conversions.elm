@@ -14,6 +14,7 @@ apiRecipeToRecipe a =
   , style_name = a.style.name
   , id = a.id
   , ingredients = List.map (\i -> {name = i.name, unit = i.unit, amount = i.amount}) a.ingredients
+  , boil_time = a.boilTime
   }
 
 

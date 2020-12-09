@@ -78,7 +78,7 @@ type alias Model =
     , temperature : Float
     , heating : Bool
     , remainingBoilTime : Maybe Duration
-    , boilEndEstimation: Maybe Posix
+    , boilStartedAt: Maybe Posix
     , availableRecipes : List RecipeListEntry
     , loading : Bool
     , snackbarQueue : Snackbar.Queue Msg
@@ -116,7 +116,7 @@ init flags url key = (
   , menuOpened = False
   , calibrationValue = -1
   , route = Home
-  , boilEndEstimation = Nothing
+  , boilStartedAt = Nothing
   }, Cmd.batch [fetchBrewSession flags.apiBaseUrl, Task.perform SetTimeZone Time.here, Task.perform SetTime Time.now] )
 
 
@@ -179,14 +179,17 @@ update msg model =
 
     SetTime time ->
       ( { model | remainingBoilTime =
-            case model.boilEndEstimation of
+            case model.selectedRecipe of
                 Nothing -> Nothing
-                Just estimation ->
-                    Maybe.Just (Duration.from time estimation)
+                Just recipe -> case recipe.boil_time of
+                    Nothing -> Nothing
+                    Just boil_time-> case model.boilStartedAt of
+                         Nothing -> Maybe.Just (Duration.minutes boil_time)
+                         Just started -> Maybe.Just (Duration.from time (Time.millisToPosix ((Time.posixToMillis started) + round boil_time *60000)))
         }, Cmd.none )
 
     SetBrewSession brewSessionData ->
-      ( { model | selectedRecipe = brewSessionData.recipeListEntry, recipeSteps = brewSessionData.steps, stepsOrder = brewSessionData.stepIds, loading = False, boilEndEstimation = Maybe.Just (Time.millisToPosix brewSessionData.boilFinishedAt)}
+      ( { model | selectedRecipe = brewSessionData.recipeListEntry, recipeSteps = brewSessionData.steps, stepsOrder = brewSessionData.stepIds, loading = False, boilStartedAt = Maybe.map Time.millisToPosix brewSessionData.boilStartedAt}
       , Cmd.batch [console (Debug.toString (brewSessionData.recipeListEntry, brewSessionData.steps, brewSessionData.stepIds)), navigate model ["brew-session"][]]
       )
 
@@ -281,7 +284,7 @@ handleBrewSession response =
       Just ( { recipeListEntry = Just (apiRecipeToRecipe value.recipe)
            , steps = Dict.fromList (List.map (\step -> (step.id, apiStepToRecipeStep step)) value.steps)
            , stepIds = List.map (\step -> step.id) value.steps
-           , boilFinishedAt = round (Maybe.withDefault 0 value.boilFinishedAt)})
+           , boilStartedAt = Maybe.map round value.boilStartedAt})
     Err _ ->
       Nothing
 
@@ -297,7 +300,7 @@ fetchBrewSession basePath =
 cancelBrewSession basePath =
   send (\response -> case response of
                               Ok _ ->
-                                SetBrewSession ({recipeListEntry = Nothing, steps = Dict.empty, stepIds = [], boilFinishedAt = 0})
+                                SetBrewSession ({recipeListEntry = Nothing, steps = Dict.empty, stepIds = [], boilStartedAt = Nothing})
                               Err e ->
                                 ShowSnackbar (Debug.toString e)
                             ) (Api.withBasePath basePath BrewStatusApi.deleteBrewStatus)

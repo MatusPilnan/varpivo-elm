@@ -11,7 +11,8 @@ type alias RecipeListEntry = {
       name: String,
       amount: Float,
       unit: String
-      }
+      },
+    boil_time: Maybe Float
     }
 
 type alias BrewSessionData =
@@ -19,5 +20,5 @@ type alias BrewSessionData =
     recipeListEntry: Maybe RecipeListEntry
     , steps: Dict String RecipeStep
     , stepIds: List String
-    , boilFinishedAt: Int
+    , boilStartedAt: Maybe Int
     }
