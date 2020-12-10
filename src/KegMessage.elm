@@ -9,6 +9,7 @@ import Json.Decode exposing (Error(..))
 import Material.Snackbar as Snackbar
 import Maybe exposing (withDefault)
 import Messages exposing (DialogVariant(..), Msg(..))
+import Time
 
 
 handleKegMessage data model console notificationPort =
@@ -37,10 +38,10 @@ handleKegMessage data model console notificationPort =
             Result.Err e ->
               handleJsonDecodeError e model
 
-        "boilTime" ->
+        "boil_started_at" ->
           case Json.Decode.decodeString Json.Decode.int value.payload of
             Result.Ok boil ->
-              ({model | remainingBoilTime = boil}, Cmd.none)
+              ({model | boilStartedAt = Maybe.Just (Time.millisToPosix boil)}, Cmd.none)
             Result.Err e ->
               handleJsonDecodeError e model
 

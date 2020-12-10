@@ -5,6 +5,7 @@ import Bootstrap.Grid.Col as Col
 import Bootstrap.Grid.Row as Row
 import Bootstrap.Utilities.Border as Border
 import Bootstrap.Utilities.Spacing as Spacing
+import Duration
 import Html
 import Html.Attributes as Attributes
 import Material.Elevation as Elevation
@@ -27,10 +28,18 @@ bottomToolbar temperature boilTime heating =
       ]
     , Grid.col []
       [ Html.p [Typography.caption, Theme.textSecondaryOnBackground, Spacing.m0, Spacing.mt1] [Html.text "Remaining boil time"]
-      , Html.p [Typography.headline6, Spacing.m0 ] [Html.text (String.fromInt boilTime ++ " min")]
+      , Html.p [Typography.headline6, Spacing.m0 ] [Html.text (formattedBoilTime boilTime)]
       ]
     ]
   ]
+
+formattedBoilTime input =
+    case input of
+        Nothing -> "00:00:00"
+        Just boilTime ->
+          if Duration.inSeconds boilTime > 0
+          then (String.padLeft 2 '0' (String.fromInt (floor (Duration.inHours boilTime)))) ++ ":" ++ String.padLeft 2 '0' (String.fromInt (modBy 60(floor (Duration.inMinutes boilTime)))) ++ ":" ++ String.padLeft 2 '0' (String.fromInt (modBy 60 (floor (Duration.inSeconds (boilTime)))))
+          else "00:00:00"
 
 heaterIndicatorClass heating =
   if heating
