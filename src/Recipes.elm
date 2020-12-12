@@ -30,6 +30,7 @@ viewRecipeListEntry recipeListEntry =
       }
     ]
 
+recipeSelection : List RecipeListEntry -> Html Msg
 recipeSelection recipes =
   let
       recipeListItems =

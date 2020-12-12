@@ -13,6 +13,7 @@ import Material.TopAppBar as TopAppBar
 import Messages exposing (DialogVariant(..), Msg(..))
 
 
+navbar : String -> Bool -> Bool -> Bool -> Html.Html Msg
 navbar title showRecipeButton menuOpen activeBrewSession =
   TopAppBar.regular TopAppBar.config
     [ TopAppBar.row [ Elevation.z8 ]
@@ -39,6 +40,7 @@ navbar title showRecipeButton menuOpen activeBrewSession =
       ]
     ]
 
+menu : Bool -> Bool -> Html.Html Msg
 menu open activeBrewSession =
   Html.div []
     [ Menu.menu

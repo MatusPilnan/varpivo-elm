@@ -24,6 +24,7 @@ import Bootstrap.Grid as Grid
 import Bootstrap.Utilities.Spacing as Spacing
 import Bootstrap.Grid.Row as Row
 import Messages exposing (..)
+import Model exposing (Model)
 import Navbar exposing (navbar)
 import Notification exposing (Notification)
 import Page exposing (page)
@@ -63,34 +64,6 @@ port notificationClick: (List String -> msg) -> Sub msg
 port console : String -> Cmd msg
 port messageReceiver : (String -> msg) -> Sub msg
 
-
--- MODEL
-
-type alias Model =
-    { key : Key
-    , url : Url
-    , apiBaseUrl : String
-    , basePath : String
-    , basePathList : List String
-    , title : String
-    , value : Float
-    , weight : Float
-    , temperature : Float
-    , heating : Bool
-    , remainingBoilTime : Maybe Duration
-    , boilStartedAt: Maybe Posix
-    , availableRecipes : List RecipeListEntry
-    , loading : Bool
-    , snackbarQueue : Snackbar.Queue Msg
-    , dialogVariant : Maybe DialogVariant
-    , recipeSteps : Dict String RecipeStep
-    , stepsOrder : List String
-    , selectedRecipe : Maybe RecipeListEntry
-    , timezone : Maybe Zone
-    , menuOpened : Bool
-    , calibrationValue : Int
-    , route: Route
-    }
 
 init : {apiBaseUrl: String, basePath: String} -> Url -> Key -> ( Model, Cmd Msg )
 init flags url key = (
@@ -332,6 +305,7 @@ startCalibration grams basePath=
        ) (Api.withBasePath basePath (ScaleApi.patchScaleRes grams))
 
 
+calibrate : String -> Cmd Msg
 calibrate basePath =
   send (\response ->
           case response of
@@ -342,6 +316,7 @@ calibrate basePath =
         ) (Api.withBasePath basePath (ScaleApi.putScaleRes))
 
 
+tareScale : String -> Cmd Msg
 tareScale basePath =
   send (\response ->
           case response of
