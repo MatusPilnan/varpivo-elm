@@ -51,10 +51,13 @@
 <main></main>
 <script src="elm.js"></script>
 <script>
+  const STORED_API_URLS_KEY = 'storedApiUrls'
+  const SELECTED_API_URL_KEY = 'selectedApiUrl'
+  var storedApiUrls = JSON.parse(localStorage.getItem(STORED_API_URLS_KEY) || '[]')
+  var apiBaseUrl = localStorage.getItem(SELECTED_API_URL_KEY) || storedApiUrls[0] || ''
   var app = Elm.Main.init({
     node: document.querySelector('main'),
-    flags: {apiBaseUrl: `${window.location.protocol}//${window.location.host}/api`, basePath: ''}
-    // flags: {apiBaseUrl: `http://127.0.0.1:5000`, basePath: ''}
+    flags: {apiBaseUrl, basePath: '', storedApiUrls}
   })
 
   function notifyMe() {
@@ -90,13 +93,9 @@
   notifyMe()
 
 
-  const protocol = window.location.protocol.replace('http', 'ws');
-  // get location host
-  const host = window.location.host;
-  // websocket instantiation
+  const apiLocation = apiBaseUrl.replace('http', 'ws');
   // Create your WebSocket.
-  var socket = new WebSocket(`${protocol}//${host}/api/tap`);
-  // var socket = new WebSocket(`ws://127.0.0.1:5000/tap`);
+  var socket = new WebSocket(`${apiLocation}/tap`);
 
   // When a command goes to the `sendMessage` port, we pass the message
   // along to the WebSocket.
@@ -129,11 +128,24 @@
     console.log(message)
   });
 
-  // When a message comes into our WebSocket, we pass the message along
-  // to the `messageReceiver` port.
-  socket.addEventListener("message", function (event) {
-    app.ports.messageReceiver.send(event.data);
-  });
+  app.ports.saveConnections.subscribe(function ({connections, selected}) {
+    var connJSON = JSON.stringify(connections)
+    localStorage.setItem(STORED_API_URLS_KEY, connJSON)
+    localStorage.setItem(SELECTED_API_URL_KEY, selected)
+  })
+
+  app.ports.connect.subscribe(function (target) {
+    socket.close()
+    socket = new WebSocket(target.replace('http', 'ws'))
+  })
+
+  function connectWebSocket(websocket) {
+    websocket.addEventListener("message", function (event) {
+      app.ports.messageReceiver.send(event.data);
+    });
+  }
+
+  connectWebSocket(socket);
 
 
 </script>

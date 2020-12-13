@@ -3,6 +3,7 @@ port module Main exposing (..)
 import Api exposing (send)
 import Api.Data exposing (BrewSession, Recipe, RecipeList, StepsList)
 import Api.Request.BrewSessionStatus as BrewStatusApi
+import Api.Request.Info as InfoApi
 import Api.Request.RecipeSteps as RecipeStepsApi
 import Api.Request.Recipes as RecipesApi
 import Api.Request.Scale as ScaleApi
@@ -16,13 +17,14 @@ import Dialog exposing (calibrationDialogContent, confirmDialogContent, dialog, 
 import Dict exposing (Dict)
 import Duration exposing (Duration)
 import Html exposing (Html)
-import Http
+import Http exposing (Error(..))
 import KegMessage exposing (handleKegMessage)
 import Material.Typography as Typography
 import Material.Snackbar as Snackbar
 import Bootstrap.Grid as Grid
 import Bootstrap.Utilities.Spacing as Spacing
 import Bootstrap.Grid.Row as Row
+import Maybe exposing (withDefault)
 import Messages exposing (..)
 import Model exposing (Model)
 import Navbar exposing (navbar)
@@ -59,38 +61,17 @@ subscriptions _ =
 
 
 port sendMessage : String -> Cmd msg
+port saveConnections : {connections: List String, selected: String} -> Cmd msg
+port connect : String -> Cmd msg
 port notification: Notification -> Cmd msg
 port notificationClick: (List String -> msg) -> Sub msg
 port console : String -> Cmd msg
 port messageReceiver : (String -> msg) -> Sub msg
 
 
-init : {apiBaseUrl: String, basePath: String} -> Url -> Key -> ( Model, Cmd Msg )
+init : {apiBaseUrl: String, basePath: String, storedApiUrls: List String} -> Url -> Key -> ( Model, Cmd Msg )
 init flags url key = (
-  { url = url
-  , key = key
-  , apiBaseUrl = flags.apiBaseUrl
-  , basePath = flags.basePath
-  , basePathList = List.filter (\val -> not (String.isEmpty val)) (String.split "/" flags.basePath)
-  , title = "Var:Pivo"
-  , value = 0
-  , weight = 0
-  , temperature = 0
-  , heating = False
-  , remainingBoilTime = Nothing
-  , availableRecipes = []
-  , loading = True
-  , snackbarQueue = Snackbar.initialQueue
-  , dialogVariant = Nothing
-  , recipeSteps = Dict.empty
-  , stepsOrder = []
-  , selectedRecipe = Nothing
-  , timezone = Nothing
-  , menuOpened = False
-  , calibrationValue = -1
-  , route = Home
-  , boilStartedAt = Nothing
-  }, Cmd.batch [fetchBrewSession flags.apiBaseUrl, Task.perform SetTimeZone Time.here, Task.perform SetTime Time.now] )
+  Model.init flags url key, Cmd.batch [fetchBrewSession flags.apiBaseUrl, Task.perform SetTimeZone Time.here, Task.perform SetTime Time.now] )
 
 
 -- UPDATE
@@ -142,7 +123,7 @@ update msg model =
       route url model console
 
     NavigateTo (path, query) ->
-      ( model, navigate model path query)
+      ( {model | menuOpened = False}, navigate model path query)
 
     RequestTimeZone ->
       ( model, Task.perform SetTimeZone Time.here )
@@ -216,10 +197,68 @@ update msg model =
                                                        ) msgs)) of
                (_, cmds) ->
                  Cmd.batch cmds
-             )
+      )
+
+    NewApiUrl string ->
+      let
+          address =
+            if String.startsWith "http://" string || String.startsWith "https://" string
+            then string
+            else "http://" ++ string
+      in
+      case Url.fromString address of
+        Just _ ->
+          ( { model | newApiUrlFormError = Nothing, apiConnecting = True }, checkApiUrl address )
+        Nothing ->
+          ( { model | newApiUrlFormError = Just "Please enter a valid address" }, console address )
+
+    SelectApiUrl string ->
+      ( { model | selectedApiUrl = Just string }, Cmd.none )
+
+    SaveApiUrl string ->
+      let
+        storedApiUrls =
+          if List.member string model.storedApiUrls then model.storedApiUrls else model.storedApiUrls ++ [ string ]
+      in
+      ( { model | newApiUrlFormError = Nothing
+        , apiConnecting = False
+        , apiBaseUrl = string
+        , loading = True
+        , storedApiUrls = storedApiUrls
+        }
+      , Cmd.batch [saveConnections {selected = string, connections = storedApiUrls }, fetchBrewSession string, navigate model [""] [], connect (string ++ "/tap")]
+      )
+
+    RemoveApiUrl string ->
+      let
+        storedApiUrls =
+          List.filter (\url -> url /= string) model.storedApiUrls
+      in
+      ( { model | storedApiUrls = storedApiUrls }, saveConnections {selected = withDefault "" model.selectedApiUrl, connections = storedApiUrls } )
+
+    RejectApiUrl reason ->
+      ( { model | newApiUrlFormError = Just reason, apiConnecting = False }, console reason )
 
 
+checkApiUrl : String -> Cmd Msg
+checkApiUrl basePath =
+  send (\response -> case response of
+                       Ok _ ->
+                         SaveApiUrl basePath
+                       Err e ->
+                         case e of
+                           BadStatus code ->
+                             case code of
+                               404 ->
+                                 RejectApiUrl "No Var:Pivo server found on that address"
+                               _ ->
+                                 RejectApiUrl ("Unknown error " ++ Debug.toString e)
+                           NetworkError ->
+                             RejectApiUrl "Could not connect to that address"
+                           _ ->
+                             RejectApiUrl ("Unknown error " ++ Debug.toString e)
 
+                      ) (Api.withBasePath basePath InfoApi.getDiscover)
 
 handleSteps: Result Http.Error StepsList -> (Dict String RecipeStep, List String)
 handleSteps res = case res of

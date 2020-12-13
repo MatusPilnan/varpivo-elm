@@ -55,11 +55,14 @@ menu open activeBrewSession =
         )(
         [ ListItem.listItem (ListItem.config |> ListItem.setOnClick (ShowDialog Calibration)) [ text "Calibrate scale" ]
         , ListItem.listItem (ListItem.config |> ListItem.setOnClick (NavigateTo (["scale"], []))) [ text "Scale" ]
-        ] ++ if activeBrewSession
+        ] ++ (if activeBrewSession
           then [ ListItem.listItem (ListItem.config |> ListItem.setOnClick
                  ( ShowDialog (Confirm ("Do you really want to discard current brew session? This can't be undone!", CancelBrewSession))
                  )) [ text "Cancel brewing" ]
                ]
-          else [])
+          else []) ++
+        [ ListItem.listItem (ListItem.config |> ListItem.setOnClick (NavigateTo (["connections"], []))) [ text "Manage connections" ]
+        ]
+        )
       ]
     ]

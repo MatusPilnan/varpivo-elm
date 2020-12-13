@@ -4,6 +4,10 @@
     }
 }
 
+.varpivo-connection-select > div {
+    width: 100%;
+}
+
 div.varpivo-bottom-toolbar {
     position: fixed;
     bottom: 0;

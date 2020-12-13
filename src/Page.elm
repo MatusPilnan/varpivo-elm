@@ -3,6 +3,7 @@ module Page exposing (page)
 
 import Bootstrap.Utilities.Flex as Flex
 import Bootstrap.Utilities.Spacing as Spacing
+import ConnectionsManagement exposing (noApiUrl)
 import Dict
 import Helpers exposing (center)
 import Html exposing (Html, text)
@@ -10,7 +11,7 @@ import Html.Attributes as Attributes
 import Material.CircularProgress as CircularProgress
 import Material.Typography as Typography
 import Maybe
-import Messages exposing (Msg)
+import Messages exposing (Msg(..))
 import Model exposing (Model)
 import Recipes exposing (recipeDetail, recipeSelection)
 import Router
@@ -19,7 +20,9 @@ import Steps exposing (stepsListView)
 
 page : Model -> Html Msg
 page model =
-  case ( model.route, model.selectedRecipe ) of
+  if model.apiBaseUrl == ""
+  then noApiUrl model
+  else case ( model.route, model.selectedRecipe ) of
     ( Router.Recipe, Nothing ) ->
       home model
     ( Router.Recipe, Just r ) ->
@@ -32,6 +35,8 @@ page model =
       stepsListView r model.recipeSteps model.stepsOrder model.timezone
     ( Router.Scale stepId, _ ) ->
       scale model stepId
+    ( Router.Connections, _) ->
+      noApiUrl model
 
 
 

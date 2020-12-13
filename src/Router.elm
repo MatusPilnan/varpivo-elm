@@ -8,7 +8,7 @@ import Url.Parser as Parser exposing ((<?>), Parser, map, oneOf, s, top)
 import Url.Parser.Query as Query
 
 
-type Route = Recipe | Home | BrewSession | Scale (Maybe String)
+type Route = Recipe | Home | BrewSession | Scale (Maybe String) | Connections
 
 routeParser : Parser (Route -> a) a
 routeParser =
@@ -17,6 +17,7 @@ routeParser =
     , map BrewSession (s "brew-session")
     , map Home top
     , map Scale (s "scale" <?> Query.string "step")
+    , map Connections (s "connections")
     ]
 
 
@@ -26,6 +27,9 @@ route url model console =
       ( { model | url = url , route = Home}, Cmd.batch [console (Url.toString url), navigate model [""] []])
 
     Just currentPage ->
+      if model.apiBaseUrl == "" && currentPage /= Connections
+      then ( model, navigate model ["connections"] [] )
+      else
       case currentPage of
         Recipe ->
           case model.selectedRecipe of
@@ -48,6 +52,9 @@ route url model console =
 
         Scale stepId ->
           ( { model | url = url, route = currentPage}, console (Debug.toString stepId) )
+
+        Connections ->
+          ( { model | url = url, route = currentPage}, Cmd.none )
 
 
 navigate : { a | basePathList : List String, key : Navigation.Key } -> List String -> List Url.Builder.QueryParameter -> Cmd msg

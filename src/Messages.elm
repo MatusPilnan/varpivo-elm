@@ -43,3 +43,8 @@ type Msg = Increment
   | MenuClosed
   | Multiple (List Msg)
   | CancelBrewSession
+  | NewApiUrl String
+  | SaveApiUrl String
+  | RejectApiUrl String
+  | SelectApiUrl String
+  | RemoveApiUrl String
