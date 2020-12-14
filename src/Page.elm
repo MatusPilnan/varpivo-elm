@@ -8,6 +8,7 @@ import Dict
 import Helpers exposing (center)
 import Html exposing (Html, text)
 import Html.Attributes as Attributes
+import Material.Button as Button
 import Material.CircularProgress as CircularProgress
 import Material.Typography as Typography
 import Maybe
@@ -43,7 +44,7 @@ page model =
 home : Model -> Html Msg
 home model =
   if model.loading then loading else
-    if List.isEmpty model.availableRecipes then noRecipes else recipeSelection model.availableRecipes
+    if List.isEmpty model.availableRecipes then noRecipes model else recipeSelection model.availableRecipes
 
 
 loading : Html msg
@@ -53,11 +54,13 @@ loading =
     , CircularProgress.indeterminate (CircularProgress.config |> CircularProgress.setFourColored True)
     ]
 
-noRecipes : Html msg
-noRecipes =
+noRecipes : Model -> Html Msg
+noRecipes model =
   Html.div [ center, Attributes.align "center", Flex.block, Flex.col, Flex.alignItemsCenter, Flex.justifyCenter ]
   [ Html.h4 [ Typography.headline4, Spacing.p2 ] [ text "We couldn't find any recipes!" ]
   , Html.h4 [ Typography.headline4, Spacing.p2 ] [ text "\u{1F631} \u{1F625}" ]
+  , Html.p [ Typography.body2, Spacing.mt5 ] [text ("Connecting to " ++ model.apiBaseUrl)]
+  , Button.outlined (Button.config |> Button.setOnClick (NavigateTo (["connections"], [])))"Manage connections"
   ]
 
 
