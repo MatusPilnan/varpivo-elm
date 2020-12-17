@@ -29,12 +29,23 @@ jobs:
       - uses: jorelali/setup-elm@v2
         with:
           elm-version: 0.19.1
-
+          
+      - name: Download API definition
+        run: wget -O ./openapi.json https://github.com/MatusPilnan/vnos-2020/releases/latest/download/openapi.json
+        
+      - name: Cache API client
+        id: cache-api
+        uses: actions/cache@v2
+        with:
+          path: ./api
+          key: ${{ runner.os }}-${{ hashFiles(./openapi.json) }}
+          
       - name: Generate API client
-        run: docker run --rm -v "${PWD}:/local" openapitools/openapi-generator-cli generate -i https://github.com/MatusPilnan/vnos-2020/releases/latest/download/openapi.json -g elm -o /local/api
+        if: steps.cache-api.outputs.cache-hit != 'true'
+        run: ./generate_api.sh
 
       - name: Build Elm app
-        run: elm make --optimize src/Main.elm --output elm.js
+        run: elm make src/Main.elm --output elm.js
         
       - name: Move files
         run: |
