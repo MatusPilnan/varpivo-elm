@@ -26,7 +26,7 @@ import Bootstrap.Utilities.Spacing as Spacing
 import Bootstrap.Grid.Row as Row
 import Maybe exposing (withDefault)
 import Messages exposing (..)
-import Model exposing (Model)
+import Model exposing (Flags, Model)
 import Navbar exposing (navbar)
 import Notification exposing (Notification)
 import Page exposing (page)
@@ -69,7 +69,7 @@ port console : String -> Cmd msg
 port messageReceiver : (String -> msg) -> Sub msg
 
 
-init : {apiBaseUrl: String, basePath: String, storedApiUrls: List String} -> Url -> Key -> ( Model, Cmd Msg )
+init : Flags -> Url -> Key -> ( Model, Cmd Msg )
 init flags url key = (
   Model.init flags url key, Cmd.batch [fetchBrewSession flags.apiBaseUrl, Task.perform SetTimeZone Time.here, Task.perform SetTime Time.now] )
 
@@ -204,7 +204,7 @@ update msg model =
           address =
             if String.startsWith "http://" string || String.startsWith "https://" string
             then string
-            else "http://" ++ string
+            else model.apiDefaultProtocol ++ string
       in
       case Url.fromString address of
         Just _ ->

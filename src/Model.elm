@@ -11,6 +11,8 @@ import Messages exposing (DialogVariant, Msg)
 import Router exposing (Route(..))
 import Time exposing (Posix, Zone)
 import Url exposing (Url)
+
+
 type alias Model =
     { key : Key
     , url : Url
@@ -18,6 +20,7 @@ type alias Model =
     , storedApiUrls: List String
     , newApiUrlFormError: Maybe String
     , apiConnecting: Bool
+    , apiDefaultProtocol: String
     , selectedApiUrl: Maybe String
     , basePath : String
     , basePathList : List String
@@ -41,7 +44,14 @@ type alias Model =
     , route: Route
     }
 
-init : {apiBaseUrl: String, basePath: String, storedApiUrls: List String} -> Url -> Key -> Model
+type alias Flags =
+  { apiBaseUrl: String
+  , basePath: String
+  , storedApiUrls: List String
+  , apiDefaultProtocol: String
+  }
+
+init : Flags -> Url -> Key -> Model
 init flags url key =
   { url = url
     , key = key
@@ -50,6 +60,7 @@ init flags url key =
     , newApiUrlFormError = Nothing
     , apiConnecting = False
     , selectedApiUrl = Nothing
+    , apiDefaultProtocol = flags.apiDefaultProtocol
     , basePath = flags.basePath
     , basePathList = List.filter (\val -> not (String.isEmpty val)) (String.split "/" flags.basePath)
     , title = "Var:Pivo"
