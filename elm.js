@@ -6766,6 +6766,7 @@ var $author$project$Model$init = F3(
 		return {
 			apiBaseUrl: flags.apiBaseUrl,
 			apiConnecting: false,
+			apiDefaultProtocol: flags.apiDefaultProtocol,
 			availableRecipes: _List_Nil,
 			basePath: flags.basePath,
 			basePathList: A2(
@@ -8698,7 +8699,7 @@ var $author$project$Main$update = F2(
 						}());
 				case 'NewApiUrl':
 					var string = msg.a;
-					var address = (A2($elm$core$String$startsWith, 'http://', string) || A2($elm$core$String$startsWith, 'https://', string)) ? string : ('http://' + string);
+					var address = (A2($elm$core$String$startsWith, 'http://', string) || A2($elm$core$String$startsWith, 'https://', string)) ? string : _Utils_ap(model.apiDefaultProtocol, string);
 					var _v13 = $elm$url$Url$fromString(address);
 					if (_v13.$ === 'Just') {
 						return _Utils_Tuple2(
@@ -15968,11 +15969,16 @@ _Platform_export({'Main':{'init':$author$project$Main$main(
 				function (basePath) {
 					return A2(
 						$elm$json$Json$Decode$andThen,
-						function (apiBaseUrl) {
-							return $elm$json$Json$Decode$succeed(
-								{apiBaseUrl: apiBaseUrl, basePath: basePath, storedApiUrls: storedApiUrls});
+						function (apiDefaultProtocol) {
+							return A2(
+								$elm$json$Json$Decode$andThen,
+								function (apiBaseUrl) {
+									return $elm$json$Json$Decode$succeed(
+										{apiBaseUrl: apiBaseUrl, apiDefaultProtocol: apiDefaultProtocol, basePath: basePath, storedApiUrls: storedApiUrls});
+								},
+								A2($elm$json$Json$Decode$field, 'apiBaseUrl', $elm$json$Json$Decode$string));
 						},
-						A2($elm$json$Json$Decode$field, 'apiBaseUrl', $elm$json$Json$Decode$string));
+						A2($elm$json$Json$Decode$field, 'apiDefaultProtocol', $elm$json$Json$Decode$string));
 				},
 				A2($elm$json$Json$Decode$field, 'basePath', $elm$json$Json$Decode$string));
 		},

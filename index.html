@@ -55,9 +55,12 @@
   const SELECTED_API_URL_KEY = 'selectedApiUrl'
   var storedApiUrls = JSON.parse(localStorage.getItem(STORED_API_URLS_KEY) || '[]')
   var apiBaseUrl = localStorage.getItem(SELECTED_API_URL_KEY) || storedApiUrls[0] || ''
+
+  var apiDefaultProtocol = `${window.location.protocol}//`
+
   var app = Elm.Main.init({
     node: document.querySelector('main'),
-    flags: {apiBaseUrl, basePath: '', storedApiUrls}
+    flags: {apiBaseUrl, basePath: '', storedApiUrls, apiDefaultProtocol}
   })
 
   function notifyMe() {
