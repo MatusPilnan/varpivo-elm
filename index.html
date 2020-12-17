@@ -1,0 +1,153 @@
+<html lang="en">
+<head>
+  <title>Var:Pivo</title>
+  <!-- Open Graph / Facebook -->
+  <meta charset="UTF-8">
+  <meta content="website" property="og:type">
+  <meta content="http://178.41.172.164:6718/" property="og:url">
+  <meta content="Var:Pivo" property="og:title">
+  <meta content="Your friendly homebrewing assistant" property="og:description">
+  <meta content="assets/icon.png" property="og:image">
+
+  <!-- Twitter -->
+  <meta content="summary_large_image" property="twitter:card">
+  <meta content="http://178.41.172.164:6718/" property="twitter:url">
+  <meta content="Var:Pivo" property="twitter:title">
+  <meta content="Your friendly homebrewing assistant" property="twitter:description">
+  <meta content="assets/icon.png"
+        property="twitter:image">
+
+  <link href="assets/icon/apple-icon-57x57.png" rel="apple-touch-icon" sizes="57x57">
+  <link href="assets/icon/apple-icon-60x60.png" rel="apple-touch-icon" sizes="60x60">
+  <link href="assets/icon/apple-icon-72x72.png" rel="apple-touch-icon" sizes="72x72">
+  <link href="assets/icon/apple-icon-76x76.png" rel="apple-touch-icon" sizes="76x76">
+  <link href="assets/icon/apple-icon-114x114.png" rel="apple-touch-icon" sizes="114x114">
+  <link href="assets/icon/apple-icon-120x120.png" rel="apple-touch-icon" sizes="120x120">
+  <link href="assets/icon/apple-icon-144x144.png" rel="apple-touch-icon" sizes="144x144">
+  <link href="assets/icon/apple-icon-152x152.png" rel="apple-touch-icon" sizes="152x152">
+  <link href="assets/icon/apple-icon-180x180.png" rel="apple-touch-icon" sizes="180x180">
+  <link href="assets/icon/android-icon-192x192.png" rel="icon" sizes="192x192" type="image/png">
+  <link href="assets/icon/favicon-32x32.png" rel="icon" sizes="32x32" type="image/png">
+  <link href="assets/icon/favicon-96x96.png" rel="icon" sizes="96x96" type="image/png">
+  <link href="assets/icon/favicon-16x16.png" rel="icon" sizes="16x16" type="image/png">
+  <link href="assets/icon/manifest.json" rel="manifest">
+  <meta content="#ffffff" name="msapplication-TileColor">
+  <meta content="ms-icon-144x144.png" name="msapplication-TileImage">
+  <meta content="#ffffff" name="theme-color">
+  <link href="https://fonts.googleapis.com/css?family=Roboto:300,400,500|Material+Icons" rel="stylesheet">
+  <script crossorigin="anonymous" src="https://kit.fontawesome.com/1a56d87c94.js"></script>
+  <link href="https://unpkg.com/material-components-web-elm@6.0.0/dist/material-components-web-elm.min.css"
+        rel="stylesheet">
+  <script src="https://unpkg.com/material-components-web-elm@6.0.0/dist/material-components-web-elm.min.js"></script>
+  <!-- Required meta tags -->
+  <meta content="width=device-width, initial-scale=1, shrink-to-fit=no" name="viewport">
+
+  <!-- Bootstrap CSS -->
+  <link crossorigin="anonymous" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
+        integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" rel="stylesheet">
+  <link href="styles.css" rel="stylesheet">
+</head>
+<body>
+<main></main>
+<script src="elm.js"></script>
+<script>
+  const STORED_API_URLS_KEY = 'storedApiUrls'
+  const SELECTED_API_URL_KEY = 'selectedApiUrl'
+  var storedApiUrls = JSON.parse(localStorage.getItem(STORED_API_URLS_KEY) || '[]')
+  var apiBaseUrl = localStorage.getItem(SELECTED_API_URL_KEY) || storedApiUrls[0] || ''
+  var app = Elm.Main.init({
+    node: document.querySelector('main'),
+    flags: {apiBaseUrl, basePath: '', storedApiUrls}
+  })
+
+  function notifyMe() {
+    // Let's check if the browser supports notifications
+    if (!("Notification" in window)) {
+      alert("This browser does not support desktop notification");
+    }
+
+    // Let's check whether notification permissions have already been granted
+    else if (Notification.permission === "granted") {
+      // If it's okay let's create a notification
+      // var notification = new Notification("Hi there!");
+    }
+
+    // Otherwise, we need to ask the user for permission
+    else if (Notification.permission !== "denied") {
+      Notification.requestPermission().then(function (permission) {
+        // If the user accepts, let's create a notification
+        if (permission === "granted") {
+          // noinspection JSUnusedLocalSymbols
+          var notification = new Notification("Hi there!", {
+            icon: 'assets/icon.png',
+            body: 'Thank you for enabling notifications!',
+          });
+        }
+      });
+    }
+
+    // At last, if the user has denied notifications, and you
+    // want to be respectful there is no need to bother them any more.
+  }
+
+  notifyMe()
+
+
+  const apiLocation = apiBaseUrl.replace('http', 'ws');
+  // Create your WebSocket.
+  var socket = new WebSocket(`${apiLocation}/tap`);
+
+  // When a command goes to the `sendMessage` port, we pass the message
+  // along to the WebSocket.
+
+  app.ports.sendMessage.subscribe(function (message) {
+    socket.send(message);
+  });
+
+  app.ports.notification.subscribe(function ({title, subtitle, time}) {
+    if (Notification.permission === 'granted') {
+      var n = new Notification(title, {
+        icon: 'assets/icon.png',
+        body: subtitle,
+        timestamp: time,
+        // image: 'assets/icon.png',
+        vibrate: [
+          100, 200, 200, 100,
+          100, 100,
+          100, 100, 100, 200,
+          200, 200, 200
+        ]
+      })
+      n.onclick = function () {
+        app.ports.notificationClick.send(['brew-session'])
+      }
+    }
+  });
+
+  app.ports.console.subscribe(function (message) {
+    console.log(message)
+  });
+
+  app.ports.saveConnections.subscribe(function ({connections, selected}) {
+    var connJSON = JSON.stringify(connections)
+    localStorage.setItem(STORED_API_URLS_KEY, connJSON)
+    localStorage.setItem(SELECTED_API_URL_KEY, selected)
+  })
+
+  app.ports.connect.subscribe(function (target) {
+    socket.close()
+    socket = new WebSocket(target.replace('http', 'ws'))
+  })
+
+  function connectWebSocket(websocket) {
+    websocket.addEventListener("message", function (event) {
+      app.ports.messageReceiver.send(event.data);
+    });
+  }
+
+  connectWebSocket(socket);
+
+
+</script>
+</body>
+</html>

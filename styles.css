@@ -1,0 +1,42 @@
+@keyframes blinker {
+    50% {
+        opacity: 40%;
+    }
+}
+
+.varpivo-connection-select > div {
+    width: 100%;
+}
+
+div.varpivo-bottom-toolbar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+}
+
+div.varpivo-centered-page {
+    position: fixed;
+    width: 100vw;
+    top: 70px;
+    bottom: 70px;
+    left: 0;
+}
+
+.varpivo-scale-add {
+    color: limegreen;
+}
+
+.varpivo-scale-remove {
+    color: red;
+}
+
+i.varpivo-heater-on {
+    color: orangered;
+    animation: blinker 2s linear infinite;
+}
+
+i.varpivo-heater-off {
+    color: lightgrey;
+    opacity: 50%;
+}
