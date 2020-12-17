@@ -38,7 +38,7 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ./api
-          key: ${{ runner.os }}-${{ hashFiles(./openapi.json) }}
+          key: ${{ runner.os }}-${{ hashFiles('./openapi.json') }}
           
       - name: Generate API client
         if: steps.cache-api.outputs.cache-hit != 'true'
