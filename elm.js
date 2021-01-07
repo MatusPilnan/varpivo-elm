@@ -6722,6 +6722,266 @@ var $author$project$Main$fetchBrewSession = function (basePath) {
 		},
 		A2($author$project$Api$withBasePath, basePath, $author$project$Api$Request$BrewSessionStatus$getBrewStatus));
 };
+var $author$project$Messages$RejectApiUrl = function (a) {
+	return {$: 'RejectApiUrl', a: a};
+};
+var $author$project$Messages$SaveApiUrl = function (a) {
+	return {$: 'SaveApiUrl', a: a};
+};
+var $author$project$Api$Data$Message = function (message) {
+	return {message: message};
+};
+var $author$project$Api$Data$messageDecoder = A3(
+	$author$project$Api$Data$decode,
+	'message',
+	$elm$json$Json$Decode$string,
+	$elm$json$Json$Decode$succeed($author$project$Api$Data$Message));
+var $author$project$Api$Request$Info$getDiscover = A7($author$project$Api$request, 'GET', '/discover-varpivo', _List_Nil, _List_Nil, _List_Nil, $elm$core$Maybe$Nothing, $author$project$Api$Data$messageDecoder);
+var $elm$core$Debug$toString = _Debug_toString;
+var $author$project$Main$checkApiUrl = F2(
+	function (basePath, autoCheck) {
+		return A2(
+			$author$project$Api$send,
+			function (response) {
+				if (response.$ === 'Ok') {
+					return $author$project$Messages$SaveApiUrl(
+						_Utils_Tuple2(basePath, autoCheck));
+				} else {
+					var e = response.a;
+					switch (e.$) {
+						case 'BadStatus':
+							var code = e.a;
+							if (code === 404) {
+								return $author$project$Messages$RejectApiUrl(
+									_Utils_Tuple2('No Var:Pivo server found on that address', autoCheck));
+							} else {
+								return $author$project$Messages$RejectApiUrl(
+									_Utils_Tuple2(
+										'Unknown error ' + $elm$core$Debug$toString(e),
+										autoCheck));
+							}
+						case 'NetworkError':
+							return $author$project$Messages$RejectApiUrl(
+								_Utils_Tuple2('Could not connect to that address', autoCheck));
+						default:
+							return $author$project$Messages$RejectApiUrl(
+								_Utils_Tuple2(
+									'Unknown error ' + $elm$core$Debug$toString(e),
+									autoCheck));
+					}
+				}
+			},
+			A2($author$project$Api$withBasePath, basePath, $author$project$Api$Request$Info$getDiscover));
+	});
+var $elm$core$Platform$Cmd$none = $elm$core$Platform$Cmd$batch(_List_Nil);
+var $elm$url$Url$Parser$State = F5(
+	function (visited, unvisited, params, frag, value) {
+		return {frag: frag, params: params, unvisited: unvisited, value: value, visited: visited};
+	});
+var $elm$url$Url$Parser$getFirstMatch = function (states) {
+	getFirstMatch:
+	while (true) {
+		if (!states.b) {
+			return $elm$core$Maybe$Nothing;
+		} else {
+			var state = states.a;
+			var rest = states.b;
+			var _v1 = state.unvisited;
+			if (!_v1.b) {
+				return $elm$core$Maybe$Just(state.value);
+			} else {
+				if ((_v1.a === '') && (!_v1.b.b)) {
+					return $elm$core$Maybe$Just(state.value);
+				} else {
+					var $temp$states = rest;
+					states = $temp$states;
+					continue getFirstMatch;
+				}
+			}
+		}
+	}
+};
+var $elm$url$Url$Parser$removeFinalEmpty = function (segments) {
+	if (!segments.b) {
+		return _List_Nil;
+	} else {
+		if ((segments.a === '') && (!segments.b.b)) {
+			return _List_Nil;
+		} else {
+			var segment = segments.a;
+			var rest = segments.b;
+			return A2(
+				$elm$core$List$cons,
+				segment,
+				$elm$url$Url$Parser$removeFinalEmpty(rest));
+		}
+	}
+};
+var $elm$url$Url$Parser$preparePath = function (path) {
+	var _v0 = A2($elm$core$String$split, '/', path);
+	if (_v0.b && (_v0.a === '')) {
+		var segments = _v0.b;
+		return $elm$url$Url$Parser$removeFinalEmpty(segments);
+	} else {
+		var segments = _v0;
+		return $elm$url$Url$Parser$removeFinalEmpty(segments);
+	}
+};
+var $elm$url$Url$Parser$addToParametersHelp = F2(
+	function (value, maybeList) {
+		if (maybeList.$ === 'Nothing') {
+			return $elm$core$Maybe$Just(
+				_List_fromArray(
+					[value]));
+		} else {
+			var list = maybeList.a;
+			return $elm$core$Maybe$Just(
+				A2($elm$core$List$cons, value, list));
+		}
+	});
+var $elm$url$Url$percentDecode = _Url_percentDecode;
+var $elm$url$Url$Parser$addParam = F2(
+	function (segment, dict) {
+		var _v0 = A2($elm$core$String$split, '=', segment);
+		if ((_v0.b && _v0.b.b) && (!_v0.b.b.b)) {
+			var rawKey = _v0.a;
+			var _v1 = _v0.b;
+			var rawValue = _v1.a;
+			var _v2 = $elm$url$Url$percentDecode(rawKey);
+			if (_v2.$ === 'Nothing') {
+				return dict;
+			} else {
+				var key = _v2.a;
+				var _v3 = $elm$url$Url$percentDecode(rawValue);
+				if (_v3.$ === 'Nothing') {
+					return dict;
+				} else {
+					var value = _v3.a;
+					return A3(
+						$elm$core$Dict$update,
+						key,
+						$elm$url$Url$Parser$addToParametersHelp(value),
+						dict);
+				}
+			}
+		} else {
+			return dict;
+		}
+	});
+var $elm$url$Url$Parser$prepareQuery = function (maybeQuery) {
+	if (maybeQuery.$ === 'Nothing') {
+		return $elm$core$Dict$empty;
+	} else {
+		var qry = maybeQuery.a;
+		return A3(
+			$elm$core$List$foldr,
+			$elm$url$Url$Parser$addParam,
+			$elm$core$Dict$empty,
+			A2($elm$core$String$split, '&', qry));
+	}
+};
+var $elm$url$Url$Parser$parse = F2(
+	function (_v0, url) {
+		var parser = _v0.a;
+		return $elm$url$Url$Parser$getFirstMatch(
+			parser(
+				A5(
+					$elm$url$Url$Parser$State,
+					_List_Nil,
+					$elm$url$Url$Parser$preparePath(url.path),
+					$elm$url$Url$Parser$prepareQuery(url.query),
+					url.fragment,
+					$elm$core$Basics$identity)));
+	});
+var $elm$url$Url$Parser$Parser = function (a) {
+	return {$: 'Parser', a: a};
+};
+var $elm$url$Url$Parser$query = function (_v0) {
+	var queryParser = _v0.a;
+	return $elm$url$Url$Parser$Parser(
+		function (_v1) {
+			var visited = _v1.visited;
+			var unvisited = _v1.unvisited;
+			var params = _v1.params;
+			var frag = _v1.frag;
+			var value = _v1.value;
+			return _List_fromArray(
+				[
+					A5(
+					$elm$url$Url$Parser$State,
+					visited,
+					unvisited,
+					params,
+					frag,
+					value(
+						queryParser(params)))
+				]);
+		});
+};
+var $elm$url$Url$Parser$Internal$Parser = function (a) {
+	return {$: 'Parser', a: a};
+};
+var $elm$url$Url$Parser$Query$custom = F2(
+	function (key, func) {
+		return $elm$url$Url$Parser$Internal$Parser(
+			function (dict) {
+				return func(
+					A2(
+						$elm$core$Maybe$withDefault,
+						_List_Nil,
+						A2($elm$core$Dict$get, key, dict)));
+			});
+	});
+var $elm$url$Url$Parser$Query$string = function (key) {
+	return A2(
+		$elm$url$Url$Parser$Query$custom,
+		key,
+		function (stringList) {
+			if (stringList.b && (!stringList.b.b)) {
+				var str = stringList.a;
+				return $elm$core$Maybe$Just(str);
+			} else {
+				return $elm$core$Maybe$Nothing;
+			}
+		});
+};
+var $elm$core$Result$withDefault = F2(
+	function (def, result) {
+		if (result.$ === 'Ok') {
+			var a = result.a;
+			return a;
+		} else {
+			return def;
+		}
+	});
+var $author$project$Main$getApiUrlsFromQueryString = F2(
+	function (protocol, url) {
+		var queryParser = $elm$url$Url$Parser$query(
+			$elm$url$Url$Parser$Query$string('connections'));
+		var _v0 = A2($elm$url$Url$Parser$parse, queryParser, url);
+		if (_v0.$ === 'Just') {
+			var urls = _v0.a;
+			var decodedUrls = A2(
+				$elm$core$Result$withDefault,
+				_List_Nil,
+				A2(
+					$elm$json$Json$Decode$decodeString,
+					$elm$json$Json$Decode$list($elm$json$Json$Decode$string),
+					A2($elm$core$Maybe$withDefault, '[]', urls)));
+			return A2(
+				$elm$core$List$map,
+				function (address) {
+					return A2(
+						$author$project$Main$checkApiUrl,
+						_Utils_ap(protocol, address),
+						true);
+				},
+				decodedUrls);
+		} else {
+			return _List_fromArray(
+				[$elm$core$Platform$Cmd$none]);
+		}
+	});
 var $elm$time$Time$Name = function (a) {
 	return {$: 'Name', a: a};
 };
@@ -6809,12 +7069,14 @@ var $author$project$Main$init = F3(
 		return _Utils_Tuple2(
 			A3($author$project$Model$init, flags, url, key),
 			$elm$core$Platform$Cmd$batch(
-				_List_fromArray(
-					[
-						$author$project$Main$fetchBrewSession(flags.apiBaseUrl),
-						A2($elm$core$Task$perform, $author$project$Messages$SetTimeZone, $elm$time$Time$here),
-						A2($elm$core$Task$perform, $author$project$Messages$SetTime, $elm$time$Time$now)
-					])));
+				_Utils_ap(
+					_List_fromArray(
+						[
+							$author$project$Main$fetchBrewSession(flags.apiBaseUrl),
+							A2($elm$core$Task$perform, $author$project$Messages$SetTimeZone, $elm$time$Time$here),
+							A2($elm$core$Task$perform, $author$project$Messages$SetTime, $elm$time$Time$now)
+						]),
+					A2($author$project$Main$getApiUrlsFromQueryString, flags.apiDefaultProtocol, url))));
 	});
 var $author$project$Messages$NavigateTo = function (a) {
 	return {$: 'NavigateTo', a: a};
@@ -7185,7 +7447,6 @@ var $author$project$Api$Request$Scale$putScaleRes = A7(
 	_List_Nil,
 	$elm$core$Maybe$Nothing,
 	$elm$json$Json$Decode$succeed(_Utils_Tuple0));
-var $elm$core$Debug$toString = _Debug_toString;
 var $author$project$Main$calibrate = function (basePath) {
 	return A2(
 		$author$project$Api$send,
@@ -7223,48 +7484,6 @@ var $author$project$Main$cancelBrewSession = function (basePath) {
 			}
 		},
 		A2($author$project$Api$withBasePath, basePath, $author$project$Api$Request$BrewSessionStatus$deleteBrewStatus));
-};
-var $author$project$Messages$RejectApiUrl = function (a) {
-	return {$: 'RejectApiUrl', a: a};
-};
-var $author$project$Messages$SaveApiUrl = function (a) {
-	return {$: 'SaveApiUrl', a: a};
-};
-var $author$project$Api$Data$Message = function (message) {
-	return {message: message};
-};
-var $author$project$Api$Data$messageDecoder = A3(
-	$author$project$Api$Data$decode,
-	'message',
-	$elm$json$Json$Decode$string,
-	$elm$json$Json$Decode$succeed($author$project$Api$Data$Message));
-var $author$project$Api$Request$Info$getDiscover = A7($author$project$Api$request, 'GET', '/discover-varpivo', _List_Nil, _List_Nil, _List_Nil, $elm$core$Maybe$Nothing, $author$project$Api$Data$messageDecoder);
-var $author$project$Main$checkApiUrl = function (basePath) {
-	return A2(
-		$author$project$Api$send,
-		function (response) {
-			if (response.$ === 'Ok') {
-				return $author$project$Messages$SaveApiUrl(basePath);
-			} else {
-				var e = response.a;
-				switch (e.$) {
-					case 'BadStatus':
-						var code = e.a;
-						if (code === 404) {
-							return $author$project$Messages$RejectApiUrl('No Var:Pivo server found on that address');
-						} else {
-							return $author$project$Messages$RejectApiUrl(
-								'Unknown error ' + $elm$core$Debug$toString(e));
-						}
-					case 'NetworkError':
-						return $author$project$Messages$RejectApiUrl('Could not connect to that address');
-					default:
-						return $author$project$Messages$RejectApiUrl(
-							'Unknown error ' + $elm$core$Debug$toString(e));
-				}
-			}
-		},
-		A2($author$project$Api$withBasePath, basePath, $author$project$Api$Request$Info$getDiscover));
 };
 var $aforemny$material_components_web_elm$Material$Snackbar$close = F2(
 	function (messageId, _v0) {
@@ -7455,7 +7674,6 @@ var $author$project$Messages$CalibrationWeightPlaced = {$: 'CalibrationWeightPla
 var $author$project$Messages$Confirm = function (a) {
 	return {$: 'Confirm', a: a};
 };
-var $elm$core$Platform$Cmd$none = $elm$core$Platform$Cmd$batch(_List_Nil);
 var $author$project$KegMessage$handleJsonDecodeError = F2(
 	function (e, model) {
 		switch (e.$) {
@@ -7769,132 +7987,10 @@ var $author$project$Main$notification = _Platform_outgoingPort(
 				]));
 	});
 var $author$project$Router$Connections = {$: 'Connections'};
-var $elm$url$Url$Parser$State = F5(
-	function (visited, unvisited, params, frag, value) {
-		return {frag: frag, params: params, unvisited: unvisited, value: value, visited: visited};
-	});
-var $elm$url$Url$Parser$getFirstMatch = function (states) {
-	getFirstMatch:
-	while (true) {
-		if (!states.b) {
-			return $elm$core$Maybe$Nothing;
-		} else {
-			var state = states.a;
-			var rest = states.b;
-			var _v1 = state.unvisited;
-			if (!_v1.b) {
-				return $elm$core$Maybe$Just(state.value);
-			} else {
-				if ((_v1.a === '') && (!_v1.b.b)) {
-					return $elm$core$Maybe$Just(state.value);
-				} else {
-					var $temp$states = rest;
-					states = $temp$states;
-					continue getFirstMatch;
-				}
-			}
-		}
-	}
-};
-var $elm$url$Url$Parser$removeFinalEmpty = function (segments) {
-	if (!segments.b) {
-		return _List_Nil;
-	} else {
-		if ((segments.a === '') && (!segments.b.b)) {
-			return _List_Nil;
-		} else {
-			var segment = segments.a;
-			var rest = segments.b;
-			return A2(
-				$elm$core$List$cons,
-				segment,
-				$elm$url$Url$Parser$removeFinalEmpty(rest));
-		}
-	}
-};
-var $elm$url$Url$Parser$preparePath = function (path) {
-	var _v0 = A2($elm$core$String$split, '/', path);
-	if (_v0.b && (_v0.a === '')) {
-		var segments = _v0.b;
-		return $elm$url$Url$Parser$removeFinalEmpty(segments);
-	} else {
-		var segments = _v0;
-		return $elm$url$Url$Parser$removeFinalEmpty(segments);
-	}
-};
-var $elm$url$Url$Parser$addToParametersHelp = F2(
-	function (value, maybeList) {
-		if (maybeList.$ === 'Nothing') {
-			return $elm$core$Maybe$Just(
-				_List_fromArray(
-					[value]));
-		} else {
-			var list = maybeList.a;
-			return $elm$core$Maybe$Just(
-				A2($elm$core$List$cons, value, list));
-		}
-	});
-var $elm$url$Url$percentDecode = _Url_percentDecode;
-var $elm$url$Url$Parser$addParam = F2(
-	function (segment, dict) {
-		var _v0 = A2($elm$core$String$split, '=', segment);
-		if ((_v0.b && _v0.b.b) && (!_v0.b.b.b)) {
-			var rawKey = _v0.a;
-			var _v1 = _v0.b;
-			var rawValue = _v1.a;
-			var _v2 = $elm$url$Url$percentDecode(rawKey);
-			if (_v2.$ === 'Nothing') {
-				return dict;
-			} else {
-				var key = _v2.a;
-				var _v3 = $elm$url$Url$percentDecode(rawValue);
-				if (_v3.$ === 'Nothing') {
-					return dict;
-				} else {
-					var value = _v3.a;
-					return A3(
-						$elm$core$Dict$update,
-						key,
-						$elm$url$Url$Parser$addToParametersHelp(value),
-						dict);
-				}
-			}
-		} else {
-			return dict;
-		}
-	});
-var $elm$url$Url$Parser$prepareQuery = function (maybeQuery) {
-	if (maybeQuery.$ === 'Nothing') {
-		return $elm$core$Dict$empty;
-	} else {
-		var qry = maybeQuery.a;
-		return A3(
-			$elm$core$List$foldr,
-			$elm$url$Url$Parser$addParam,
-			$elm$core$Dict$empty,
-			A2($elm$core$String$split, '&', qry));
-	}
-};
-var $elm$url$Url$Parser$parse = F2(
-	function (_v0, url) {
-		var parser = _v0.a;
-		return $elm$url$Url$Parser$getFirstMatch(
-			parser(
-				A5(
-					$elm$url$Url$Parser$State,
-					_List_Nil,
-					$elm$url$Url$Parser$preparePath(url.path),
-					$elm$url$Url$Parser$prepareQuery(url.query),
-					url.fragment,
-					$elm$core$Basics$identity)));
-	});
 var $author$project$Router$BrewSession = {$: 'BrewSession'};
 var $author$project$Router$Recipe = {$: 'Recipe'};
 var $author$project$Router$Scale = function (a) {
 	return {$: 'Scale', a: a};
-};
-var $elm$url$Url$Parser$Parser = function (a) {
-	return {$: 'Parser', a: a};
 };
 var $elm$url$Url$Parser$mapState = F2(
 	function (func, _v0) {
@@ -7956,28 +8052,6 @@ var $elm$url$Url$Parser$oneOf = function (parsers) {
 				parsers);
 		});
 };
-var $elm$url$Url$Parser$query = function (_v0) {
-	var queryParser = _v0.a;
-	return $elm$url$Url$Parser$Parser(
-		function (_v1) {
-			var visited = _v1.visited;
-			var unvisited = _v1.unvisited;
-			var params = _v1.params;
-			var frag = _v1.frag;
-			var value = _v1.value;
-			return _List_fromArray(
-				[
-					A5(
-					$elm$url$Url$Parser$State,
-					visited,
-					unvisited,
-					params,
-					frag,
-					value(
-						queryParser(params)))
-				]);
-		});
-};
 var $elm$url$Url$Parser$slash = F2(
 	function (_v0, _v1) {
 		var parseBefore = _v0.a;
@@ -8020,33 +8094,6 @@ var $elm$url$Url$Parser$s = function (str) {
 						frag,
 						value)
 					]) : _List_Nil;
-			}
-		});
-};
-var $elm$url$Url$Parser$Internal$Parser = function (a) {
-	return {$: 'Parser', a: a};
-};
-var $elm$url$Url$Parser$Query$custom = F2(
-	function (key, func) {
-		return $elm$url$Url$Parser$Internal$Parser(
-			function (dict) {
-				return func(
-					A2(
-						$elm$core$Maybe$withDefault,
-						_List_Nil,
-						A2($elm$core$Dict$get, key, dict)));
-			});
-	});
-var $elm$url$Url$Parser$Query$string = function (key) {
-	return A2(
-		$elm$url$Url$Parser$Query$custom,
-		key,
-		function (stringList) {
-			if (stringList.b && (!stringList.b.b)) {
-				var str = stringList.a;
-				return $elm$core$Maybe$Just(str);
-			} else {
-				return $elm$core$Maybe$Nothing;
 			}
 		});
 };
@@ -8222,7 +8269,7 @@ var $author$project$Router$route = F3(
 						return _Utils_Tuple2(
 							_Utils_update(
 								model,
-								{route: currentPage, url: url}),
+								{newApiUrlFormError: $elm$core$Maybe$Nothing, route: currentPage, url: url}),
 							$elm$core$Platform$Cmd$none);
 				}
 			}
@@ -8706,7 +8753,7 @@ var $author$project$Main$update = F2(
 							_Utils_update(
 								model,
 								{apiConnecting: true, newApiUrlFormError: $elm$core$Maybe$Nothing}),
-							$author$project$Main$checkApiUrl(address));
+							A2($author$project$Main$checkApiUrl, address, false));
 					} else {
 						return _Utils_Tuple2(
 							_Utils_update(
@@ -8726,7 +8773,9 @@ var $author$project$Main$update = F2(
 							}),
 						$elm$core$Platform$Cmd$none);
 				case 'SaveApiUrl':
-					var string = msg.a;
+					var _v14 = msg.a;
+					var string = _v14.a;
+					var autoDetection = _v14.b;
 					var storedApiUrls = A2($elm$core$List$member, string, model.storedApiUrls) ? model.storedApiUrls : _Utils_ap(
 						model.storedApiUrls,
 						_List_fromArray(
@@ -8734,7 +8783,13 @@ var $author$project$Main$update = F2(
 					return _Utils_Tuple2(
 						_Utils_update(
 							model,
-							{apiBaseUrl: string, apiConnecting: false, loading: true, newApiUrlFormError: $elm$core$Maybe$Nothing, storedApiUrls: storedApiUrls}),
+							{
+								apiBaseUrl: (model.apiBaseUrl === '') ? string : (autoDetection ? model.apiBaseUrl : string),
+								apiConnecting: false,
+								loading: true,
+								newApiUrlFormError: $elm$core$Maybe$Nothing,
+								storedApiUrls: storedApiUrls
+							}),
 						$elm$core$Platform$Cmd$batch(
 							_List_fromArray(
 								[
@@ -8767,13 +8822,15 @@ var $author$project$Main$update = F2(
 								selected: A2($elm$core$Maybe$withDefault, '', model.selectedApiUrl)
 							}));
 				default:
-					var reason = msg.a;
+					var _v15 = msg.a;
+					var reason = _v15.a;
+					var autoCheckedUrl = _v15.b;
 					return _Utils_Tuple2(
 						_Utils_update(
 							model,
 							{
 								apiConnecting: false,
-								newApiUrlFormError: $elm$core$Maybe$Just(reason)
+								newApiUrlFormError: autoCheckedUrl ? $elm$core$Maybe$Nothing : $elm$core$Maybe$Just(reason)
 							}),
 						$author$project$Main$console(reason));
 			}
