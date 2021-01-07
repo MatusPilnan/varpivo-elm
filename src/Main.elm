@@ -18,6 +18,7 @@ import Dict exposing (Dict)
 import Duration exposing (Duration)
 import Html exposing (Html)
 import Http exposing (Error(..))
+import Json.Decode exposing (decodeString, list, string)
 import KegMessage exposing (handleKegMessage)
 import Material.Typography as Typography
 import Material.Snackbar as Snackbar
@@ -36,6 +37,8 @@ import Router exposing (Route(..), navigate, route)
 import Task
 import Time exposing (Posix, Zone)
 import Url exposing (Url)
+import Url.Parser as Parser
+import Url.Parser.Query as QueryParser
 
 
 
@@ -70,8 +73,15 @@ port messageReceiver : (String -> msg) -> Sub msg
 
 
 init : Flags -> Url -> Key -> ( Model, Cmd Msg )
-init flags url key = (
-  Model.init flags url key, Cmd.batch [fetchBrewSession flags.apiBaseUrl, Task.perform SetTimeZone Time.here, Task.perform SetTime Time.now] )
+init flags url key =
+  ( Model.init flags url key
+  , Cmd.batch
+    ( [ fetchBrewSession flags.apiBaseUrl
+      , Task.perform SetTimeZone Time.here
+      , Task.perform SetTime Time.now
+      ] ++ getApiUrlsFromQueryString flags.apiDefaultProtocol url
+    )
+  )
 
 
 -- UPDATE
@@ -208,21 +218,21 @@ update msg model =
       in
       case Url.fromString address of
         Just _ ->
-          ( { model | newApiUrlFormError = Nothing, apiConnecting = True }, checkApiUrl address )
+          ( { model | newApiUrlFormError = Nothing, apiConnecting = True }, checkApiUrl address False )
         Nothing ->
           ( { model | newApiUrlFormError = Just "Please enter a valid address" }, console address )
 
     SelectApiUrl string ->
       ( { model | selectedApiUrl = Just string }, Cmd.none )
 
-    SaveApiUrl string ->
+    SaveApiUrl (string, autoDetection) ->
       let
         storedApiUrls =
           if List.member string model.storedApiUrls then model.storedApiUrls else model.storedApiUrls ++ [ string ]
       in
       ( { model | newApiUrlFormError = Nothing
         , apiConnecting = False
-        , apiBaseUrl = string
+        , apiBaseUrl = if model.apiBaseUrl == "" then string else (if autoDetection then model.apiBaseUrl else string)
         , loading = True
         , storedApiUrls = storedApiUrls
         }
@@ -236,27 +246,46 @@ update msg model =
       in
       ( { model | storedApiUrls = storedApiUrls }, saveConnections {selected = withDefault "" model.selectedApiUrl, connections = storedApiUrls } )
 
-    RejectApiUrl reason ->
-      ( { model | newApiUrlFormError = Just reason, apiConnecting = False }, console reason )
+    RejectApiUrl (reason, autoCheckedUrl) ->
+      ( { model | newApiUrlFormError = (if autoCheckedUrl then Nothing else Just reason ), apiConnecting = False }, console reason )
 
 
-checkApiUrl : String -> Cmd Msg
-checkApiUrl basePath =
+getApiUrlsFromQueryString : String -> Url -> List (Cmd Msg)
+getApiUrlsFromQueryString protocol url =
+  let
+    queryParser =
+      Parser.query (QueryParser.string "connections")
+  in
+  case Parser.parse queryParser url of
+    Just urls ->
+      let
+        decodedUrls =
+          Result.withDefault [] (decodeString (list string) (Maybe.withDefault "[]" urls))
+      in
+      List.map (\address -> checkApiUrl (protocol ++ address) True) decodedUrls
+
+    Nothing ->
+      [Cmd.none]
+      
+
+
+checkApiUrl : String -> Bool -> Cmd Msg
+checkApiUrl basePath autoCheck =
   send (\response -> case response of
                        Ok _ ->
-                         SaveApiUrl basePath
+                         SaveApiUrl (basePath, autoCheck)
                        Err e ->
                          case e of
                            BadStatus code ->
                              case code of
                                404 ->
-                                 RejectApiUrl "No Var:Pivo server found on that address"
+                                 RejectApiUrl ("No Var:Pivo server found on that address", autoCheck)
                                _ ->
-                                 RejectApiUrl ("Unknown error " ++ Debug.toString e)
+                                 RejectApiUrl ("Unknown error " ++ Debug.toString e, autoCheck)
                            NetworkError ->
-                             RejectApiUrl "Could not connect to that address"
+                             RejectApiUrl ("Could not connect to that address", autoCheck)
                            _ ->
-                             RejectApiUrl ("Unknown error " ++ Debug.toString e)
+                             RejectApiUrl ("Unknown error " ++ Debug.toString e, autoCheck)
 
                       ) (Api.withBasePath basePath InfoApi.getDiscover)
 

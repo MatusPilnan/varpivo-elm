@@ -44,7 +44,7 @@ type Msg = Increment
   | Multiple (List Msg)
   | CancelBrewSession
   | NewApiUrl String
-  | SaveApiUrl String
-  | RejectApiUrl String
+  | SaveApiUrl (String, Bool)
+  | RejectApiUrl (String, Bool)
   | SelectApiUrl String
   | RemoveApiUrl String

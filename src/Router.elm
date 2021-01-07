@@ -54,7 +54,7 @@ route url model console =
           ( { model | url = url, route = currentPage}, console (Debug.toString stepId) )
 
         Connections ->
-          ( { model | url = url, route = currentPage}, Cmd.none )
+          ( { model | url = url, route = currentPage, newApiUrlFormError = Nothing}, Cmd.none )
 
 
 navigate : { a | basePathList : List String, key : Navigation.Key } -> List String -> List Url.Builder.QueryParameter -> Cmd msg
