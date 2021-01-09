@@ -7,13 +7,13 @@ import Api.Request.Info as InfoApi
 import Api.Request.RecipeSteps as RecipeStepsApi
 import Api.Request.Recipes as RecipesApi
 import Api.Request.Scale as ScaleApi
-import ApiErrorMessage exposing (apiErrorMessage)
+import SnackbarTools exposing (apiErrorMessage, brewSessionKeyRejectedMessage)
 import BottomToolbar exposing (bottomToolbar)
 import Browser exposing (Document)
 import Browser.Navigation as Navigation exposing (Key)
 import Data.Conversions exposing (apiRecipeToRecipe, apiStepListToStepList, apiStepToRecipeStep)
 import Data.Step exposing (RecipeStep, StepKind(..))
-import Dialog exposing (calibrationDialogContent, confirmDialogContent, dialog, dialogActions, scaleDialogContent)
+import Dialog exposing (dialog, showDialog)
 import Dict exposing (Dict)
 import Duration exposing (Duration)
 import Html exposing (Html)
@@ -27,7 +27,7 @@ import Bootstrap.Utilities.Spacing as Spacing
 import Bootstrap.Grid.Row as Row
 import Maybe exposing (withDefault)
 import Messages exposing (..)
-import Model exposing (Flags, Model)
+import Model exposing (Flags, Model, defaultSecurityFormState)
 import Navbar exposing (navbar)
 import Notification exposing (Notification)
 import Page exposing (page)
@@ -65,6 +65,7 @@ subscriptions _ =
 
 port sendMessage : String -> Cmd msg
 port saveConnections : {connections: List String, selected: String} -> Cmd msg
+port saveBrewSessionCode : String -> Cmd msg
 port connect : String -> Cmd msg
 port notification: Notification -> Cmd msg
 port notificationClick: (List String -> msg) -> Sub msg
@@ -74,9 +75,13 @@ port messageReceiver : (String -> msg) -> Sub msg
 
 init : Flags -> Url -> Key -> ( Model, Cmd Msg )
 init flags url key =
-  ( Model.init flags url key
+  let
+    model =
+      Model.init flags url key
+  in
+  ( model
   , Cmd.batch
-    ( [ fetchBrewSession flags.apiBaseUrl
+    ( [ fetchBrewSession model.security.code flags.apiBaseUrl
       , Task.perform SetTimeZone Time.here
       , Task.perform SetTime Time.now
       ] ++ getApiUrlsFromQueryString flags.apiDefaultProtocol url
@@ -153,12 +158,29 @@ update msg model =
         }, Cmd.none )
 
     SetBrewSession brewSessionData ->
-      ( { model | selectedRecipe = brewSessionData.recipeListEntry, recipeSteps = brewSessionData.steps, stepsOrder = brewSessionData.stepIds, loading = False, boilStartedAt = Maybe.map Time.millisToPosix brewSessionData.boilStartedAt}
-      , Cmd.batch [console (Debug.toString (brewSessionData.recipeListEntry, brewSessionData.steps, brewSessionData.stepIds)), navigate model ["brew-session"][]]
+      let
+        oldSecurity =
+          model.security
+        oldSecurityForm =
+          oldSecurity.form
+      in
+      ( { model | selectedRecipe = brewSessionData.recipeListEntry
+        , recipeSteps = brewSessionData.steps
+        , stepsOrder = brewSessionData.stepIds
+        , loading = False
+        , boilStartedAt = Maybe.map Time.millisToPosix brewSessionData.boilStartedAt
+        , security =
+          { oldSecurity | valid = brewSessionData.brewSessionCodeValid
+          , form = {oldSecurityForm | value = (if brewSessionData.brewSessionCodeValid then model.security.code else "")} }
+        }
+      , Cmd.batch
+        [ navigate model ["brew-session"][]
+        , if brewSessionData.brewSessionCodeValid then saveBrewSessionCode model.security.code else Cmd.none
+        ]
       )
 
     StartStep stepId ->
-      (model, startStep stepId model.apiBaseUrl)
+      (model, startStep stepId model.security.code model.apiBaseUrl)
 
     UpdateStep step ->
       ( { model | recipeSteps = (Dict.insert step.id step model.recipeSteps)}, Cmd.none )
@@ -169,7 +191,7 @@ update msg model =
           Just step ->
             case (step.started, step.finished) of
               (Just _, Nothing) ->
-                Cmd.batch [finishStep stepId model.apiBaseUrl, navigate model [] []]
+                Cmd.batch [finishStep stepId model.security.code model.apiBaseUrl, navigate model [] []]
               (_, _) ->
                 navigate model [] []
 
@@ -187,16 +209,16 @@ update msg model =
       ( { model | calibrationValue = int}, Cmd.none )
 
     StartCalibration ->
-      ( model, if model.calibrationValue == -1 then Cmd.none else startCalibration model.calibrationValue model.apiBaseUrl )
+      ( model, if model.calibrationValue == -1 then Cmd.none else startCalibration model.calibrationValue model.security.code model.apiBaseUrl )
 
     CalibrationWeightPlaced ->
-      ( model, calibrate model.apiBaseUrl )
+      ( model, calibrate model.security.code model.apiBaseUrl )
 
     TareScale ->
-      ( model, tareScale model.apiBaseUrl)
+      ( model, tareScale model.security.code model.apiBaseUrl)
 
     CancelBrewSession ->
-      ( model, Cmd.batch [cancelBrewSession model.apiBaseUrl, fetchRecipes model.apiBaseUrl])
+      ( model, Cmd.batch [cancelBrewSession model.security.code model.apiBaseUrl, fetchRecipes model.apiBaseUrl])
 
     Multiple msgs ->
       ( model, case List.unzip (List.map (\i -> update i model) (List.filter (\i -> case i of
@@ -236,7 +258,12 @@ update msg model =
         , loading = True
         , storedApiUrls = storedApiUrls
         }
-      , Cmd.batch [saveConnections {selected = string, connections = storedApiUrls }, fetchBrewSession string, navigate model [""] [], connect (string ++ "/tap")]
+      , Cmd.batch
+        [ saveConnections {selected = string, connections = storedApiUrls }
+        , fetchBrewSession string model.security.code
+        , navigate model [""] []
+        , connect (string ++ "/tap")
+        ]
       )
 
     RemoveApiUrl string ->
@@ -249,6 +276,45 @@ update msg model =
     RejectApiUrl (reason, autoCheckedUrl) ->
       ( { model | newApiUrlFormError = (if autoCheckedUrl then Nothing else Just reason ), apiConnecting = False }, console reason )
 
+    BrewSessionCodeInput value ->
+      let
+        oldSecurity =
+          model.security
+        oldSecurityForm =
+          oldSecurity.form
+      in
+      ( { model | security = { oldSecurity | form = { oldSecurityForm | value = String.toUpper value} } }, Cmd.none )
+
+    BrewSessionCodeChange suggestedCode ->
+      let
+        oldSecurity =
+          model.security
+        oldSecurityForm =
+          oldSecurity.form
+      in
+      ( { model | security = { oldSecurity | form = { oldSecurityForm | hint = "Checking..."} } }, verifyBrewSessionCode suggestedCode model.apiBaseUrl )
+
+    BrewSessionCodeVerified newCode ->
+      let
+        oldSecurity =
+          model.security
+      in
+      ( { model | security = { oldSecurity | form = { defaultSecurityFormState | value = newCode}, code = newCode, valid = True } }, saveBrewSessionCode newCode )
+
+    BrewSessionCodeRejected (rejectionMessage, currentIsInvalid) ->
+      let
+        oldSecurity =
+          model.security
+        oldSecurityForm =
+          oldSecurity.form
+      in
+      ( { model | security =
+          { oldSecurity | form = { oldSecurityForm | error = rejectionMessage, valid = False}
+          , valid = (if not currentIsInvalid then model.security.valid else False)
+          }
+        , snackbarQueue = (Snackbar.addMessage (brewSessionKeyRejectedMessage rejectionMessage) model.snackbarQueue)
+        }, Cmd.none )
+
 
 getApiUrlsFromQueryString : String -> Url -> List (Cmd Msg)
 getApiUrlsFromQueryString protocol url =
@@ -256,7 +322,7 @@ getApiUrlsFromQueryString protocol url =
     queryParser =
       Parser.query (QueryParser.string "connections")
   in
-  case Parser.parse queryParser url of
+  case Parser.parse queryParser {url | path = ""} of
     Just urls ->
       let
         decodedUrls =
@@ -267,6 +333,26 @@ getApiUrlsFromQueryString protocol url =
     Nothing ->
       [Cmd.none]
       
+
+verifyBrewSessionCode : String -> String -> Cmd Msg
+verifyBrewSessionCode brewSessionCode basePath =
+  send
+  ( \response ->
+    case response of
+      Ok _ ->
+        BrewSessionCodeVerified brewSessionCode
+      Err e ->
+        case e of
+          BadStatus code ->
+            case code of
+              401 ->
+                BrewSessionCodeRejected ("Invalid code", False)
+              _ ->
+                BrewSessionCodeRejected ("Code couldn't be verified", False)
+          _ ->
+            BrewSessionCodeRejected ("Code couldn't be verified", False)
+
+  ) (Api.withBasePath basePath (InfoApi.getAuth ( Just brewSessionCode ) ) )
 
 
 checkApiUrl : String -> Bool -> Cmd Msg
@@ -287,7 +373,7 @@ checkApiUrl basePath autoCheck =
                            _ ->
                              RejectApiUrl ("Unknown error " ++ Debug.toString e, autoCheck)
 
-                      ) (Api.withBasePath basePath InfoApi.getDiscover)
+                      ) (Api.withBasePath basePath (InfoApi.getDiscover))
 
 handleSteps: Result Http.Error StepsList -> (Dict String RecipeStep, List String)
 handleSteps res = case res of
@@ -325,74 +411,92 @@ handleBrewSession response =
       Just ( { recipeListEntry = Just (apiRecipeToRecipe value.recipe)
            , steps = Dict.fromList (List.map (\step -> (step.id, apiStepToRecipeStep step)) value.steps)
            , stepIds = List.map (\step -> step.id) value.steps
-           , boilStartedAt = Maybe.map round value.boilStartedAt})
+           , boilStartedAt = Maybe.map round value.boilStartedAt
+           , brewSessionCodeValid = value.bsCodeValid
+           })
     Err _ ->
       Nothing
 
 
-fetchBrewSession basePath =
+fetchBrewSession brewSessionCode basePath =
   send (\response -> case (handleBrewSession response) of
                        Nothing ->
                          FetchRecipes
                        Just result ->
                          SetBrewSession result
-                     ) (Api.withBasePath basePath BrewStatusApi.getBrewStatus)
+                     ) (Api.withBasePath basePath (BrewStatusApi.getBrewStatus (Just brewSessionCode)))
 
-cancelBrewSession basePath =
+cancelBrewSession brewSessionCode basePath =
   send (\response -> case response of
                               Ok _ ->
-                                SetBrewSession ({recipeListEntry = Nothing, steps = Dict.empty, stepIds = [], boilStartedAt = Nothing})
+                                SetBrewSession ({ recipeListEntry = Nothing
+                                                , steps = Dict.empty
+                                                , stepIds = []
+                                                , boilStartedAt = Nothing
+                                                , brewSessionCodeValid = True
+                                                })
                               Err e ->
-                                ShowSnackbar (Debug.toString e)
-                            ) (Api.withBasePath basePath BrewStatusApi.deleteBrewStatus)
+                                handleApiError e
+                            ) (Api.withBasePath basePath (BrewStatusApi.deleteBrewStatus (Just brewSessionCode)))
 
-handleStep : Result.Result error Api.Data.RecipeStep -> Msg
+handleStep : Result.Result Error Api.Data.RecipeStep -> Msg
 handleStep response =
   case response of
     Ok value ->
       UpdateStep (apiStepToRecipeStep value)
     Err e ->
+      handleApiError e
+
+handleApiError e =
+  case e of
+    BadStatus code ->
+      case code of
+        401 ->
+          BrewSessionCodeRejected ("You are in spectator mode! Add brew session key to gain control.", True)
+        _ ->
+          ShowSnackbar (Debug.toString e)
+    _ ->
       ShowSnackbar (Debug.toString e)
 
-startStep : String -> String -> Cmd Msg
-startStep stepId basePath =
-  send handleStep (Api.withBasePath basePath (RecipeStepsApi.postStepStart stepId))
+startStep : String -> String -> String -> Cmd Msg
+startStep stepId brewSessionCode basePath =
+  send handleStep (Api.withBasePath basePath (RecipeStepsApi.postStepStart stepId (Just brewSessionCode)))
 
-finishStep : String -> String -> Cmd Msg
-finishStep stepId basePath =
-    send handleStep (Api.withBasePath basePath (RecipeStepsApi.deleteStepStart stepId))
+finishStep : String -> String -> String -> Cmd Msg
+finishStep stepId brewSessionCode basePath =
+    send handleStep (Api.withBasePath basePath (RecipeStepsApi.deleteStepStart stepId (Just brewSessionCode)))
 
-startCalibration : Int -> String -> Cmd Msg
-startCalibration grams basePath=
+startCalibration : Int -> String -> String -> Cmd Msg
+startCalibration grams brewSessionCode basePath=
   send (\response ->
          case response of
            Ok _ ->
              ShowSnackbar "Scale calibration started"
            Err e ->
-             ShowSnackbar (Debug.toString e)
-       ) (Api.withBasePath basePath (ScaleApi.patchScaleRes grams))
+             handleApiError e
+       ) (Api.withBasePath basePath (ScaleApi.patchScaleRes grams (Just brewSessionCode)))
 
 
-calibrate : String -> Cmd Msg
-calibrate basePath =
+calibrate : String -> String -> Cmd Msg
+calibrate brewSessionCode basePath =
   send (\response ->
           case response of
             Ok _ ->
               ShowSnackbar "Calibration in progress. Do not move the weight."
             Err e ->
-              ShowSnackbar (Debug.toString e)
-        ) (Api.withBasePath basePath (ScaleApi.putScaleRes))
+              handleApiError e
+        ) (Api.withBasePath basePath (ScaleApi.putScaleRes (Just brewSessionCode) ))
 
 
-tareScale : String -> Cmd Msg
-tareScale basePath =
+tareScale : String -> String -> Cmd Msg
+tareScale brewSessionCode basePath =
   send (\response ->
           case response of
             Ok _ ->
               ShowSnackbar "Tare done"
             Err e ->
-              ShowSnackbar (Debug.toString e)
-        ) (Api.withBasePath basePath ScaleApi.deleteScaleRes)
+              handleApiError e
+        ) (Api.withBasePath basePath (ScaleApi.deleteScaleRes (Just brewSessionCode)))
 
 
 -- VIEW
@@ -402,20 +506,8 @@ view model =
   { title = model.title
   , body =
     [ Html.div [ Typography.typography ]
-      [ navbar model.title (isRecipeSelected model) model.menuOpened ( not (Dict.isEmpty model.recipeSteps) )
-      , case model.dialogVariant of
-          Nothing ->
-            Html.div [] []
-
-          Just Messages.Scale ->
-            dialog (scaleDialogContent model.weight) (Just "Scale") Nothing
-
-          Just (Confirm (prompt, action)) ->
-            dialog (confirmDialogContent prompt) (Just "Confirm") (Just ( dialogActions ( Just action ) (Just ( CloseDialog Nothing ))))
-
-          Just Calibration ->
-            dialog (calibrationDialogContent) (Just "Scale calibration") (Just (dialogActions (Just StartCalibration) ( Just (CloseDialog Nothing)) ))
-
+      [ navbar model.title (isRecipeSelected model) model.menuOpened ( not (Dict.isEmpty model.recipeSteps) ) model.security.valid
+      , showDialog model
       , Grid.container [ Spacing.py5 ]
         [ Grid.row [ Row.attrs [ Spacing.pt4 ] ]
           [ Grid.col []

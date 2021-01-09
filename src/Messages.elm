@@ -10,7 +10,7 @@ import Url
 import Url.Builder exposing (QueryParameter)
 
 
-type DialogVariant = Scale | Confirm ( String, Msg ) | Calibration
+type DialogVariant = Scale | Confirm ( String, Msg ) | Calibration | Security
 
 type Msg = Increment
   | Decrement
@@ -48,3 +48,7 @@ type Msg = Increment
   | RejectApiUrl (String, Bool)
   | SelectApiUrl String
   | RemoveApiUrl String
+  | BrewSessionCodeInput String
+  | BrewSessionCodeChange String
+  | BrewSessionCodeVerified String
+  | BrewSessionCodeRejected (String, Bool)

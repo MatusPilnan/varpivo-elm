@@ -1,6 +1,7 @@
 module Dialog exposing (..)
 
 import Bootstrap.Utilities.Size as Size
+import Bootstrap.Utilities.Spacing as Spacing
 import Html
 import Material.Button as Button
 import Material.Dialog as Dialog
@@ -8,7 +9,8 @@ import Material.HelperText as HelperText
 import Material.TextField as TextField
 import Material.Typography as Typography
 import Maybe exposing (withDefault)
-import Messages exposing (Msg(..))
+import Messages exposing (DialogVariant(..), Msg(..))
+import Model exposing (BrewSessionSecurity, Model)
 
 
 dialog content title actions =
@@ -62,3 +64,47 @@ calibrationDialogContent =
   , HelperText.helperLine [] [ HelperText.helperText (HelperText.config |> HelperText.setPersistent True) "Weight of object used for calibration"]
   ]
 
+
+securityDialogContent : BrewSessionSecurity -> List (Html.Html Msg)
+securityDialogContent security =
+ [ if security.valid
+   then Html.b [ Typography.body1 ] [ Html.text "Your brew session key seems valid. There is no need to change it now." ]
+   else Html.div [] []
+ , Html.p [ Typography.body1 ] [ Html.text "Enter current brew session key code here to be able to control the brewing process." ]
+ , TextField.filled
+   ( TextField.config
+     |> TextField.setLabel (Just "Brew session key code")
+     |> TextField.setRequired True
+     |> TextField.setValue (Just security.form.value)
+     |> TextField.setOnInput BrewSessionCodeInput
+     |> TextField.setValid security.form.valid
+     |> TextField.setOnChange BrewSessionCodeChange
+     |> TextField.setAttributes [ Size.w100 ]
+   )
+ , HelperText.helperLine []
+   [ HelperText.helperText
+     ( HelperText.config
+     |> HelperText.setPersistent True
+     |> HelperText.setValidation (not security.form.valid)
+     ) (if security.form.valid then security.form.hint else security.form.error)]
+ , Html.p [ Typography.body2, Spacing.mt3 ] [ Html.text "You can find the current brew session key code on the device screen. Or use the NFC thing!" ]
+ ]
+
+
+showDialog : Model -> Html.Html Msg
+showDialog model =
+  case model.dialogVariant of
+    Nothing ->
+      Html.div [] []
+
+    Just Security ->
+      dialog (securityDialogContent model.security) (Just "Brew session key") (Just (dialogActions (Just (BrewSessionCodeChange model.security.form.value)) (Just ( CloseDialog Nothing ))) )
+
+    Just Messages.Scale ->
+      dialog (scaleDialogContent model.weight) (Just "Scale") Nothing
+
+    Just (Confirm (prompt, action)) ->
+      dialog (confirmDialogContent prompt) (Just "Confirm") (Just ( dialogActions ( Just action ) (Just ( CloseDialog Nothing ))))
+
+    Just Calibration ->
+      dialog (calibrationDialogContent) (Just "Scale calibration") (Just (dialogActions (Just StartCalibration) ( Just (CloseDialog Nothing)) ))
