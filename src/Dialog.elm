@@ -1,5 +1,6 @@
 module Dialog exposing (..)
 
+import Bootstrap.Alert as Alert
 import Bootstrap.Utilities.Size as Size
 import Bootstrap.Utilities.Spacing as Spacing
 import Html
@@ -68,7 +69,7 @@ calibrationDialogContent =
 securityDialogContent : BrewSessionSecurity -> List (Html.Html Msg)
 securityDialogContent security =
  [ if security.valid
-   then Html.b [ Typography.body1 ] [ Html.text "Your brew session key seems valid. There is no need to change it now." ]
+   then Alert.simpleSuccess [ Typography.body1 ] [ Html.text "Your brew session key seems valid. There is no need to change it right now." ]
    else Html.div [] []
  , Html.p [ Typography.body1 ] [ Html.text "Enter current brew session key code here to be able to control the brewing process." ]
  , TextField.filled
