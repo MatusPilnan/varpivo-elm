@@ -13,8 +13,8 @@ import Material.TopAppBar as TopAppBar
 import Messages exposing (DialogVariant(..), Msg(..))
 
 
-navbar : String -> Bool -> Bool -> Bool -> Html.Html Msg
-navbar title showRecipeButton menuOpen activeBrewSession =
+navbar : String -> Bool -> Bool -> Bool -> Bool -> Html.Html Msg
+navbar title showRecipeButton menuOpen activeBrewSession brewSessionCodeValid =
   TopAppBar.regular TopAppBar.config
     [ TopAppBar.row [ Elevation.z8 ]
       [ TopAppBar.section [ TopAppBar.alignStart, TopAppBar.title ]
@@ -24,7 +24,11 @@ navbar title showRecipeButton menuOpen activeBrewSession =
             |> Button.setAttributes [ Theme.onPrimary ]) title ]
         ]
       , TopAppBar.section [ TopAppBar.alignEnd, Menu.surfaceAnchor ]
-        [ if showRecipeButton then
+        [ IconButton.iconButton
+          ( IconButton.config
+            |> IconButton.setOnClick (ShowDialog Security)
+          ) (IconButton.icon (if brewSessionCodeValid then "verified_user" else "vpn_key"))
+        , if showRecipeButton then
             IconButton.iconButton (IconButton.config |> IconButton.setOnClick (NavigateTo (["recipe"], [])) )
                                 (IconButton.icon "menu_book")
           else Html.div [] []

@@ -21,4 +21,5 @@ type alias BrewSessionData =
     , steps: Dict String RecipeStep
     , stepIds: List String
     , boilStartedAt: Maybe Int
+    , brewSessionCodeValid: Bool
     }

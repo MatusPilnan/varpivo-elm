@@ -11,6 +11,8 @@ import Messages exposing (DialogVariant, Msg)
 import Router exposing (Route(..))
 import Time exposing (Posix, Zone)
 import Url exposing (Url)
+import Url.Parser as Parser exposing ((</>))
+import Url.Parser.Query as QueryParser
 
 
 type alias Model =
@@ -42,13 +44,26 @@ type alias Model =
     , menuOpened : Bool
     , calibrationValue : Int
     , route: Route
+    , security : BrewSessionSecurity
     }
+
+type alias BrewSessionSecurity =
+  { code : String
+  , valid : Bool
+  , form :
+    { value : String
+    , valid : Bool
+    , error : String
+    , hint : String
+    }
+  }
 
 type alias Flags =
   { apiBaseUrl: String
   , basePath: String
   , storedApiUrls: List String
   , apiDefaultProtocol: String
+  , brewSessionCode: String
   }
 
 init : Flags -> Url -> Key -> Model
@@ -81,4 +96,39 @@ init flags url key =
     , calibrationValue = -1
     , route = Home
     , boilStartedAt = Nothing
+    , security = defaultSecurity url flags
     }
+
+defaultSecurityFormState =
+  { value = ""
+  , valid = True
+  , error = ""
+  , hint = "Current brew session key"
+  }
+
+
+defaultSecurity : Url -> Flags -> BrewSessionSecurity
+defaultSecurity url flags =
+  let
+      codeFromUrl =
+          getBrewSessionKeyFromUrl url
+  in
+  { code = Maybe.withDefault flags.brewSessionCode codeFromUrl
+  , valid =
+    case codeFromUrl of
+      Just _ ->
+        True
+      Nothing ->
+        False
+  , form = defaultSecurityFormState
+  }
+
+
+getBrewSessionKeyFromUrl : Url -> Maybe String
+getBrewSessionKeyFromUrl url =
+  case Parser.parse (Parser.query (QueryParser.string "brewSessionCode")) {url | path = ""} of
+   Just key ->
+     key
+
+   Nothing ->
+     Nothing
