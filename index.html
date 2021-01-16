@@ -53,14 +53,16 @@
 <script>
   const STORED_API_URLS_KEY = 'storedApiUrls'
   const SELECTED_API_URL_KEY = 'selectedApiUrl'
+  const BREW_SESSION_CODE_KEY = 'brewSessionCode'
   var storedApiUrls = JSON.parse(localStorage.getItem(STORED_API_URLS_KEY) || '[]')
   var apiBaseUrl = localStorage.getItem(SELECTED_API_URL_KEY) || storedApiUrls[0] || ''
+  var brewSessionCode = localStorage.getItem(BREW_SESSION_CODE_KEY) || ""
 
   var apiDefaultProtocol = `${window.location.protocol}//`
 
   var app = Elm.Main.init({
     node: document.querySelector('main'),
-    flags: {apiBaseUrl, basePath: 'varpivo-elm', storedApiUrls, apiDefaultProtocol}
+    flags: {apiBaseUrl, basePath: 'varpivo-elm', storedApiUrls, apiDefaultProtocol, brewSessionCode}
   })
 
   function notifyMe() {
@@ -148,6 +150,11 @@
     }
     socket = new WebSocket(target.replace('http', 'ws'))
     connectWebSocket(socket)
+  })
+
+  app.ports.saveBrewSessionCode.subscribe(function (newCode) {
+    console.log(newCode)
+    localStorage.setItem(BREW_SESSION_CODE_KEY, newCode)
   })
 
   function connectWebSocket(websocket) {

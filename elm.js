@@ -5438,10 +5438,11 @@ var $author$project$Messages$FetchRecipes = {$: 'FetchRecipes'};
 var $author$project$Messages$SetBrewSession = function (a) {
 	return {$: 'SetBrewSession', a: a};
 };
-var $author$project$Api$Data$BrewSession = F3(
-	function (steps, recipe, boilStartedAt) {
-		return {boilStartedAt: boilStartedAt, recipe: recipe, steps: steps};
+var $author$project$Api$Data$BrewSession = F4(
+	function (steps, recipe, boilStartedAt, bsCodeValid) {
+		return {boilStartedAt: boilStartedAt, bsCodeValid: bsCodeValid, recipe: recipe, steps: steps};
 	});
+var $elm$json$Json$Decode$bool = _Json_decodeBool;
 var $author$project$Api$Data$decodeChain = $elm$json$Json$Decode$map2($elm$core$Basics$apR);
 var $author$project$Api$Data$decode = F2(
 	function (key, decoder) {
@@ -5568,7 +5569,6 @@ var $author$project$Api$Data$RecipeStep = function (id) {
 		};
 	};
 };
-var $elm$json$Json$Decode$bool = _Json_decodeBool;
 var $author$project$Api$Data$recipeStepDecoder = A4(
 	$author$project$Api$Data$maybeDecode,
 	'target',
@@ -5620,20 +5620,34 @@ var $author$project$Api$Data$recipeStepDecoder = A4(
 											'id',
 											$elm$json$Json$Decode$string,
 											$elm$json$Json$Decode$succeed($author$project$Api$Data$RecipeStep))))))))))));
-var $author$project$Api$Data$brewSessionDecoder = A4(
-	$author$project$Api$Data$maybeDecode,
-	'boil_started_at',
-	$elm$json$Json$Decode$float,
-	$elm$core$Maybe$Nothing,
-	A3(
-		$author$project$Api$Data$decode,
-		'recipe',
-		$author$project$Api$Data$recipeDecoder,
+var $author$project$Api$Data$brewSessionDecoder = A3(
+	$author$project$Api$Data$decode,
+	'bs_code_valid',
+	$elm$json$Json$Decode$bool,
+	A4(
+		$author$project$Api$Data$maybeDecode,
+		'boil_started_at',
+		$elm$json$Json$Decode$float,
+		$elm$core$Maybe$Nothing,
 		A3(
 			$author$project$Api$Data$decode,
-			'steps',
-			$elm$json$Json$Decode$list($author$project$Api$Data$recipeStepDecoder),
-			$elm$json$Json$Decode$succeed($author$project$Api$Data$BrewSession))));
+			'recipe',
+			$author$project$Api$Data$recipeDecoder,
+			A3(
+				$author$project$Api$Data$decode,
+				'steps',
+				$elm$json$Json$Decode$list($author$project$Api$Data$recipeStepDecoder),
+				$elm$json$Json$Decode$succeed($author$project$Api$Data$BrewSession)))));
+var $elm$core$Maybe$map = F2(
+	function (f, maybe) {
+		if (maybe.$ === 'Just') {
+			var value = maybe.a;
+			return $elm$core$Maybe$Just(
+				f(value));
+		} else {
+			return $elm$core$Maybe$Nothing;
+		}
+	});
 var $author$project$Api$Request = function (a) {
 	return {$: 'Request', a: a};
 };
@@ -6203,16 +6217,6 @@ var $elm$http$Http$Header = F2(
 		return {$: 'Header', a: a, b: b};
 	});
 var $elm$http$Http$header = $elm$http$Http$Header;
-var $elm$core$Maybe$map = F2(
-	function (f, maybe) {
-		if (maybe.$ === 'Just') {
-			var value = maybe.a;
-			return $elm$core$Maybe$Just(
-				f(value));
-		} else {
-			return $elm$core$Maybe$Nothing;
-		}
-	});
 var $author$project$Api$headers = $elm$core$List$filterMap(
 	function (_v0) {
 		var key = _v0.a;
@@ -6320,7 +6324,22 @@ var $author$project$Api$request = F7(
 				tracker: $elm$core$Maybe$Nothing
 			});
 	});
-var $author$project$Api$Request$BrewSessionStatus$getBrewStatus = A7($author$project$Api$request, 'GET', '/status', _List_Nil, _List_Nil, _List_Nil, $elm$core$Maybe$Nothing, $author$project$Api$Data$brewSessionDecoder);
+var $author$project$Api$Request$BrewSessionStatus$getBrewStatus = function (authorization_header) {
+	return A7(
+		$author$project$Api$request,
+		'GET',
+		'/status',
+		_List_Nil,
+		_List_Nil,
+		_List_fromArray(
+			[
+				_Utils_Tuple2(
+				'Authorization',
+				A2($elm$core$Maybe$map, $elm$core$Basics$identity, authorization_header))
+			]),
+		$elm$core$Maybe$Nothing,
+		$author$project$Api$Data$brewSessionDecoder);
+};
 var $author$project$Data$Conversions$apiRecipeToRecipe = function (a) {
 	return {
 		boil_time: a.boilTime,
@@ -6397,6 +6416,7 @@ var $author$project$Main$handleBrewSession = function (response) {
 		return $elm$core$Maybe$Just(
 			{
 				boilStartedAt: A2($elm$core$Maybe$map, $elm$core$Basics$round, value.boilStartedAt),
+				brewSessionCodeValid: value.bsCodeValid,
 				recipeListEntry: $elm$core$Maybe$Just(
 					$author$project$Data$Conversions$apiRecipeToRecipe(value.recipe)),
 				stepIds: A2(
@@ -6708,20 +6728,25 @@ var $author$project$Api$withBasePath = F2(
 				req,
 				{basePath: basePath}));
 	});
-var $author$project$Main$fetchBrewSession = function (basePath) {
-	return A2(
-		$author$project$Api$send,
-		function (response) {
-			var _v0 = $author$project$Main$handleBrewSession(response);
-			if (_v0.$ === 'Nothing') {
-				return $author$project$Messages$FetchRecipes;
-			} else {
-				var result = _v0.a;
-				return $author$project$Messages$SetBrewSession(result);
-			}
-		},
-		A2($author$project$Api$withBasePath, basePath, $author$project$Api$Request$BrewSessionStatus$getBrewStatus));
-};
+var $author$project$Main$fetchBrewSession = F2(
+	function (brewSessionCode, basePath) {
+		return A2(
+			$author$project$Api$send,
+			function (response) {
+				var _v0 = $author$project$Main$handleBrewSession(response);
+				if (_v0.$ === 'Nothing') {
+					return $author$project$Messages$FetchRecipes;
+				} else {
+					var result = _v0.a;
+					return $author$project$Messages$SetBrewSession(result);
+				}
+			},
+			A2(
+				$author$project$Api$withBasePath,
+				basePath,
+				$author$project$Api$Request$BrewSessionStatus$getBrewStatus(
+					$elm$core$Maybe$Just(brewSessionCode))));
+	});
 var $author$project$Messages$RejectApiUrl = function (a) {
 	return {$: 'RejectApiUrl', a: a};
 };
@@ -6958,7 +6983,12 @@ var $author$project$Main$getApiUrlsFromQueryString = F2(
 	function (protocol, url) {
 		var queryParser = $elm$url$Url$Parser$query(
 			$elm$url$Url$Parser$Query$string('connections'));
-		var _v0 = A2($elm$url$Url$Parser$parse, queryParser, url);
+		var _v0 = A2(
+			$elm$url$Url$Parser$parse,
+			queryParser,
+			_Utils_update(
+				url,
+				{path: ''}));
 		if (_v0.$ === 'Just') {
 			var urls = _v0.a;
 			var decodedUrls = A2(
@@ -6995,6 +7025,37 @@ var $elm$time$Time$Zone = F2(
 var $elm$time$Time$customZone = $elm$time$Time$Zone;
 var $elm$time$Time$here = _Time_here(_Utils_Tuple0);
 var $author$project$Router$Home = {$: 'Home'};
+var $author$project$Model$defaultSecurityFormState = {error: '', hint: 'Current brew session key', valid: true, value: ''};
+var $author$project$Model$getBrewSessionKeyFromUrl = function (url) {
+	var _v0 = A2(
+		$elm$url$Url$Parser$parse,
+		$elm$url$Url$Parser$query(
+			$elm$url$Url$Parser$Query$string('brewSessionCode')),
+		_Utils_update(
+			url,
+			{path: ''}));
+	if (_v0.$ === 'Just') {
+		var key = _v0.a;
+		return key;
+	} else {
+		return $elm$core$Maybe$Nothing;
+	}
+};
+var $author$project$Model$defaultSecurity = F2(
+	function (url, flags) {
+		var codeFromUrl = $author$project$Model$getBrewSessionKeyFromUrl(url);
+		return {
+			code: A2($elm$core$Maybe$withDefault, flags.brewSessionCode, codeFromUrl),
+			form: $author$project$Model$defaultSecurityFormState,
+			valid: function () {
+				if (codeFromUrl.$ === 'Just') {
+					return true;
+				} else {
+					return false;
+				}
+			}()
+		};
+	});
 var $elm$core$List$filter = F2(
 	function (isGood, list) {
 		return A3(
@@ -7046,6 +7107,7 @@ var $author$project$Model$init = F3(
 			recipeSteps: $elm$core$Dict$empty,
 			remainingBoilTime: $elm$core$Maybe$Nothing,
 			route: $author$project$Router$Home,
+			security: A2($author$project$Model$defaultSecurity, url, flags),
 			selectedApiUrl: $elm$core$Maybe$Nothing,
 			selectedRecipe: $elm$core$Maybe$Nothing,
 			snackbarQueue: $aforemny$material_components_web_elm$Material$Snackbar$initialQueue,
@@ -7066,13 +7128,14 @@ var $elm$time$Time$millisToPosix = $elm$time$Time$Posix;
 var $elm$time$Time$now = _Time_now($elm$time$Time$millisToPosix);
 var $author$project$Main$init = F3(
 	function (flags, url, key) {
+		var model = A3($author$project$Model$init, flags, url, key);
 		return _Utils_Tuple2(
-			A3($author$project$Model$init, flags, url, key),
+			model,
 			$elm$core$Platform$Cmd$batch(
 				_Utils_ap(
 					_List_fromArray(
 						[
-							$author$project$Main$fetchBrewSession(flags.apiBaseUrl),
+							A2($author$project$Main$fetchBrewSession, model.security.code, flags.apiBaseUrl),
 							A2($elm$core$Task$perform, $author$project$Messages$SetTimeZone, $elm$time$Time$here),
 							A2($elm$core$Task$perform, $author$project$Messages$SetTime, $elm$time$Time$now)
 						]),
@@ -7428,63 +7491,151 @@ var $aforemny$material_components_web_elm$Material$Snackbar$setActionIcon = F2(
 				message_,
 				{actionIcon: actionIcon}));
 	});
-var $author$project$ApiErrorMessage$apiErrorMessage = function (message) {
+var $author$project$SnackbarTools$apiErrorMessage = function (message) {
 	return A2(
 		$aforemny$material_components_web_elm$Material$Snackbar$setActionIcon,
 		$elm$core$Maybe$Just(
 			$aforemny$material_components_web_elm$Material$Snackbar$icon('close')),
 		$aforemny$material_components_web_elm$Material$Snackbar$message(message));
 };
+var $author$project$Messages$Security = {$: 'Security'};
+var $author$project$Messages$ShowDialog = function (a) {
+	return {$: 'ShowDialog', a: a};
+};
+var $aforemny$material_components_web_elm$Material$Snackbar$setActionButton = F2(
+	function (actionButton, _v0) {
+		var message_ = _v0.a;
+		return $aforemny$material_components_web_elm$Material$Snackbar$Message(
+			_Utils_update(
+				message_,
+				{actionButton: actionButton}));
+	});
+var $aforemny$material_components_web_elm$Material$Snackbar$setOnActionButtonClick = F2(
+	function (onActionButtonClick, _v0) {
+		var message_ = _v0.a;
+		return $aforemny$material_components_web_elm$Material$Snackbar$Message(
+			_Utils_update(
+				message_,
+				{
+					onActionButtonClick: $elm$core$Maybe$Just(onActionButtonClick)
+				}));
+	});
+var $aforemny$material_components_web_elm$Material$Snackbar$setStacked = F2(
+	function (stacked, _v0) {
+		var message_ = _v0.a;
+		return $aforemny$material_components_web_elm$Material$Snackbar$Message(
+			_Utils_update(
+				message_,
+				{stacked: stacked}));
+	});
+var $author$project$SnackbarTools$brewSessionKeyRejectedMessage = function (message) {
+	return A2(
+		$aforemny$material_components_web_elm$Material$Snackbar$setOnActionButtonClick,
+		function (_v0) {
+			return $author$project$Messages$ShowDialog($author$project$Messages$Security);
+		},
+		A2(
+			$aforemny$material_components_web_elm$Material$Snackbar$setStacked,
+			true,
+			A2(
+				$aforemny$material_components_web_elm$Material$Snackbar$setActionButton,
+				$elm$core$Maybe$Just('Edit key'),
+				A2(
+					$aforemny$material_components_web_elm$Material$Snackbar$setActionIcon,
+					$elm$core$Maybe$Just(
+						$aforemny$material_components_web_elm$Material$Snackbar$icon('close')),
+					$aforemny$material_components_web_elm$Material$Snackbar$message(message)))));
+};
 var $author$project$Messages$ShowSnackbar = function (a) {
 	return {$: 'ShowSnackbar', a: a};
 };
-var $author$project$Api$Request$Scale$putScaleRes = A7(
-	$author$project$Api$request,
-	'PUT',
-	'/scale',
-	_List_Nil,
-	_List_Nil,
-	_List_Nil,
-	$elm$core$Maybe$Nothing,
-	$elm$json$Json$Decode$succeed(_Utils_Tuple0));
-var $author$project$Main$calibrate = function (basePath) {
-	return A2(
-		$author$project$Api$send,
-		function (response) {
-			if (response.$ === 'Ok') {
-				return $author$project$Messages$ShowSnackbar('Calibration in progress. Do not move the weight.');
-			} else {
-				var e = response.a;
-				return $author$project$Messages$ShowSnackbar(
-					$elm$core$Debug$toString(e));
-			}
-		},
-		A2($author$project$Api$withBasePath, basePath, $author$project$Api$Request$Scale$putScaleRes));
+var $author$project$Messages$BrewSessionCodeRejected = function (a) {
+	return {$: 'BrewSessionCodeRejected', a: a};
 };
-var $author$project$Api$Request$BrewSessionStatus$deleteBrewStatus = A7(
-	$author$project$Api$request,
-	'DELETE',
-	'/status',
-	_List_Nil,
-	_List_Nil,
-	_List_Nil,
-	$elm$core$Maybe$Nothing,
-	$elm$json$Json$Decode$succeed(_Utils_Tuple0));
-var $author$project$Main$cancelBrewSession = function (basePath) {
-	return A2(
-		$author$project$Api$send,
-		function (response) {
-			if (response.$ === 'Ok') {
-				return $author$project$Messages$SetBrewSession(
-					{boilStartedAt: $elm$core$Maybe$Nothing, recipeListEntry: $elm$core$Maybe$Nothing, stepIds: _List_Nil, steps: $elm$core$Dict$empty});
-			} else {
-				var e = response.a;
-				return $author$project$Messages$ShowSnackbar(
-					$elm$core$Debug$toString(e));
-			}
-		},
-		A2($author$project$Api$withBasePath, basePath, $author$project$Api$Request$BrewSessionStatus$deleteBrewStatus));
+var $author$project$Main$handleApiError = function (e) {
+	if (e.$ === 'BadStatus') {
+		var code = e.a;
+		if (code === 401) {
+			return $author$project$Messages$BrewSessionCodeRejected(
+				_Utils_Tuple2('You are in spectator mode! Add brew session key to gain control.', true));
+		} else {
+			return $author$project$Messages$ShowSnackbar(
+				$elm$core$Debug$toString(e));
+		}
+	} else {
+		return $author$project$Messages$ShowSnackbar(
+			$elm$core$Debug$toString(e));
+	}
 };
+var $author$project$Api$Request$Scale$putScaleRes = function (authorization_header) {
+	return A7(
+		$author$project$Api$request,
+		'PUT',
+		'/scale',
+		_List_Nil,
+		_List_Nil,
+		_List_fromArray(
+			[
+				_Utils_Tuple2(
+				'Authorization',
+				A2($elm$core$Maybe$map, $elm$core$Basics$identity, authorization_header))
+			]),
+		$elm$core$Maybe$Nothing,
+		$elm$json$Json$Decode$succeed(_Utils_Tuple0));
+};
+var $author$project$Main$calibrate = F2(
+	function (brewSessionCode, basePath) {
+		return A2(
+			$author$project$Api$send,
+			function (response) {
+				if (response.$ === 'Ok') {
+					return $author$project$Messages$ShowSnackbar('Calibration in progress. Do not move the weight.');
+				} else {
+					var e = response.a;
+					return $author$project$Main$handleApiError(e);
+				}
+			},
+			A2(
+				$author$project$Api$withBasePath,
+				basePath,
+				$author$project$Api$Request$Scale$putScaleRes(
+					$elm$core$Maybe$Just(brewSessionCode))));
+	});
+var $author$project$Api$Request$BrewSessionStatus$deleteBrewStatus = function (authorization_header) {
+	return A7(
+		$author$project$Api$request,
+		'DELETE',
+		'/status',
+		_List_Nil,
+		_List_Nil,
+		_List_fromArray(
+			[
+				_Utils_Tuple2(
+				'Authorization',
+				A2($elm$core$Maybe$map, $elm$core$Basics$identity, authorization_header))
+			]),
+		$elm$core$Maybe$Nothing,
+		$elm$json$Json$Decode$succeed(_Utils_Tuple0));
+};
+var $author$project$Main$cancelBrewSession = F2(
+	function (brewSessionCode, basePath) {
+		return A2(
+			$author$project$Api$send,
+			function (response) {
+				if (response.$ === 'Ok') {
+					return $author$project$Messages$SetBrewSession(
+						{boilStartedAt: $elm$core$Maybe$Nothing, brewSessionCodeValid: true, recipeListEntry: $elm$core$Maybe$Nothing, stepIds: _List_Nil, steps: $elm$core$Dict$empty});
+				} else {
+					var e = response.a;
+					return $author$project$Main$handleApiError(e);
+				}
+			},
+			A2(
+				$author$project$Api$withBasePath,
+				basePath,
+				$author$project$Api$Request$BrewSessionStatus$deleteBrewStatus(
+					$elm$core$Maybe$Just(brewSessionCode))));
+	});
 var $aforemny$material_components_web_elm$Material$Snackbar$close = F2(
 	function (messageId, _v0) {
 		var queue = _v0.a;
@@ -7612,22 +7763,28 @@ var $author$project$Main$fetchRecipes = function (basePath) {
 		},
 		A2($author$project$Api$withBasePath, basePath, $author$project$Api$Request$Recipes$getRecipeList));
 };
-var $author$project$Api$Request$RecipeSteps$deleteStepStart = function (stepId_path) {
-	return A7(
-		$author$project$Api$request,
-		'DELETE',
-		'/step/{stepId}',
-		_List_fromArray(
-			[
-				_Utils_Tuple2(
-				'stepId',
-				$elm$core$Basics$identity(stepId_path))
-			]),
-		_List_Nil,
-		_List_Nil,
-		$elm$core$Maybe$Nothing,
-		$author$project$Api$Data$recipeStepDecoder);
-};
+var $author$project$Api$Request$RecipeSteps$deleteStepStart = F2(
+	function (stepId_path, authorization_header) {
+		return A7(
+			$author$project$Api$request,
+			'DELETE',
+			'/step/{stepId}',
+			_List_fromArray(
+				[
+					_Utils_Tuple2(
+					'stepId',
+					$elm$core$Basics$identity(stepId_path))
+				]),
+			_List_Nil,
+			_List_fromArray(
+				[
+					_Utils_Tuple2(
+					'Authorization',
+					A2($elm$core$Maybe$map, $elm$core$Basics$identity, authorization_header))
+				]),
+			$elm$core$Maybe$Nothing,
+			$author$project$Api$Data$recipeStepDecoder);
+	});
 var $author$project$Messages$UpdateStep = function (a) {
 	return {$: 'UpdateStep', a: a};
 };
@@ -7638,19 +7795,21 @@ var $author$project$Main$handleStep = function (response) {
 			$author$project$Data$Conversions$apiStepToRecipeStep(value));
 	} else {
 		var e = response.a;
-		return $author$project$Messages$ShowSnackbar(
-			$elm$core$Debug$toString(e));
+		return $author$project$Main$handleApiError(e);
 	}
 };
-var $author$project$Main$finishStep = F2(
-	function (stepId, basePath) {
+var $author$project$Main$finishStep = F3(
+	function (stepId, brewSessionCode, basePath) {
 		return A2(
 			$author$project$Api$send,
 			$author$project$Main$handleStep,
 			A2(
 				$author$project$Api$withBasePath,
 				basePath,
-				$author$project$Api$Request$RecipeSteps$deleteStepStart(stepId)));
+				A2(
+					$author$project$Api$Request$RecipeSteps$deleteStepStart,
+					stepId,
+					$elm$core$Maybe$Just(brewSessionCode))));
 	});
 var $ianmackenzie$elm_units$Quantity$Quantity = function (a) {
 	return {$: 'Quantity', a: a};
@@ -8275,6 +8434,7 @@ var $author$project$Router$route = F3(
 			}
 		}
 	});
+var $author$project$Main$saveBrewSessionCode = _Platform_outgoingPort('saveBrewSessionCode', $elm$json$Json$Encode$string);
 var $elm$json$Json$Encode$list = F2(
 	function (func, entries) {
 		return _Json_wrap(
@@ -8299,25 +8459,31 @@ var $author$project$Main$saveConnections = _Platform_outgoingPort(
 				]));
 	});
 var $author$project$Main$sendMessage = _Platform_outgoingPort('sendMessage', $elm$json$Json$Encode$string);
-var $author$project$Api$Request$Scale$patchScaleRes = function (grams_query) {
-	return A7(
-		$author$project$Api$request,
-		'PATCH',
-		'/scale',
-		_List_Nil,
-		_List_fromArray(
-			[
-				_Utils_Tuple2(
-				'grams',
-				$elm$core$Maybe$Just(
-					$elm$core$String$fromInt(grams_query)))
-			]),
-		_List_Nil,
-		$elm$core$Maybe$Nothing,
-		$elm$json$Json$Decode$succeed(_Utils_Tuple0));
-};
-var $author$project$Main$startCalibration = F2(
-	function (grams, basePath) {
+var $author$project$Api$Request$Scale$patchScaleRes = F2(
+	function (grams_query, authorization_header) {
+		return A7(
+			$author$project$Api$request,
+			'PATCH',
+			'/scale',
+			_List_Nil,
+			_List_fromArray(
+				[
+					_Utils_Tuple2(
+					'grams',
+					$elm$core$Maybe$Just(
+						$elm$core$String$fromInt(grams_query)))
+				]),
+			_List_fromArray(
+				[
+					_Utils_Tuple2(
+					'Authorization',
+					A2($elm$core$Maybe$map, $elm$core$Basics$identity, authorization_header))
+				]),
+			$elm$core$Maybe$Nothing,
+			$elm$json$Json$Decode$succeed(_Utils_Tuple0));
+	});
+var $author$project$Main$startCalibration = F3(
+	function (grams, brewSessionCode, basePath) {
 		return A2(
 			$author$project$Api$send,
 			function (response) {
@@ -8325,64 +8491,87 @@ var $author$project$Main$startCalibration = F2(
 					return $author$project$Messages$ShowSnackbar('Scale calibration started');
 				} else {
 					var e = response.a;
-					return $author$project$Messages$ShowSnackbar(
-						$elm$core$Debug$toString(e));
+					return $author$project$Main$handleApiError(e);
 				}
 			},
 			A2(
 				$author$project$Api$withBasePath,
 				basePath,
-				$author$project$Api$Request$Scale$patchScaleRes(grams)));
+				A2(
+					$author$project$Api$Request$Scale$patchScaleRes,
+					grams,
+					$elm$core$Maybe$Just(brewSessionCode))));
 	});
-var $author$project$Api$Request$RecipeSteps$postStepStart = function (stepId_path) {
-	return A7(
-		$author$project$Api$request,
-		'POST',
-		'/step/{stepId}',
-		_List_fromArray(
-			[
-				_Utils_Tuple2(
-				'stepId',
-				$elm$core$Basics$identity(stepId_path))
-			]),
-		_List_Nil,
-		_List_Nil,
-		$elm$core$Maybe$Nothing,
-		$author$project$Api$Data$recipeStepDecoder);
-};
-var $author$project$Main$startStep = F2(
-	function (stepId, basePath) {
+var $author$project$Api$Request$RecipeSteps$postStepStart = F2(
+	function (stepId_path, authorization_header) {
+		return A7(
+			$author$project$Api$request,
+			'POST',
+			'/step/{stepId}',
+			_List_fromArray(
+				[
+					_Utils_Tuple2(
+					'stepId',
+					$elm$core$Basics$identity(stepId_path))
+				]),
+			_List_Nil,
+			_List_fromArray(
+				[
+					_Utils_Tuple2(
+					'Authorization',
+					A2($elm$core$Maybe$map, $elm$core$Basics$identity, authorization_header))
+				]),
+			$elm$core$Maybe$Nothing,
+			$author$project$Api$Data$recipeStepDecoder);
+	});
+var $author$project$Main$startStep = F3(
+	function (stepId, brewSessionCode, basePath) {
 		return A2(
 			$author$project$Api$send,
 			$author$project$Main$handleStep,
 			A2(
 				$author$project$Api$withBasePath,
 				basePath,
-				$author$project$Api$Request$RecipeSteps$postStepStart(stepId)));
+				A2(
+					$author$project$Api$Request$RecipeSteps$postStepStart,
+					stepId,
+					$elm$core$Maybe$Just(brewSessionCode))));
 	});
-var $author$project$Api$Request$Scale$deleteScaleRes = A7(
-	$author$project$Api$request,
-	'DELETE',
-	'/scale',
-	_List_Nil,
-	_List_Nil,
-	_List_Nil,
-	$elm$core$Maybe$Nothing,
-	$elm$json$Json$Decode$succeed(_Utils_Tuple0));
-var $author$project$Main$tareScale = function (basePath) {
-	return A2(
-		$author$project$Api$send,
-		function (response) {
-			if (response.$ === 'Ok') {
-				return $author$project$Messages$ShowSnackbar('Tare done');
-			} else {
-				var e = response.a;
-				return $author$project$Messages$ShowSnackbar(
-					$elm$core$Debug$toString(e));
-			}
-		},
-		A2($author$project$Api$withBasePath, basePath, $author$project$Api$Request$Scale$deleteScaleRes));
+var $author$project$Api$Request$Scale$deleteScaleRes = function (authorization_header) {
+	return A7(
+		$author$project$Api$request,
+		'DELETE',
+		'/scale',
+		_List_Nil,
+		_List_Nil,
+		_List_fromArray(
+			[
+				_Utils_Tuple2(
+				'Authorization',
+				A2($elm$core$Maybe$map, $elm$core$Basics$identity, authorization_header))
+			]),
+		$elm$core$Maybe$Nothing,
+		$elm$json$Json$Decode$succeed(_Utils_Tuple0));
 };
+var $author$project$Main$tareScale = F2(
+	function (brewSessionCode, basePath) {
+		return A2(
+			$author$project$Api$send,
+			function (response) {
+				if (response.$ === 'Ok') {
+					return $author$project$Messages$ShowSnackbar('Tare done');
+				} else {
+					var e = response.a;
+					return $author$project$Main$handleApiError(e);
+				}
+			},
+			A2(
+				$author$project$Api$withBasePath,
+				basePath,
+				$author$project$Api$Request$Scale$deleteScaleRes(
+					$elm$core$Maybe$Just(brewSessionCode))));
+	});
+var $elm$core$String$toUpper = _String_toUpper;
 var $elm$core$List$unzip = function (pairs) {
 	var step = F2(
 		function (_v0, _v1) {
@@ -8400,6 +8589,55 @@ var $elm$core$List$unzip = function (pairs) {
 		_Utils_Tuple2(_List_Nil, _List_Nil),
 		pairs);
 };
+var $author$project$Messages$BrewSessionCodeVerified = function (a) {
+	return {$: 'BrewSessionCodeVerified', a: a};
+};
+var $author$project$Api$Request$Info$getAuth = function (authorization_header) {
+	return A7(
+		$author$project$Api$request,
+		'GET',
+		'/auth',
+		_List_Nil,
+		_List_Nil,
+		_List_fromArray(
+			[
+				_Utils_Tuple2(
+				'Authorization',
+				A2($elm$core$Maybe$map, $elm$core$Basics$identity, authorization_header))
+			]),
+		$elm$core$Maybe$Nothing,
+		$author$project$Api$Data$messageDecoder);
+};
+var $author$project$Main$verifyBrewSessionCode = F2(
+	function (brewSessionCode, basePath) {
+		return A2(
+			$author$project$Api$send,
+			function (response) {
+				if (response.$ === 'Ok') {
+					return $author$project$Messages$BrewSessionCodeVerified(brewSessionCode);
+				} else {
+					var e = response.a;
+					if (e.$ === 'BadStatus') {
+						var code = e.a;
+						if (code === 401) {
+							return $author$project$Messages$BrewSessionCodeRejected(
+								_Utils_Tuple2('Invalid code', false));
+						} else {
+							return $author$project$Messages$BrewSessionCodeRejected(
+								_Utils_Tuple2('Code couldn\'t be verified', false));
+						}
+					} else {
+						return $author$project$Messages$BrewSessionCodeRejected(
+							_Utils_Tuple2('Code couldn\'t be verified', false));
+					}
+				}
+			},
+			A2(
+				$author$project$Api$withBasePath,
+				basePath,
+				$author$project$Api$Request$Info$getAuth(
+					$elm$core$Maybe$Just(brewSessionCode))));
+	});
 var $author$project$Main$update = F2(
 	function (msg, model) {
 		update:
@@ -8515,7 +8753,7 @@ var $author$project$Main$update = F2(
 								loading: false,
 								snackbarQueue: A2(
 									$aforemny$material_components_web_elm$Material$Snackbar$addMessage,
-									$author$project$ApiErrorMessage$apiErrorMessage(string),
+									$author$project$SnackbarTools$apiErrorMessage(string),
 									model.snackbarQueue)
 							}),
 						$elm$core$Platform$Cmd$none);
@@ -8619,6 +8857,8 @@ var $author$project$Main$update = F2(
 						$elm$core$Platform$Cmd$none);
 				case 'SetBrewSession':
 					var brewSessionData = msg.a;
+					var oldSecurity = model.security;
+					var oldSecurityForm = oldSecurity.form;
 					return _Utils_Tuple2(
 						_Utils_update(
 							model,
@@ -8626,27 +8866,35 @@ var $author$project$Main$update = F2(
 								boilStartedAt: A2($elm$core$Maybe$map, $elm$time$Time$millisToPosix, brewSessionData.boilStartedAt),
 								loading: false,
 								recipeSteps: brewSessionData.steps,
+								security: _Utils_update(
+									oldSecurity,
+									{
+										form: _Utils_update(
+											oldSecurityForm,
+											{
+												value: brewSessionData.brewSessionCodeValid ? model.security.code : ''
+											}),
+										valid: brewSessionData.brewSessionCodeValid
+									}),
 								selectedRecipe: brewSessionData.recipeListEntry,
 								stepsOrder: brewSessionData.stepIds
 							}),
 						$elm$core$Platform$Cmd$batch(
 							_List_fromArray(
 								[
-									$author$project$Main$console(
-									$elm$core$Debug$toString(
-										_Utils_Tuple3(brewSessionData.recipeListEntry, brewSessionData.steps, brewSessionData.stepIds))),
 									A3(
 									$author$project$Router$navigate,
 									model,
 									_List_fromArray(
 										['brew-session']),
-									_List_Nil)
+									_List_Nil),
+									brewSessionData.brewSessionCodeValid ? $author$project$Main$saveBrewSessionCode(model.security.code) : $elm$core$Platform$Cmd$none
 								])));
 				case 'StartStep':
 					var stepId = msg.a;
 					return _Utils_Tuple2(
 						model,
-						A2($author$project$Main$startStep, stepId, model.apiBaseUrl));
+						A3($author$project$Main$startStep, stepId, model.security.code, model.apiBaseUrl));
 				case 'UpdateStep':
 					var step = msg.a;
 					return _Utils_Tuple2(
@@ -8670,7 +8918,7 @@ var $author$project$Main$update = F2(
 									return $elm$core$Platform$Cmd$batch(
 										_List_fromArray(
 											[
-												A2($author$project$Main$finishStep, stepId, model.apiBaseUrl),
+												A3($author$project$Main$finishStep, stepId, model.security.code, model.apiBaseUrl),
 												A3($author$project$Router$navigate, model, _List_Nil, _List_Nil)
 											]));
 								} else {
@@ -8702,22 +8950,22 @@ var $author$project$Main$update = F2(
 				case 'StartCalibration':
 					return _Utils_Tuple2(
 						model,
-						_Utils_eq(model.calibrationValue, -1) ? $elm$core$Platform$Cmd$none : A2($author$project$Main$startCalibration, model.calibrationValue, model.apiBaseUrl));
+						_Utils_eq(model.calibrationValue, -1) ? $elm$core$Platform$Cmd$none : A3($author$project$Main$startCalibration, model.calibrationValue, model.security.code, model.apiBaseUrl));
 				case 'CalibrationWeightPlaced':
 					return _Utils_Tuple2(
 						model,
-						$author$project$Main$calibrate(model.apiBaseUrl));
+						A2($author$project$Main$calibrate, model.security.code, model.apiBaseUrl));
 				case 'TareScale':
 					return _Utils_Tuple2(
 						model,
-						$author$project$Main$tareScale(model.apiBaseUrl));
+						A2($author$project$Main$tareScale, model.security.code, model.apiBaseUrl));
 				case 'CancelBrewSession':
 					return _Utils_Tuple2(
 						model,
 						$elm$core$Platform$Cmd$batch(
 							_List_fromArray(
 								[
-									$author$project$Main$cancelBrewSession(model.apiBaseUrl),
+									A2($author$project$Main$cancelBrewSession, model.security.code, model.apiBaseUrl),
 									$author$project$Main$fetchRecipes(model.apiBaseUrl)
 								])));
 				case 'Multiple':
@@ -8795,7 +9043,7 @@ var $author$project$Main$update = F2(
 								[
 									$author$project$Main$saveConnections(
 									{connections: storedApiUrls, selected: string}),
-									$author$project$Main$fetchBrewSession(string),
+									A2($author$project$Main$fetchBrewSession, string, model.security.code),
 									A3(
 									$author$project$Router$navigate,
 									model,
@@ -8821,7 +9069,7 @@ var $author$project$Main$update = F2(
 								connections: storedApiUrls,
 								selected: A2($elm$core$Maybe$withDefault, '', model.selectedApiUrl)
 							}));
-				default:
+				case 'RejectApiUrl':
 					var _v15 = msg.a;
 					var reason = _v15.a;
 					var autoCheckedUrl = _v15.b;
@@ -8833,16 +9081,90 @@ var $author$project$Main$update = F2(
 								newApiUrlFormError: autoCheckedUrl ? $elm$core$Maybe$Nothing : $elm$core$Maybe$Just(reason)
 							}),
 						$author$project$Main$console(reason));
+				case 'BrewSessionCodeInput':
+					var value = msg.a;
+					var oldSecurity = model.security;
+					var oldSecurityForm = oldSecurity.form;
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								security: _Utils_update(
+									oldSecurity,
+									{
+										form: _Utils_update(
+											oldSecurityForm,
+											{
+												value: $elm$core$String$toUpper(value)
+											})
+									})
+							}),
+						$elm$core$Platform$Cmd$none);
+				case 'BrewSessionCodeChange':
+					var suggestedCode = msg.a;
+					var oldSecurity = model.security;
+					var oldSecurityForm = oldSecurity.form;
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								security: _Utils_update(
+									oldSecurity,
+									{
+										form: _Utils_update(
+											oldSecurityForm,
+											{hint: 'Checking...'})
+									})
+							}),
+						A2($author$project$Main$verifyBrewSessionCode, suggestedCode, model.apiBaseUrl));
+				case 'BrewSessionCodeVerified':
+					var newCode = msg.a;
+					var oldSecurity = model.security;
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								security: _Utils_update(
+									oldSecurity,
+									{
+										code: newCode,
+										form: _Utils_update(
+											$author$project$Model$defaultSecurityFormState,
+											{value: newCode}),
+										valid: true
+									})
+							}),
+						$author$project$Main$saveBrewSessionCode(newCode));
+				default:
+					var _v16 = msg.a;
+					var rejectionMessage = _v16.a;
+					var currentIsInvalid = _v16.b;
+					var oldSecurity = model.security;
+					var oldSecurityForm = oldSecurity.form;
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								security: _Utils_update(
+									oldSecurity,
+									{
+										form: _Utils_update(
+											oldSecurityForm,
+											{error: rejectionMessage, valid: false}),
+										valid: (!currentIsInvalid) ? model.security.valid : false
+									}),
+								snackbarQueue: A2(
+									$aforemny$material_components_web_elm$Material$Snackbar$addMessage,
+									$author$project$SnackbarTools$brewSessionKeyRejectedMessage(rejectionMessage),
+									model.snackbarQueue)
+							}),
+						$elm$core$Platform$Cmd$none);
 			}
 		}
 	});
-var $author$project$Messages$CloseDialog = function (a) {
-	return {$: 'CloseDialog', a: a};
-};
 var $author$project$Messages$SnackbarClosed = function (a) {
 	return {$: 'SnackbarClosed', a: a};
 };
-var $author$project$Messages$StartCalibration = {$: 'StartCalibration'};
 var $rundis$elm_bootstrap$Bootstrap$Grid$Internal$RowAttrs = function (a) {
 	return {$: 'RowAttrs', a: a};
 };
@@ -9888,818 +10210,6 @@ var $author$project$BottomToolbar$bottomToolbar = F3(
 						]))
 				]));
 	});
-var $author$project$Messages$CalibrationValueUpdate = function (a) {
-	return {$: 'CalibrationValueUpdate', a: a};
-};
-var $aforemny$material_components_web_elm$Material$HelperText$Config = function (a) {
-	return {$: 'Config', a: a};
-};
-var $aforemny$material_components_web_elm$Material$HelperText$config = $aforemny$material_components_web_elm$Material$HelperText$Config(
-	{additionalAttributes: _List_Nil, persistent: false, validation: true});
-var $aforemny$material_components_web_elm$Material$TextField$Config = function (a) {
-	return {$: 'Config', a: a};
-};
-var $aforemny$material_components_web_elm$Material$TextField$config = $aforemny$material_components_web_elm$Material$TextField$Config(
-	{additionalAttributes: _List_Nil, disabled: false, endAligned: false, fullwidth: false, label: $elm$core$Maybe$Nothing, leadingIcon: $elm$core$Maybe$Nothing, max: $elm$core$Maybe$Nothing, maxLength: $elm$core$Maybe$Nothing, min: $elm$core$Maybe$Nothing, minLength: $elm$core$Maybe$Nothing, onChange: $elm$core$Maybe$Nothing, onInput: $elm$core$Maybe$Nothing, pattern: $elm$core$Maybe$Nothing, placeholder: $elm$core$Maybe$Nothing, prefix: $elm$core$Maybe$Nothing, required: false, step: $elm$core$Maybe$Nothing, suffix: $elm$core$Maybe$Nothing, trailingIcon: $elm$core$Maybe$Nothing, type_: $elm$core$Maybe$Nothing, valid: true, value: $elm$core$Maybe$Nothing});
-var $aforemny$material_components_web_elm$Material$TextField$disabledCs = function (_v0) {
-	var disabled = _v0.a.disabled;
-	return disabled ? $elm$core$Maybe$Just(
-		$elm$html$Html$Attributes$class('mdc-text-field--disabled')) : $elm$core$Maybe$Nothing;
-};
-var $elm$json$Json$Encode$bool = _Json_wrap;
-var $elm$virtual_dom$VirtualDom$property = F2(
-	function (key, value) {
-		return A2(
-			_VirtualDom_property,
-			_VirtualDom_noInnerHtmlOrFormAction(key),
-			_VirtualDom_noJavaScriptOrHtmlUri(value));
-	});
-var $elm$html$Html$Attributes$property = $elm$virtual_dom$VirtualDom$property;
-var $aforemny$material_components_web_elm$Material$TextField$disabledProp = function (_v0) {
-	var disabled = _v0.a.disabled;
-	return $elm$core$Maybe$Just(
-		A2(
-			$elm$html$Html$Attributes$property,
-			'disabled',
-			$elm$json$Json$Encode$bool(disabled)));
-};
-var $aforemny$material_components_web_elm$Material$TextField$endAlignedCs = function (_v0) {
-	var endAligned = _v0.a.endAligned;
-	return endAligned ? $elm$core$Maybe$Just(
-		$elm$html$Html$Attributes$class('mdc-text-field--end-aligned')) : $elm$core$Maybe$Nothing;
-};
-var $aforemny$material_components_web_elm$Material$TextField$filledCs = function (outlined_) {
-	return (!outlined_) ? $elm$core$Maybe$Just(
-		$elm$html$Html$Attributes$class('mdc-text-field--filled')) : $elm$core$Maybe$Nothing;
-};
-var $aforemny$material_components_web_elm$Material$TextField$foucClassNamesProp = $elm$core$Maybe$Just(
-	A2(
-		$elm$html$Html$Attributes$property,
-		'foucClassNames',
-		A2(
-			$elm$json$Json$Encode$list,
-			$elm$json$Json$Encode$string,
-			_List_fromArray(
-				['mdc-text-field--label-floating']))));
-var $aforemny$material_components_web_elm$Material$TextField$fullwidthCs = function (_v0) {
-	var fullwidth = _v0.a.fullwidth;
-	return fullwidth ? $elm$core$Maybe$Just(
-		$elm$html$Html$Attributes$class('mdc-text-field--fullwidth')) : $elm$core$Maybe$Nothing;
-};
-var $elm$virtual_dom$VirtualDom$attribute = F2(
-	function (key, value) {
-		return A2(
-			_VirtualDom_attribute,
-			_VirtualDom_noOnOrFormAction(key),
-			_VirtualDom_noJavaScriptOrHtmlUri(value));
-	});
-var $elm$html$Html$Attributes$attribute = $elm$virtual_dom$VirtualDom$attribute;
-var $aforemny$material_components_web_elm$Material$TextField$ariaLabelAttr = function (_v0) {
-	var fullwidth = _v0.a.fullwidth;
-	var placeholder = _v0.a.placeholder;
-	var label = _v0.a.label;
-	return fullwidth ? A2(
-		$elm$core$Maybe$map,
-		$elm$html$Html$Attributes$attribute('aria-label'),
-		label) : $elm$core$Maybe$Nothing;
-};
-var $elm$virtual_dom$VirtualDom$Normal = function (a) {
-	return {$: 'Normal', a: a};
-};
-var $elm$virtual_dom$VirtualDom$on = _VirtualDom_on;
-var $elm$html$Html$Events$on = F2(
-	function (event, decoder) {
-		return A2(
-			$elm$virtual_dom$VirtualDom$on,
-			event,
-			$elm$virtual_dom$VirtualDom$Normal(decoder));
-	});
-var $elm$json$Json$Decode$at = F2(
-	function (fields, decoder) {
-		return A3($elm$core$List$foldr, $elm$json$Json$Decode$field, decoder, fields);
-	});
-var $elm$html$Html$Events$targetValue = A2(
-	$elm$json$Json$Decode$at,
-	_List_fromArray(
-		['target', 'value']),
-	$elm$json$Json$Decode$string);
-var $aforemny$material_components_web_elm$Material$TextField$changeHandler = function (_v0) {
-	var onChange = _v0.a.onChange;
-	return A2(
-		$elm$core$Maybe$map,
-		function (f) {
-			return A2(
-				$elm$html$Html$Events$on,
-				'change',
-				A2($elm$json$Json$Decode$map, f, $elm$html$Html$Events$targetValue));
-		},
-		onChange);
-};
-var $elm$html$Html$input = _VirtualDom_node('input');
-var $aforemny$material_components_web_elm$Material$TextField$inputCs = $elm$core$Maybe$Just(
-	$elm$html$Html$Attributes$class('mdc-text-field__input'));
-var $elm$html$Html$Events$alwaysStop = function (x) {
-	return _Utils_Tuple2(x, true);
-};
-var $elm$virtual_dom$VirtualDom$MayStopPropagation = function (a) {
-	return {$: 'MayStopPropagation', a: a};
-};
-var $elm$html$Html$Events$stopPropagationOn = F2(
-	function (event, decoder) {
-		return A2(
-			$elm$virtual_dom$VirtualDom$on,
-			event,
-			$elm$virtual_dom$VirtualDom$MayStopPropagation(decoder));
-	});
-var $elm$html$Html$Events$onInput = function (tagger) {
-	return A2(
-		$elm$html$Html$Events$stopPropagationOn,
-		'input',
-		A2(
-			$elm$json$Json$Decode$map,
-			$elm$html$Html$Events$alwaysStop,
-			A2($elm$json$Json$Decode$map, tagger, $elm$html$Html$Events$targetValue)));
-};
-var $aforemny$material_components_web_elm$Material$TextField$inputHandler = function (_v0) {
-	var onInput = _v0.a.onInput;
-	return A2($elm$core$Maybe$map, $elm$html$Html$Events$onInput, onInput);
-};
-var $aforemny$material_components_web_elm$Material$TextField$maxLengthAttr = function (_v0) {
-	var maxLength = _v0.a.maxLength;
-	return A2(
-		$elm$core$Maybe$map,
-		A2(
-			$elm$core$Basics$composeL,
-			$elm$html$Html$Attributes$attribute('maxLength'),
-			$elm$core$String$fromInt),
-		maxLength);
-};
-var $aforemny$material_components_web_elm$Material$TextField$minLengthAttr = function (_v0) {
-	var minLength = _v0.a.minLength;
-	return A2(
-		$elm$core$Maybe$map,
-		A2(
-			$elm$core$Basics$composeL,
-			$elm$html$Html$Attributes$attribute('minLength'),
-			$elm$core$String$fromInt),
-		minLength);
-};
-var $elm$html$Html$Attributes$placeholder = $elm$html$Html$Attributes$stringProperty('placeholder');
-var $aforemny$material_components_web_elm$Material$TextField$placeholderAttr = function (_v0) {
-	var placeholder = _v0.a.placeholder;
-	return A2($elm$core$Maybe$map, $elm$html$Html$Attributes$placeholder, placeholder);
-};
-var $elm$html$Html$Attributes$type_ = $elm$html$Html$Attributes$stringProperty('type');
-var $aforemny$material_components_web_elm$Material$TextField$typeAttr = function (_v0) {
-	var type_ = _v0.a.type_;
-	return A2($elm$core$Maybe$map, $elm$html$Html$Attributes$type_, type_);
-};
-var $aforemny$material_components_web_elm$Material$TextField$inputElt = function (config_) {
-	return A2(
-		$elm$html$Html$input,
-		A2(
-			$elm$core$List$filterMap,
-			$elm$core$Basics$identity,
-			_List_fromArray(
-				[
-					$aforemny$material_components_web_elm$Material$TextField$inputCs,
-					$aforemny$material_components_web_elm$Material$TextField$typeAttr(config_),
-					$aforemny$material_components_web_elm$Material$TextField$ariaLabelAttr(config_),
-					$aforemny$material_components_web_elm$Material$TextField$placeholderAttr(config_),
-					$aforemny$material_components_web_elm$Material$TextField$inputHandler(config_),
-					$aforemny$material_components_web_elm$Material$TextField$changeHandler(config_),
-					$aforemny$material_components_web_elm$Material$TextField$minLengthAttr(config_),
-					$aforemny$material_components_web_elm$Material$TextField$maxLengthAttr(config_)
-				])),
-		_List_Nil);
-};
-var $elm$html$Html$span = _VirtualDom_node('span');
-var $aforemny$material_components_web_elm$Material$TextField$labelElt = function (_v0) {
-	var label = _v0.a.label;
-	var value = _v0.a.value;
-	var fullwidth = _v0.a.fullwidth;
-	var floatingLabelFloatAboveCs = 'mdc-floating-label--float-above';
-	var floatingLabelCs = 'mdc-floating-label';
-	var _v1 = _Utils_Tuple2(fullwidth, label);
-	if ((!_v1.a) && (_v1.b.$ === 'Just')) {
-		var str = _v1.b.a;
-		return A2(
-			$elm$html$Html$span,
-			_List_fromArray(
-				[
-					(A2($elm$core$Maybe$withDefault, '', value) !== '') ? $elm$html$Html$Attributes$class(floatingLabelCs + (' ' + floatingLabelFloatAboveCs)) : $elm$html$Html$Attributes$class(floatingLabelCs),
-					A2(
-					$elm$html$Html$Attributes$property,
-					'foucClassNames',
-					A2(
-						$elm$json$Json$Encode$list,
-						$elm$json$Json$Encode$string,
-						_List_fromArray(
-							[floatingLabelFloatAboveCs])))
-				]),
-			_List_fromArray(
-				[
-					$elm$html$Html$text(str)
-				]));
-	} else {
-		return $elm$html$Html$text('');
-	}
-};
-var $aforemny$material_components_web_elm$Material$TextField$labelFloatingCs = function (_v0) {
-	var label = _v0.a.label;
-	var value = _v0.a.value;
-	var fullwidth = _v0.a.fullwidth;
-	return ((!fullwidth) && ((!_Utils_eq(label, $elm$core$Maybe$Nothing)) && (A2($elm$core$Maybe$withDefault, '', value) !== ''))) ? $elm$core$Maybe$Just(
-		$elm$html$Html$Attributes$class('mdc-text-field--label-floating')) : $elm$core$Maybe$Nothing;
-};
-var $elm$svg$Svg$Attributes$class = _VirtualDom_attribute('class');
-var $elm$html$Html$Events$keyCode = A2($elm$json$Json$Decode$field, 'keyCode', $elm$json$Json$Decode$int);
-var $elm$html$Html$Events$onClick = function (msg) {
-	return A2(
-		$elm$html$Html$Events$on,
-		'click',
-		$elm$json$Json$Decode$succeed(msg));
-};
-var $elm$html$Html$Attributes$tabindex = function (n) {
-	return A2(
-		_VirtualDom_attribute,
-		'tabIndex',
-		$elm$core$String$fromInt(n));
-};
-var $aforemny$material_components_web_elm$Material$TextField$iconElt = F2(
-	function (modifierCs, icon_) {
-		if (icon_.$ === 'Nothing') {
-			return $elm$html$Html$text('');
-		} else {
-			if (icon_.a.$ === 'Icon') {
-				var node = icon_.a.a.node;
-				var attributes = icon_.a.a.attributes;
-				var nodes = icon_.a.a.nodes;
-				var onInteraction = icon_.a.a.onInteraction;
-				var disabled = icon_.a.a.disabled;
-				return A2(
-					node,
-					A2(
-						$elm$core$List$cons,
-						$elm$html$Html$Attributes$class('mdc-text-field__icon'),
-						A2(
-							$elm$core$List$cons,
-							$elm$html$Html$Attributes$class(modifierCs),
-							function () {
-								if (onInteraction.$ === 'Just') {
-									var msg = onInteraction.a;
-									return (!disabled) ? A2(
-										$elm$core$List$cons,
-										$elm$html$Html$Attributes$tabindex(0),
-										A2(
-											$elm$core$List$cons,
-											A2($elm$html$Html$Attributes$attribute, 'role', 'button'),
-											A2(
-												$elm$core$List$cons,
-												$elm$html$Html$Events$onClick(msg),
-												A2(
-													$elm$core$List$cons,
-													A2(
-														$elm$html$Html$Events$on,
-														'keydown',
-														A2(
-															$elm$json$Json$Decode$andThen,
-															function (keyCode) {
-																return (keyCode === 13) ? $elm$json$Json$Decode$succeed(msg) : $elm$json$Json$Decode$fail('');
-															},
-															$elm$html$Html$Events$keyCode)),
-													attributes)))) : A2(
-										$elm$core$List$cons,
-										$elm$html$Html$Attributes$tabindex(-1),
-										A2(
-											$elm$core$List$cons,
-											A2($elm$html$Html$Attributes$attribute, 'role', 'button'),
-											attributes));
-								} else {
-									return attributes;
-								}
-							}())),
-					nodes);
-			} else {
-				var node = icon_.a.a.node;
-				var attributes = icon_.a.a.attributes;
-				var nodes = icon_.a.a.nodes;
-				var onInteraction = icon_.a.a.onInteraction;
-				var disabled = icon_.a.a.disabled;
-				return A2(
-					node,
-					A2(
-						$elm$core$List$cons,
-						$elm$svg$Svg$Attributes$class('mdc-text-field__icon'),
-						A2(
-							$elm$core$List$cons,
-							$elm$svg$Svg$Attributes$class(modifierCs),
-							function () {
-								if (onInteraction.$ === 'Just') {
-									var msg = onInteraction.a;
-									return (!disabled) ? A2(
-										$elm$core$List$cons,
-										$elm$html$Html$Attributes$tabindex(0),
-										A2(
-											$elm$core$List$cons,
-											A2($elm$html$Html$Attributes$attribute, 'role', 'button'),
-											A2(
-												$elm$core$List$cons,
-												$elm$html$Html$Events$onClick(msg),
-												A2(
-													$elm$core$List$cons,
-													A2(
-														$elm$html$Html$Events$on,
-														'keydown',
-														A2(
-															$elm$json$Json$Decode$andThen,
-															function (keyCode) {
-																return (keyCode === 13) ? $elm$json$Json$Decode$succeed(msg) : $elm$json$Json$Decode$fail('');
-															},
-															$elm$html$Html$Events$keyCode)),
-													attributes)))) : A2(
-										$elm$core$List$cons,
-										$elm$html$Html$Attributes$tabindex(-1),
-										A2(
-											$elm$core$List$cons,
-											A2($elm$html$Html$Attributes$attribute, 'role', 'button'),
-											attributes));
-								} else {
-									return attributes;
-								}
-							}())),
-					nodes);
-			}
-		}
-	});
-var $aforemny$material_components_web_elm$Material$TextField$leadingIconElt = function (_v0) {
-	var leadingIcon = _v0.a.leadingIcon;
-	return A2($aforemny$material_components_web_elm$Material$TextField$iconElt, 'mdc-text-field__icon--leading', leadingIcon);
-};
-var $aforemny$material_components_web_elm$Material$TextField$lineRippleElt = A2(
-	$elm$html$Html$span,
-	_List_fromArray(
-		[
-			$elm$html$Html$Attributes$class('mdc-line-ripple')
-		]),
-	_List_Nil);
-var $elm$json$Json$Encode$int = _Json_wrap;
-var $aforemny$material_components_web_elm$Material$TextField$maxLengthProp = function (_v0) {
-	var maxLength = _v0.a.maxLength;
-	return $elm$core$Maybe$Just(
-		A2(
-			$elm$html$Html$Attributes$property,
-			'maxLength',
-			$elm$json$Json$Encode$int(
-				A2($elm$core$Maybe$withDefault, -1, maxLength))));
-};
-var $aforemny$material_components_web_elm$Material$TextField$maxProp = function (_v0) {
-	var max = _v0.a.max;
-	return $elm$core$Maybe$Just(
-		A2(
-			$elm$html$Html$Attributes$property,
-			'max',
-			$elm$json$Json$Encode$string(
-				A2(
-					$elm$core$Maybe$withDefault,
-					'',
-					A2($elm$core$Maybe$map, $elm$core$String$fromInt, max)))));
-};
-var $aforemny$material_components_web_elm$Material$TextField$minLengthProp = function (_v0) {
-	var minLength = _v0.a.minLength;
-	return $elm$core$Maybe$Just(
-		A2(
-			$elm$html$Html$Attributes$property,
-			'minLength',
-			$elm$json$Json$Encode$int(
-				A2($elm$core$Maybe$withDefault, -1, minLength))));
-};
-var $aforemny$material_components_web_elm$Material$TextField$minProp = function (_v0) {
-	var min = _v0.a.min;
-	return $elm$core$Maybe$Just(
-		A2(
-			$elm$html$Html$Attributes$property,
-			'min',
-			$elm$json$Json$Encode$string(
-				A2(
-					$elm$core$Maybe$withDefault,
-					'',
-					A2($elm$core$Maybe$map, $elm$core$String$fromInt, min)))));
-};
-var $aforemny$material_components_web_elm$Material$TextField$noLabelCs = function (_v0) {
-	var label = _v0.a.label;
-	return _Utils_eq(label, $elm$core$Maybe$Nothing) ? $elm$core$Maybe$Just(
-		$elm$html$Html$Attributes$class('mdc-text-field--no-label')) : $elm$core$Maybe$Nothing;
-};
-var $elm$virtual_dom$VirtualDom$node = function (tag) {
-	return _VirtualDom_node(
-		_VirtualDom_noScript(tag));
-};
-var $elm$html$Html$node = $elm$virtual_dom$VirtualDom$node;
-var $aforemny$material_components_web_elm$Material$TextField$notchedOutlineLeadingElt = A2(
-	$elm$html$Html$span,
-	_List_fromArray(
-		[
-			$elm$html$Html$Attributes$class('mdc-notched-outline__leading')
-		]),
-	_List_Nil);
-var $aforemny$material_components_web_elm$Material$TextField$notchedOutlineNotchElt = function (config_) {
-	return A2(
-		$elm$html$Html$span,
-		_List_fromArray(
-			[
-				$elm$html$Html$Attributes$class('mdc-notched-outline__notch')
-			]),
-		_List_fromArray(
-			[
-				$aforemny$material_components_web_elm$Material$TextField$labelElt(config_)
-			]));
-};
-var $aforemny$material_components_web_elm$Material$TextField$notchedOutlineTrailingElt = A2(
-	$elm$html$Html$span,
-	_List_fromArray(
-		[
-			$elm$html$Html$Attributes$class('mdc-notched-outline__trailing')
-		]),
-	_List_Nil);
-var $aforemny$material_components_web_elm$Material$TextField$notchedOutlineElt = function (config_) {
-	return A2(
-		$elm$html$Html$span,
-		_List_fromArray(
-			[
-				$elm$html$Html$Attributes$class('mdc-notched-outline')
-			]),
-		_List_fromArray(
-			[
-				$aforemny$material_components_web_elm$Material$TextField$notchedOutlineLeadingElt,
-				$aforemny$material_components_web_elm$Material$TextField$notchedOutlineNotchElt(config_),
-				$aforemny$material_components_web_elm$Material$TextField$notchedOutlineTrailingElt
-			]));
-};
-var $aforemny$material_components_web_elm$Material$TextField$outlinedCs = function (outlined_) {
-	return outlined_ ? $elm$core$Maybe$Just(
-		$elm$html$Html$Attributes$class('mdc-text-field--outlined')) : $elm$core$Maybe$Nothing;
-};
-var $elm$json$Json$Encode$null = _Json_encodeNull;
-var $aforemny$material_components_web_elm$Material$TextField$patternProp = function (_v0) {
-	var pattern = _v0.a.pattern;
-	return $elm$core$Maybe$Just(
-		A2(
-			$elm$html$Html$Attributes$property,
-			'pattern',
-			A2(
-				$elm$core$Maybe$withDefault,
-				$elm$json$Json$Encode$null,
-				A2($elm$core$Maybe$map, $elm$json$Json$Encode$string, pattern))));
-};
-var $aforemny$material_components_web_elm$Material$TextField$prefixCs = $elm$html$Html$Attributes$class('mdc-text-field__affix mdc-text-field__affix--prefix');
-var $aforemny$material_components_web_elm$Material$TextField$prefixElt = function (_v0) {
-	var prefix = _v0.a.prefix;
-	if (prefix.$ === 'Just') {
-		var prefixStr = prefix.a;
-		return A2(
-			$elm$html$Html$span,
-			_List_fromArray(
-				[$aforemny$material_components_web_elm$Material$TextField$prefixCs]),
-			_List_fromArray(
-				[
-					$elm$html$Html$text(prefixStr)
-				]));
-	} else {
-		return $elm$html$Html$text('');
-	}
-};
-var $aforemny$material_components_web_elm$Material$TextField$requiredProp = function (_v0) {
-	var required = _v0.a.required;
-	return $elm$core$Maybe$Just(
-		A2(
-			$elm$html$Html$Attributes$property,
-			'required',
-			$elm$json$Json$Encode$bool(required)));
-};
-var $aforemny$material_components_web_elm$Material$TextField$rippleElt = A2(
-	$elm$html$Html$span,
-	_List_fromArray(
-		[
-			$elm$html$Html$Attributes$class('mdc-text-field__ripple')
-		]),
-	_List_Nil);
-var $aforemny$material_components_web_elm$Material$TextField$rootCs = $elm$core$Maybe$Just(
-	$elm$html$Html$Attributes$class('mdc-text-field'));
-var $aforemny$material_components_web_elm$Material$TextField$stepProp = function (_v0) {
-	var step = _v0.a.step;
-	return $elm$core$Maybe$Just(
-		A2(
-			$elm$html$Html$Attributes$property,
-			'step',
-			$elm$json$Json$Encode$string(
-				A2(
-					$elm$core$Maybe$withDefault,
-					'',
-					A2($elm$core$Maybe$map, $elm$core$String$fromInt, step)))));
-};
-var $aforemny$material_components_web_elm$Material$TextField$suffixCs = $elm$html$Html$Attributes$class('mdc-text-field__affix mdc-text-field__affix--suffix');
-var $aforemny$material_components_web_elm$Material$TextField$suffixElt = function (_v0) {
-	var suffix = _v0.a.suffix;
-	if (suffix.$ === 'Just') {
-		var suffixStr = suffix.a;
-		return A2(
-			$elm$html$Html$span,
-			_List_fromArray(
-				[$aforemny$material_components_web_elm$Material$TextField$suffixCs]),
-			_List_fromArray(
-				[
-					$elm$html$Html$text(suffixStr)
-				]));
-	} else {
-		return $elm$html$Html$text('');
-	}
-};
-var $aforemny$material_components_web_elm$Material$TextField$trailingIconElt = function (_v0) {
-	var trailingIcon = _v0.a.trailingIcon;
-	return A2($aforemny$material_components_web_elm$Material$TextField$iconElt, 'mdc-text-field__icon--trailing', trailingIcon);
-};
-var $aforemny$material_components_web_elm$Material$TextField$validProp = function (_v0) {
-	var valid = _v0.a.valid;
-	return $elm$core$Maybe$Just(
-		A2(
-			$elm$html$Html$Attributes$property,
-			'valid',
-			$elm$json$Json$Encode$bool(valid)));
-};
-var $aforemny$material_components_web_elm$Material$TextField$valueProp = function (_v0) {
-	var value = _v0.a.value;
-	return A2(
-		$elm$core$Maybe$map,
-		A2(
-			$elm$core$Basics$composeL,
-			$elm$html$Html$Attributes$property('value'),
-			$elm$json$Json$Encode$string),
-		value);
-};
-var $aforemny$material_components_web_elm$Material$TextField$withLeadingIconCs = function (_v0) {
-	var leadingIcon = _v0.a.leadingIcon;
-	return (!_Utils_eq(leadingIcon, $elm$core$Maybe$Nothing)) ? $elm$core$Maybe$Just(
-		$elm$html$Html$Attributes$class('mdc-text-field--with-leading-icon')) : $elm$core$Maybe$Nothing;
-};
-var $aforemny$material_components_web_elm$Material$TextField$withTrailingIconCs = function (_v0) {
-	var trailingIcon = _v0.a.trailingIcon;
-	return (!_Utils_eq(trailingIcon, $elm$core$Maybe$Nothing)) ? $elm$core$Maybe$Just(
-		$elm$html$Html$Attributes$class('mdc-text-field--with-trailing-icon')) : $elm$core$Maybe$Nothing;
-};
-var $aforemny$material_components_web_elm$Material$TextField$textField = F2(
-	function (outlined_, config_) {
-		var additionalAttributes = config_.a.additionalAttributes;
-		var fullwidth = config_.a.fullwidth;
-		return A3(
-			$elm$html$Html$node,
-			'mdc-text-field',
-			_Utils_ap(
-				A2(
-					$elm$core$List$filterMap,
-					$elm$core$Basics$identity,
-					_List_fromArray(
-						[
-							$aforemny$material_components_web_elm$Material$TextField$rootCs,
-							$aforemny$material_components_web_elm$Material$TextField$noLabelCs(config_),
-							$aforemny$material_components_web_elm$Material$TextField$filledCs(outlined_),
-							$aforemny$material_components_web_elm$Material$TextField$outlinedCs(outlined_),
-							$aforemny$material_components_web_elm$Material$TextField$fullwidthCs(config_),
-							$aforemny$material_components_web_elm$Material$TextField$labelFloatingCs(config_),
-							$aforemny$material_components_web_elm$Material$TextField$foucClassNamesProp,
-							$aforemny$material_components_web_elm$Material$TextField$disabledCs(config_),
-							$aforemny$material_components_web_elm$Material$TextField$withLeadingIconCs(config_),
-							$aforemny$material_components_web_elm$Material$TextField$withTrailingIconCs(config_),
-							$aforemny$material_components_web_elm$Material$TextField$endAlignedCs(config_),
-							$aforemny$material_components_web_elm$Material$TextField$valueProp(config_),
-							$aforemny$material_components_web_elm$Material$TextField$disabledProp(config_),
-							$aforemny$material_components_web_elm$Material$TextField$requiredProp(config_),
-							$aforemny$material_components_web_elm$Material$TextField$validProp(config_),
-							$aforemny$material_components_web_elm$Material$TextField$patternProp(config_),
-							$aforemny$material_components_web_elm$Material$TextField$minLengthProp(config_),
-							$aforemny$material_components_web_elm$Material$TextField$maxLengthProp(config_),
-							$aforemny$material_components_web_elm$Material$TextField$minProp(config_),
-							$aforemny$material_components_web_elm$Material$TextField$maxProp(config_),
-							$aforemny$material_components_web_elm$Material$TextField$stepProp(config_)
-						])),
-				additionalAttributes),
-			outlined_ ? _List_fromArray(
-				[
-					$aforemny$material_components_web_elm$Material$TextField$leadingIconElt(config_),
-					$aforemny$material_components_web_elm$Material$TextField$prefixElt(config_),
-					$aforemny$material_components_web_elm$Material$TextField$inputElt(config_),
-					$aforemny$material_components_web_elm$Material$TextField$suffixElt(config_),
-					$aforemny$material_components_web_elm$Material$TextField$notchedOutlineElt(config_),
-					$aforemny$material_components_web_elm$Material$TextField$trailingIconElt(config_)
-				]) : _List_fromArray(
-				[
-					$aforemny$material_components_web_elm$Material$TextField$rippleElt,
-					$aforemny$material_components_web_elm$Material$TextField$leadingIconElt(config_),
-					$aforemny$material_components_web_elm$Material$TextField$prefixElt(config_),
-					$aforemny$material_components_web_elm$Material$TextField$inputElt(config_),
-					$aforemny$material_components_web_elm$Material$TextField$suffixElt(config_),
-					$aforemny$material_components_web_elm$Material$TextField$labelElt(config_),
-					$aforemny$material_components_web_elm$Material$TextField$lineRippleElt,
-					$aforemny$material_components_web_elm$Material$TextField$trailingIconElt(config_)
-				]));
-	});
-var $aforemny$material_components_web_elm$Material$TextField$filled = function (config_) {
-	return A2($aforemny$material_components_web_elm$Material$TextField$textField, false, config_);
-};
-var $aforemny$material_components_web_elm$Material$HelperText$helperLineCs = $elm$html$Html$Attributes$class('mdc-text-field-helper-line');
-var $aforemny$material_components_web_elm$Material$HelperText$helperLine = F2(
-	function (additionalAttributes, nodes) {
-		return A2(
-			$elm$html$Html$div,
-			A2($elm$core$List$cons, $aforemny$material_components_web_elm$Material$HelperText$helperLineCs, additionalAttributes),
-			nodes);
-	});
-var $aforemny$material_components_web_elm$Material$HelperText$ariaHiddenAttr = $elm$core$Maybe$Just(
-	A2($elm$html$Html$Attributes$attribute, 'aria-hidden', 'true'));
-var $aforemny$material_components_web_elm$Material$HelperText$helperTextCs = $elm$core$Maybe$Just(
-	$elm$html$Html$Attributes$class('mdc-text-field-helper-text'));
-var $aforemny$material_components_web_elm$Material$HelperText$persistentCs = function (_v0) {
-	var config_ = _v0.a;
-	return config_.persistent ? $elm$core$Maybe$Just(
-		$elm$html$Html$Attributes$class('mdc-text-field-helper-text--persistent')) : $elm$core$Maybe$Nothing;
-};
-var $aforemny$material_components_web_elm$Material$HelperText$validationCs = function (_v0) {
-	var config_ = _v0.a;
-	return config_.validation ? $elm$core$Maybe$Just(
-		$elm$html$Html$Attributes$class('mdc-text-field-helper-text--validation-msg')) : $elm$core$Maybe$Nothing;
-};
-var $aforemny$material_components_web_elm$Material$HelperText$helperText = F2(
-	function (config_, string) {
-		var additionalAttributes = config_.a.additionalAttributes;
-		return A2(
-			$elm$html$Html$div,
-			_Utils_ap(
-				A2(
-					$elm$core$List$filterMap,
-					$elm$core$Basics$identity,
-					_List_fromArray(
-						[
-							$aforemny$material_components_web_elm$Material$HelperText$helperTextCs,
-							$aforemny$material_components_web_elm$Material$HelperText$persistentCs(config_),
-							$aforemny$material_components_web_elm$Material$HelperText$validationCs(config_),
-							$aforemny$material_components_web_elm$Material$HelperText$ariaHiddenAttr
-						])),
-				additionalAttributes),
-			_List_fromArray(
-				[
-					$elm$html$Html$text(string)
-				]));
-	});
-var $aforemny$material_components_web_elm$Material$TextField$setAttributes = F2(
-	function (additionalAttributes, _v0) {
-		var config_ = _v0.a;
-		return $aforemny$material_components_web_elm$Material$TextField$Config(
-			_Utils_update(
-				config_,
-				{additionalAttributes: additionalAttributes}));
-	});
-var $aforemny$material_components_web_elm$Material$TextField$setEndAligned = F2(
-	function (endAligned, _v0) {
-		var config_ = _v0.a;
-		return $aforemny$material_components_web_elm$Material$TextField$Config(
-			_Utils_update(
-				config_,
-				{endAligned: endAligned}));
-	});
-var $aforemny$material_components_web_elm$Material$TextField$setLabel = F2(
-	function (label, _v0) {
-		var config_ = _v0.a;
-		return $aforemny$material_components_web_elm$Material$TextField$Config(
-			_Utils_update(
-				config_,
-				{label: label}));
-	});
-var $aforemny$material_components_web_elm$Material$TextField$setMax = F2(
-	function (max, _v0) {
-		var config_ = _v0.a;
-		return $aforemny$material_components_web_elm$Material$TextField$Config(
-			_Utils_update(
-				config_,
-				{max: max}));
-	});
-var $aforemny$material_components_web_elm$Material$TextField$setMin = F2(
-	function (min, _v0) {
-		var config_ = _v0.a;
-		return $aforemny$material_components_web_elm$Material$TextField$Config(
-			_Utils_update(
-				config_,
-				{min: min}));
-	});
-var $aforemny$material_components_web_elm$Material$TextField$setOnChange = F2(
-	function (onChange, _v0) {
-		var config_ = _v0.a;
-		return $aforemny$material_components_web_elm$Material$TextField$Config(
-			_Utils_update(
-				config_,
-				{
-					onChange: $elm$core$Maybe$Just(onChange)
-				}));
-	});
-var $aforemny$material_components_web_elm$Material$HelperText$setPersistent = F2(
-	function (persistent, _v0) {
-		var config_ = _v0.a;
-		return $aforemny$material_components_web_elm$Material$HelperText$Config(
-			_Utils_update(
-				config_,
-				{persistent: persistent}));
-	});
-var $aforemny$material_components_web_elm$Material$TextField$setRequired = F2(
-	function (required, _v0) {
-		var config_ = _v0.a;
-		return $aforemny$material_components_web_elm$Material$TextField$Config(
-			_Utils_update(
-				config_,
-				{required: required}));
-	});
-var $aforemny$material_components_web_elm$Material$TextField$setStep = F2(
-	function (step, _v0) {
-		var config_ = _v0.a;
-		return $aforemny$material_components_web_elm$Material$TextField$Config(
-			_Utils_update(
-				config_,
-				{step: step}));
-	});
-var $aforemny$material_components_web_elm$Material$TextField$setSuffix = F2(
-	function (suffix, _v0) {
-		var config_ = _v0.a;
-		return $aforemny$material_components_web_elm$Material$TextField$Config(
-			_Utils_update(
-				config_,
-				{suffix: suffix}));
-	});
-var $aforemny$material_components_web_elm$Material$TextField$setType = F2(
-	function (type_, _v0) {
-		var config_ = _v0.a;
-		return $aforemny$material_components_web_elm$Material$TextField$Config(
-			_Utils_update(
-				config_,
-				{type_: type_}));
-	});
-var $rundis$elm_bootstrap$Bootstrap$Utilities$Size$w100 = $elm$html$Html$Attributes$class('w-100');
-var $author$project$Dialog$calibrationDialogContent = _List_fromArray(
-	[
-		A2(
-		$elm$html$Html$p,
-		_List_Nil,
-		_List_fromArray(
-			[
-				$elm$html$Html$text('Enter real weight (grams) for calibration')
-			])),
-		$aforemny$material_components_web_elm$Material$TextField$filled(
-		A2(
-			$aforemny$material_components_web_elm$Material$TextField$setAttributes,
-			_List_fromArray(
-				[$rundis$elm_bootstrap$Bootstrap$Utilities$Size$w100]),
-			A2(
-				$aforemny$material_components_web_elm$Material$TextField$setOnChange,
-				function (value) {
-					return $author$project$Messages$CalibrationValueUpdate(
-						A2(
-							$elm$core$Maybe$withDefault,
-							-1,
-							$elm$core$String$toInt(value)));
-				},
-				A2(
-					$aforemny$material_components_web_elm$Material$TextField$setStep,
-					$elm$core$Maybe$Just(100),
-					A2(
-						$aforemny$material_components_web_elm$Material$TextField$setMax,
-						$elm$core$Maybe$Just(5000),
-						A2(
-							$aforemny$material_components_web_elm$Material$TextField$setMin,
-							$elm$core$Maybe$Just(1),
-							A2(
-								$aforemny$material_components_web_elm$Material$TextField$setType,
-								$elm$core$Maybe$Just('number'),
-								A2(
-									$aforemny$material_components_web_elm$Material$TextField$setEndAligned,
-									true,
-									A2(
-										$aforemny$material_components_web_elm$Material$TextField$setSuffix,
-										$elm$core$Maybe$Just(' g'),
-										A2(
-											$aforemny$material_components_web_elm$Material$TextField$setRequired,
-											true,
-											A2(
-												$aforemny$material_components_web_elm$Material$TextField$setLabel,
-												$elm$core$Maybe$Just('Real weight'),
-												$aforemny$material_components_web_elm$Material$TextField$config))))))))))),
-		A2(
-		$aforemny$material_components_web_elm$Material$HelperText$helperLine,
-		_List_Nil,
-		_List_fromArray(
-			[
-				A2(
-				$aforemny$material_components_web_elm$Material$HelperText$helperText,
-				A2($aforemny$material_components_web_elm$Material$HelperText$setPersistent, true, $aforemny$material_components_web_elm$Material$HelperText$config),
-				'Weight of object used for calibration')
-			]))
-	]);
 var $aforemny$material_components_web_elm$Material$Snackbar$Config = function (a) {
 	return {$: 'Config', a: a};
 };
@@ -10707,12 +10217,6 @@ var $aforemny$material_components_web_elm$Material$Snackbar$config = function (_
 	var onClosed = _v0.onClosed;
 	return $aforemny$material_components_web_elm$Material$Snackbar$Config(
 		{additionalAttributes: _List_Nil, closeOnEscape: false, onClosed: onClosed});
-};
-var $author$project$Dialog$confirmDialogContent = function (message) {
-	return _List_fromArray(
-		[
-			$elm$html$Html$text(message)
-		]);
 };
 var $rundis$elm_bootstrap$Bootstrap$Grid$container = F2(
 	function (attributes, children) {
@@ -10726,455 +10230,6 @@ var $rundis$elm_bootstrap$Bootstrap$Grid$container = F2(
 				attributes),
 			children);
 	});
-var $aforemny$material_components_web_elm$Material$Button$Internal$Config = function (a) {
-	return {$: 'Config', a: a};
-};
-var $aforemny$material_components_web_elm$Material$Button$config = $aforemny$material_components_web_elm$Material$Button$Internal$Config(
-	{additionalAttributes: _List_Nil, dense: false, disabled: false, href: $elm$core$Maybe$Nothing, icon: $elm$core$Maybe$Nothing, onClick: $elm$core$Maybe$Nothing, target: $elm$core$Maybe$Nothing, touch: true, trailingIcon: false});
-var $aforemny$material_components_web_elm$Material$Dialog$Config = function (a) {
-	return {$: 'Config', a: a};
-};
-var $aforemny$material_components_web_elm$Material$Dialog$config = $aforemny$material_components_web_elm$Material$Dialog$Config(
-	{additionalAttributes: _List_Nil, onClose: $elm$core$Maybe$Nothing, open: false});
-var $aforemny$material_components_web_elm$Material$Dialog$closeHandler = function (_v0) {
-	var onClose = _v0.a.onClose;
-	return A2(
-		$elm$core$Maybe$map,
-		A2(
-			$elm$core$Basics$composeL,
-			$elm$html$Html$Events$on('MDCDialog:close'),
-			$elm$json$Json$Decode$succeed),
-		onClose);
-};
-var $elm$core$List$isEmpty = function (xs) {
-	if (!xs.b) {
-		return true;
-	} else {
-		return false;
-	}
-};
-var $aforemny$material_components_web_elm$Material$Dialog$actionsElt = function (_v0) {
-	var actions = _v0.actions;
-	return $elm$core$List$isEmpty(actions) ? $elm$core$Maybe$Nothing : $elm$core$Maybe$Just(
-		A2(
-			$elm$html$Html$div,
-			_List_fromArray(
-				[
-					$elm$html$Html$Attributes$class('mdc-dialog__actions')
-				]),
-			actions));
-};
-var $aforemny$material_components_web_elm$Material$Dialog$alertDialogRoleAttr = A2($elm$html$Html$Attributes$attribute, 'role', 'alertdialog');
-var $aforemny$material_components_web_elm$Material$Dialog$ariaModalAttr = A2($elm$html$Html$Attributes$attribute, 'aria-modal', 'true');
-var $aforemny$material_components_web_elm$Material$Dialog$contentElt = function (_v0) {
-	var content = _v0.content;
-	return $elm$core$Maybe$Just(
-		A2(
-			$elm$html$Html$div,
-			_List_fromArray(
-				[
-					$elm$html$Html$Attributes$class('mdc-dialog__content')
-				]),
-			content));
-};
-var $aforemny$material_components_web_elm$Material$Dialog$dialogSurfaceCs = $elm$html$Html$Attributes$class('mdc-dialog__surface');
-var $aforemny$material_components_web_elm$Material$Dialog$titleElt = function (_v0) {
-	var title = _v0.title;
-	if (title.$ === 'Just') {
-		var title_ = title.a;
-		return $elm$core$Maybe$Just(
-			A2(
-				$elm$html$Html$div,
-				_List_fromArray(
-					[
-						$elm$html$Html$Attributes$class('mdc-dialog__title')
-					]),
-				_List_fromArray(
-					[
-						$elm$html$Html$text(title_)
-					])));
-	} else {
-		return $elm$core$Maybe$Nothing;
-	}
-};
-var $aforemny$material_components_web_elm$Material$Dialog$surfaceElt = function (content) {
-	return A2(
-		$elm$html$Html$div,
-		_List_fromArray(
-			[$aforemny$material_components_web_elm$Material$Dialog$dialogSurfaceCs, $aforemny$material_components_web_elm$Material$Dialog$alertDialogRoleAttr, $aforemny$material_components_web_elm$Material$Dialog$ariaModalAttr]),
-		A2(
-			$elm$core$List$filterMap,
-			$elm$core$Basics$identity,
-			_List_fromArray(
-				[
-					$aforemny$material_components_web_elm$Material$Dialog$titleElt(content),
-					$aforemny$material_components_web_elm$Material$Dialog$contentElt(content),
-					$aforemny$material_components_web_elm$Material$Dialog$actionsElt(content)
-				])));
-};
-var $aforemny$material_components_web_elm$Material$Dialog$containerElt = function (content) {
-	return A2(
-		$elm$html$Html$div,
-		_List_fromArray(
-			[
-				$elm$html$Html$Attributes$class('mdc-dialog__container')
-			]),
-		_List_fromArray(
-			[
-				$aforemny$material_components_web_elm$Material$Dialog$surfaceElt(content)
-			]));
-};
-var $aforemny$material_components_web_elm$Material$Dialog$openProp = function (_v0) {
-	var open = _v0.a.open;
-	return $elm$core$Maybe$Just(
-		A2(
-			$elm$html$Html$Attributes$property,
-			'open',
-			$elm$json$Json$Encode$bool(open)));
-};
-var $aforemny$material_components_web_elm$Material$Dialog$rootCs = $elm$core$Maybe$Just(
-	$elm$html$Html$Attributes$class('mdc-dialog'));
-var $aforemny$material_components_web_elm$Material$Dialog$scrimElt = A2(
-	$elm$html$Html$div,
-	_List_fromArray(
-		[
-			$elm$html$Html$Attributes$class('mdc-dialog__scrim')
-		]),
-	_List_Nil);
-var $aforemny$material_components_web_elm$Material$Dialog$dialog = F2(
-	function (config_, content) {
-		var additionalAttributes = config_.a.additionalAttributes;
-		return A3(
-			$elm$html$Html$node,
-			'mdc-dialog',
-			_Utils_ap(
-				A2(
-					$elm$core$List$filterMap,
-					$elm$core$Basics$identity,
-					_List_fromArray(
-						[
-							$aforemny$material_components_web_elm$Material$Dialog$rootCs,
-							$aforemny$material_components_web_elm$Material$Dialog$openProp(config_),
-							$aforemny$material_components_web_elm$Material$Dialog$closeHandler(config_)
-						])),
-				additionalAttributes),
-			_List_fromArray(
-				[
-					$aforemny$material_components_web_elm$Material$Dialog$containerElt(content),
-					$aforemny$material_components_web_elm$Material$Dialog$scrimElt
-				]));
-	});
-var $aforemny$material_components_web_elm$Material$Button$setOnClick = F2(
-	function (onClick, _v0) {
-		var config_ = _v0.a;
-		return $aforemny$material_components_web_elm$Material$Button$Internal$Config(
-			_Utils_update(
-				config_,
-				{
-					onClick: $elm$core$Maybe$Just(onClick)
-				}));
-	});
-var $aforemny$material_components_web_elm$Material$Dialog$setOnClose = F2(
-	function (onClose, _v0) {
-		var config_ = _v0.a;
-		return $aforemny$material_components_web_elm$Material$Dialog$Config(
-			_Utils_update(
-				config_,
-				{
-					onClose: $elm$core$Maybe$Just(onClose)
-				}));
-	});
-var $aforemny$material_components_web_elm$Material$Dialog$setOpen = F2(
-	function (open, _v0) {
-		var config_ = _v0.a;
-		return $aforemny$material_components_web_elm$Material$Dialog$Config(
-			_Utils_update(
-				config_,
-				{open: open}));
-	});
-var $aforemny$material_components_web_elm$Material$Button$Text = {$: 'Text'};
-var $elm$html$Html$a = _VirtualDom_node('a');
-var $elm$html$Html$button = _VirtualDom_node('button');
-var $aforemny$material_components_web_elm$Material$Button$clickHandler = function (_v0) {
-	var onClick = _v0.a.onClick;
-	return A2($elm$core$Maybe$map, $elm$html$Html$Events$onClick, onClick);
-};
-var $aforemny$material_components_web_elm$Material$Button$denseCs = function (_v0) {
-	var dense = _v0.a.dense;
-	return dense ? $elm$core$Maybe$Just(
-		$elm$html$Html$Attributes$class('mdc-button--dense')) : $elm$core$Maybe$Nothing;
-};
-var $elm$html$Html$Attributes$boolProperty = F2(
-	function (key, bool) {
-		return A2(
-			_VirtualDom_property,
-			key,
-			$elm$json$Json$Encode$bool(bool));
-	});
-var $elm$html$Html$Attributes$disabled = $elm$html$Html$Attributes$boolProperty('disabled');
-var $aforemny$material_components_web_elm$Material$Button$disabledAttr = function (_v0) {
-	var disabled = _v0.a.disabled;
-	return $elm$core$Maybe$Just(
-		$elm$html$Html$Attributes$disabled(disabled));
-};
-var $aforemny$material_components_web_elm$Material$Button$disabledProp = function (_v0) {
-	var disabled = _v0.a.disabled;
-	return $elm$core$Maybe$Just(
-		A2(
-			$elm$html$Html$Attributes$property,
-			'disabled',
-			$elm$json$Json$Encode$bool(disabled)));
-};
-var $elm$html$Html$Attributes$href = function (url) {
-	return A2(
-		$elm$html$Html$Attributes$stringProperty,
-		'href',
-		_VirtualDom_noJavaScriptUri(url));
-};
-var $aforemny$material_components_web_elm$Material$Button$hrefAttr = function (_v0) {
-	var href = _v0.a.href;
-	return A2($elm$core$Maybe$map, $elm$html$Html$Attributes$href, href);
-};
-var $aforemny$material_components_web_elm$Material$Button$labelElt = function (label) {
-	return $elm$core$Maybe$Just(
-		A2(
-			$elm$html$Html$span,
-			_List_fromArray(
-				[
-					$elm$html$Html$Attributes$class('mdc-button__label')
-				]),
-			_List_fromArray(
-				[
-					$elm$html$Html$text(label)
-				])));
-};
-var $elm$virtual_dom$VirtualDom$map = _VirtualDom_map;
-var $elm$html$Html$map = $elm$virtual_dom$VirtualDom$map;
-var $aforemny$material_components_web_elm$Material$Button$iconElt = function (_v0) {
-	var config_ = _v0.a;
-	return A2(
-		$elm$core$Maybe$map,
-		$elm$html$Html$map($elm$core$Basics$never),
-		function () {
-			var _v1 = config_.icon;
-			if (_v1.$ === 'Just') {
-				if (_v1.a.$ === 'Icon') {
-					var node = _v1.a.a.node;
-					var attributes = _v1.a.a.attributes;
-					var nodes = _v1.a.a.nodes;
-					return $elm$core$Maybe$Just(
-						A2(
-							node,
-							A2(
-								$elm$core$List$cons,
-								$elm$html$Html$Attributes$class('mdc-button__icon'),
-								A2(
-									$elm$core$List$cons,
-									A2($elm$html$Html$Attributes$attribute, 'aria-hidden', 'true'),
-									attributes)),
-							nodes));
-				} else {
-					var node = _v1.a.a.node;
-					var attributes = _v1.a.a.attributes;
-					var nodes = _v1.a.a.nodes;
-					return $elm$core$Maybe$Just(
-						A2(
-							node,
-							A2(
-								$elm$core$List$cons,
-								$elm$svg$Svg$Attributes$class('mdc-button__icon'),
-								A2(
-									$elm$core$List$cons,
-									A2($elm$html$Html$Attributes$attribute, 'aria-hidden', 'true'),
-									attributes)),
-							nodes));
-				}
-			} else {
-				return $elm$core$Maybe$Nothing;
-			}
-		}());
-};
-var $aforemny$material_components_web_elm$Material$Button$leadingIconElt = function (config_) {
-	var trailingIcon = config_.a.trailingIcon;
-	return (!trailingIcon) ? $aforemny$material_components_web_elm$Material$Button$iconElt(config_) : $elm$core$Maybe$Nothing;
-};
-var $aforemny$material_components_web_elm$Material$Button$rippleElt = $elm$core$Maybe$Just(
-	A2(
-		$elm$html$Html$div,
-		_List_fromArray(
-			[
-				$elm$html$Html$Attributes$class('mdc-button__ripple')
-			]),
-		_List_Nil));
-var $aforemny$material_components_web_elm$Material$Button$rootCs = $elm$core$Maybe$Just(
-	$elm$html$Html$Attributes$class('mdc-button'));
-var $aforemny$material_components_web_elm$Material$Button$tabIndexProp = function (_v0) {
-	var disabled = _v0.a.disabled;
-	return disabled ? $elm$core$Maybe$Just(
-		A2(
-			$elm$html$Html$Attributes$property,
-			'tabIndex',
-			$elm$json$Json$Encode$int(-1))) : $elm$core$Maybe$Just(
-		A2(
-			$elm$html$Html$Attributes$property,
-			'tabIndex',
-			$elm$json$Json$Encode$int(0)));
-};
-var $elm$html$Html$Attributes$target = $elm$html$Html$Attributes$stringProperty('target');
-var $aforemny$material_components_web_elm$Material$Button$targetAttr = function (_v0) {
-	var href = _v0.a.href;
-	var target = _v0.a.target;
-	return (!_Utils_eq(href, $elm$core$Maybe$Nothing)) ? A2($elm$core$Maybe$map, $elm$html$Html$Attributes$target, target) : $elm$core$Maybe$Nothing;
-};
-var $aforemny$material_components_web_elm$Material$Button$touchCs = function (_v0) {
-	var touch = _v0.a.touch;
-	return touch ? $elm$core$Maybe$Just(
-		$elm$html$Html$Attributes$class('mdc-button--touch')) : $elm$core$Maybe$Nothing;
-};
-var $aforemny$material_components_web_elm$Material$Button$touchElt = function (_v0) {
-	var touch = _v0.a.touch;
-	return touch ? $elm$core$Maybe$Just(
-		A2(
-			$elm$html$Html$div,
-			_List_fromArray(
-				[
-					$elm$html$Html$Attributes$class('mdc-button__touch')
-				]),
-			_List_Nil)) : $elm$core$Maybe$Nothing;
-};
-var $aforemny$material_components_web_elm$Material$Button$trailingIconElt = function (config_) {
-	var trailingIcon = config_.a.trailingIcon;
-	return trailingIcon ? $aforemny$material_components_web_elm$Material$Button$iconElt(config_) : $elm$core$Maybe$Nothing;
-};
-var $aforemny$material_components_web_elm$Material$Button$variantCs = function (variant) {
-	switch (variant.$) {
-		case 'Text':
-			return $elm$core$Maybe$Nothing;
-		case 'Raised':
-			return $elm$core$Maybe$Just(
-				$elm$html$Html$Attributes$class('mdc-button--raised'));
-		case 'Unelevated':
-			return $elm$core$Maybe$Just(
-				$elm$html$Html$Attributes$class('mdc-button--unelevated'));
-		default:
-			return $elm$core$Maybe$Just(
-				$elm$html$Html$Attributes$class('mdc-button--outlined'));
-	}
-};
-var $aforemny$material_components_web_elm$Material$Button$button = F3(
-	function (variant, config_, label) {
-		var additionalAttributes = config_.a.additionalAttributes;
-		var touch = config_.a.touch;
-		var href = config_.a.href;
-		var wrapTouch = function (node) {
-			return touch ? A2(
-				$elm$html$Html$div,
-				_List_fromArray(
-					[
-						$elm$html$Html$Attributes$class('mdc-touch-target-wrapper')
-					]),
-				_List_fromArray(
-					[node])) : node;
-		};
-		return wrapTouch(
-			A3(
-				$elm$html$Html$node,
-				'mdc-button',
-				A2(
-					$elm$core$List$filterMap,
-					$elm$core$Basics$identity,
-					_List_fromArray(
-						[
-							$aforemny$material_components_web_elm$Material$Button$disabledProp(config_)
-						])),
-				_List_fromArray(
-					[
-						A2(
-						(!_Utils_eq(href, $elm$core$Maybe$Nothing)) ? $elm$html$Html$a : $elm$html$Html$button,
-						_Utils_ap(
-							A2(
-								$elm$core$List$filterMap,
-								$elm$core$Basics$identity,
-								_List_fromArray(
-									[
-										$aforemny$material_components_web_elm$Material$Button$rootCs,
-										$aforemny$material_components_web_elm$Material$Button$variantCs(variant),
-										$aforemny$material_components_web_elm$Material$Button$denseCs(config_),
-										$aforemny$material_components_web_elm$Material$Button$touchCs(config_),
-										$aforemny$material_components_web_elm$Material$Button$disabledAttr(config_),
-										$aforemny$material_components_web_elm$Material$Button$tabIndexProp(config_),
-										$aforemny$material_components_web_elm$Material$Button$hrefAttr(config_),
-										$aforemny$material_components_web_elm$Material$Button$targetAttr(config_),
-										$aforemny$material_components_web_elm$Material$Button$clickHandler(config_)
-									])),
-							additionalAttributes),
-						A2(
-							$elm$core$List$filterMap,
-							$elm$core$Basics$identity,
-							_List_fromArray(
-								[
-									$aforemny$material_components_web_elm$Material$Button$rippleElt,
-									$aforemny$material_components_web_elm$Material$Button$leadingIconElt(config_),
-									$aforemny$material_components_web_elm$Material$Button$labelElt(label),
-									$aforemny$material_components_web_elm$Material$Button$trailingIconElt(config_),
-									$aforemny$material_components_web_elm$Material$Button$touchElt(config_)
-								])))
-					])));
-	});
-var $aforemny$material_components_web_elm$Material$Button$text = F2(
-	function (config_, label) {
-		return A3($aforemny$material_components_web_elm$Material$Button$button, $aforemny$material_components_web_elm$Material$Button$Text, config_, label);
-	});
-var $author$project$Dialog$dialog = F3(
-	function (content, title, actions) {
-		return A2(
-			$aforemny$material_components_web_elm$Material$Dialog$dialog,
-			A2(
-				$aforemny$material_components_web_elm$Material$Dialog$setOnClose,
-				$author$project$Messages$CloseDialog($elm$core$Maybe$Nothing),
-				A2($aforemny$material_components_web_elm$Material$Dialog$setOpen, true, $aforemny$material_components_web_elm$Material$Dialog$config)),
-			{
-				actions: function () {
-					if (actions.$ === 'Just') {
-						var ac = actions.a;
-						return ac;
-					} else {
-						return _List_fromArray(
-							[
-								A2(
-								$aforemny$material_components_web_elm$Material$Button$text,
-								A2(
-									$aforemny$material_components_web_elm$Material$Button$setOnClick,
-									$author$project$Messages$CloseDialog($elm$core$Maybe$Nothing),
-									$aforemny$material_components_web_elm$Material$Button$config),
-								'Cancel')
-							]);
-					}
-				}(),
-				content: content,
-				title: title
-			});
-	});
-var $author$project$Dialog$dialogActions = F2(
-	function (onConfirm, onClose) {
-		return _List_fromArray(
-			[
-				A2(
-				$aforemny$material_components_web_elm$Material$Button$text,
-				A2(
-					$aforemny$material_components_web_elm$Material$Button$setOnClick,
-					$author$project$Messages$CloseDialog(onConfirm),
-					$aforemny$material_components_web_elm$Material$Button$config),
-				'OK'),
-				A2(
-				$aforemny$material_components_web_elm$Material$Button$text,
-				A2(
-					$aforemny$material_components_web_elm$Material$Button$setOnClick,
-					$author$project$Messages$CloseDialog(onClose),
-					$aforemny$material_components_web_elm$Material$Button$config),
-				'Cancel')
-			]);
-	});
 var $author$project$Main$isRecipeSelected = function (model) {
 	var _v0 = model.selectedRecipe;
 	if (_v0.$ === 'Just') {
@@ -11186,6 +10241,11 @@ var $author$project$Main$isRecipeSelected = function (model) {
 var $author$project$Messages$MenuOpened = {$: 'MenuOpened'};
 var $aforemny$material_components_web_elm$Material$TopAppBar$alignEnd = $elm$html$Html$Attributes$class('mdc-top-app-bar__section--align-end');
 var $aforemny$material_components_web_elm$Material$TopAppBar$alignStart = $elm$html$Html$Attributes$class('mdc-top-app-bar__section--align-start');
+var $aforemny$material_components_web_elm$Material$Button$Internal$Config = function (a) {
+	return {$: 'Config', a: a};
+};
+var $aforemny$material_components_web_elm$Material$Button$config = $aforemny$material_components_web_elm$Material$Button$Internal$Config(
+	{additionalAttributes: _List_Nil, dense: false, disabled: false, href: $elm$core$Maybe$Nothing, icon: $elm$core$Maybe$Nothing, onClick: $elm$core$Maybe$Nothing, target: $elm$core$Maybe$Nothing, touch: true, trailingIcon: false});
 var $aforemny$material_components_web_elm$Material$IconButton$Internal$Config = function (a) {
 	return {$: 'Config', a: a};
 };
@@ -11217,12 +10277,43 @@ var $aforemny$material_components_web_elm$Material$IconButton$icon = function (i
 				$elm$html$Html$text(iconName)
 			]));
 };
+var $elm$svg$Svg$Attributes$class = _VirtualDom_attribute('class');
+var $elm$virtual_dom$VirtualDom$Normal = function (a) {
+	return {$: 'Normal', a: a};
+};
+var $elm$virtual_dom$VirtualDom$on = _VirtualDom_on;
+var $elm$html$Html$Events$on = F2(
+	function (event, decoder) {
+		return A2(
+			$elm$virtual_dom$VirtualDom$on,
+			event,
+			$elm$virtual_dom$VirtualDom$Normal(decoder));
+	});
+var $elm$html$Html$Events$onClick = function (msg) {
+	return A2(
+		$elm$html$Html$Events$on,
+		'click',
+		$elm$json$Json$Decode$succeed(msg));
+};
 var $aforemny$material_components_web_elm$Material$IconButton$clickHandler = function (_v0) {
 	var onClick = _v0.a.onClick;
 	return A2($elm$core$Maybe$map, $elm$html$Html$Events$onClick, onClick);
 };
+var $elm$virtual_dom$VirtualDom$map = _VirtualDom_map;
+var $elm$html$Html$map = $elm$virtual_dom$VirtualDom$map;
+var $elm$virtual_dom$VirtualDom$node = function (tag) {
+	return _VirtualDom_node(
+		_VirtualDom_noScript(tag));
+};
+var $elm$html$Html$node = $elm$virtual_dom$VirtualDom$node;
 var $aforemny$material_components_web_elm$Material$IconButton$rootCs = $elm$core$Maybe$Just(
 	$elm$html$Html$Attributes$class('mdc-icon-button'));
+var $elm$html$Html$Attributes$tabindex = function (n) {
+	return A2(
+		_VirtualDom_attribute,
+		'tabIndex',
+		$elm$core$String$fromInt(n));
+};
 var $aforemny$material_components_web_elm$Material$IconButton$tabIndexProp = $elm$core$Maybe$Just(
 	$elm$html$Html$Attributes$tabindex(0));
 var $aforemny$material_components_web_elm$Material$IconButton$iconButton = F2(
@@ -11278,9 +10369,6 @@ var $author$project$Messages$Calibration = {$: 'Calibration'};
 var $author$project$Messages$CancelBrewSession = {$: 'CancelBrewSession'};
 var $author$project$Messages$MenuClosed = {$: 'MenuClosed'};
 var $author$project$Messages$Scale = {$: 'Scale'};
-var $author$project$Messages$ShowDialog = function (a) {
-	return {$: 'ShowDialog', a: a};
-};
 var $aforemny$material_components_web_elm$Material$List$Config = function (a) {
 	return {$: 'Config', a: a};
 };
@@ -11317,6 +10405,10 @@ var $elm$core$Maybe$andThen = F2(
 		} else {
 			return $elm$core$Maybe$Nothing;
 		}
+	});
+var $elm$json$Json$Decode$at = F2(
+	function (fields, decoder) {
+		return A3($elm$core$List$foldr, $elm$json$Json$Decode$field, decoder, fields);
 	});
 var $elm$core$List$head = function (list) {
 	if (list.b) {
@@ -11383,6 +10475,15 @@ var $aforemny$material_components_web_elm$Material$List$nonInteractiveCs = funct
 };
 var $aforemny$material_components_web_elm$Material$List$rootCs = $elm$core$Maybe$Just(
 	$elm$html$Html$Attributes$class('mdc-list'));
+var $elm$json$Json$Encode$int = _Json_wrap;
+var $elm$virtual_dom$VirtualDom$property = F2(
+	function (key, value) {
+		return A2(
+			_VirtualDom_property,
+			_VirtualDom_noInnerHtmlOrFormAction(key),
+			_VirtualDom_noJavaScriptOrHtmlUri(value));
+	});
+var $elm$html$Html$Attributes$property = $elm$virtual_dom$VirtualDom$property;
 var $aforemny$material_components_web_elm$Material$List$selectedIndexProp = function (listItems) {
 	var selectedIndex = A2(
 		$elm$core$List$filterMap,
@@ -11425,6 +10526,7 @@ var $aforemny$material_components_web_elm$Material$List$twoLineCs = function (_v
 	return twoLine ? $elm$core$Maybe$Just(
 		$elm$html$Html$Attributes$class('mdc-list--two-line')) : $elm$core$Maybe$Nothing;
 };
+var $elm$json$Json$Encode$bool = _Json_wrap;
 var $aforemny$material_components_web_elm$Material$List$wrapFocusProp = function (_v0) {
 	var wrapFocus = _v0.a.wrapFocus;
 	return $elm$core$Maybe$Just(
@@ -11476,6 +10578,7 @@ var $aforemny$material_components_web_elm$Material$List$list = F3(
 var $aforemny$material_components_web_elm$Material$List$Item$Internal$ListItem = function (a) {
 	return {$: 'ListItem', a: a};
 };
+var $elm$html$Html$a = _VirtualDom_node('a');
 var $aforemny$material_components_web_elm$Material$List$Item$Internal$Activated = {$: 'Activated'};
 var $aforemny$material_components_web_elm$Material$List$Item$activatedCs = function (_v0) {
 	var selection = _v0.a.selection;
@@ -11484,6 +10587,14 @@ var $aforemny$material_components_web_elm$Material$List$Item$activatedCs = funct
 		$elm$core$Maybe$Just($aforemny$material_components_web_elm$Material$List$Item$Internal$Activated)) ? $elm$core$Maybe$Just(
 		$elm$html$Html$Attributes$class('mdc-list-item--activated')) : $elm$core$Maybe$Nothing;
 };
+var $elm$virtual_dom$VirtualDom$attribute = F2(
+	function (key, value) {
+		return A2(
+			_VirtualDom_attribute,
+			_VirtualDom_noOnOrFormAction(key),
+			_VirtualDom_noJavaScriptOrHtmlUri(value));
+	});
+var $elm$html$Html$Attributes$attribute = $elm$virtual_dom$VirtualDom$attribute;
 var $aforemny$material_components_web_elm$Material$List$Item$ariaSelectedAttr = function (_v0) {
 	var selection = _v0.a.selection;
 	return (!_Utils_eq(selection, $elm$core$Maybe$Nothing)) ? $elm$core$Maybe$Just(
@@ -11493,6 +10604,12 @@ var $aforemny$material_components_web_elm$Material$List$Item$disabledCs = functi
 	var disabled = _v0.a.disabled;
 	return disabled ? $elm$core$Maybe$Just(
 		$elm$html$Html$Attributes$class('mdc-list-item--disabled')) : $elm$core$Maybe$Nothing;
+};
+var $elm$html$Html$Attributes$href = function (url) {
+	return A2(
+		$elm$html$Html$Attributes$stringProperty,
+		'href',
+		_VirtualDom_noJavaScriptUri(url));
 };
 var $aforemny$material_components_web_elm$Material$List$Item$hrefAttr = function (_v0) {
 	var href = _v0.a.href;
@@ -11508,6 +10625,7 @@ var $aforemny$material_components_web_elm$Material$List$Item$selectedCs = functi
 		$elm$core$Maybe$Just($aforemny$material_components_web_elm$Material$List$Item$Internal$Selected)) ? $elm$core$Maybe$Just(
 		$elm$html$Html$Attributes$class('mdc-list-item--selected')) : $elm$core$Maybe$Nothing;
 };
+var $elm$html$Html$Attributes$target = $elm$html$Html$Attributes$stringProperty('target');
 var $aforemny$material_components_web_elm$Material$List$Item$targetAttr = function (_v0) {
 	var href = _v0.a.href;
 	var target = _v0.a.target;
@@ -11843,6 +10961,16 @@ var $aforemny$material_components_web_elm$Material$IconButton$setAttributes = F2
 				config_,
 				{additionalAttributes: additionalAttributes}));
 	});
+var $aforemny$material_components_web_elm$Material$Button$setOnClick = F2(
+	function (onClick, _v0) {
+		var config_ = _v0.a;
+		return $aforemny$material_components_web_elm$Material$Button$Internal$Config(
+			_Utils_update(
+				config_,
+				{
+					onClick: $elm$core$Maybe$Just(onClick)
+				}));
+	});
 var $aforemny$material_components_web_elm$Material$IconButton$setOnClick = F2(
 	function (onClick, _v0) {
 		var config_ = _v0.a;
@@ -11853,11 +10981,235 @@ var $aforemny$material_components_web_elm$Material$IconButton$setOnClick = F2(
 					onClick: $elm$core$Maybe$Just(onClick)
 				}));
 	});
+var $elm$html$Html$span = _VirtualDom_node('span');
 var $aforemny$material_components_web_elm$Material$Menu$surfaceAnchor = $elm$html$Html$Attributes$class('mdc-menu-surface--anchor');
+var $aforemny$material_components_web_elm$Material$Button$Text = {$: 'Text'};
+var $elm$html$Html$button = _VirtualDom_node('button');
+var $aforemny$material_components_web_elm$Material$Button$clickHandler = function (_v0) {
+	var onClick = _v0.a.onClick;
+	return A2($elm$core$Maybe$map, $elm$html$Html$Events$onClick, onClick);
+};
+var $aforemny$material_components_web_elm$Material$Button$denseCs = function (_v0) {
+	var dense = _v0.a.dense;
+	return dense ? $elm$core$Maybe$Just(
+		$elm$html$Html$Attributes$class('mdc-button--dense')) : $elm$core$Maybe$Nothing;
+};
+var $elm$html$Html$Attributes$boolProperty = F2(
+	function (key, bool) {
+		return A2(
+			_VirtualDom_property,
+			key,
+			$elm$json$Json$Encode$bool(bool));
+	});
+var $elm$html$Html$Attributes$disabled = $elm$html$Html$Attributes$boolProperty('disabled');
+var $aforemny$material_components_web_elm$Material$Button$disabledAttr = function (_v0) {
+	var disabled = _v0.a.disabled;
+	return $elm$core$Maybe$Just(
+		$elm$html$Html$Attributes$disabled(disabled));
+};
+var $aforemny$material_components_web_elm$Material$Button$disabledProp = function (_v0) {
+	var disabled = _v0.a.disabled;
+	return $elm$core$Maybe$Just(
+		A2(
+			$elm$html$Html$Attributes$property,
+			'disabled',
+			$elm$json$Json$Encode$bool(disabled)));
+};
+var $aforemny$material_components_web_elm$Material$Button$hrefAttr = function (_v0) {
+	var href = _v0.a.href;
+	return A2($elm$core$Maybe$map, $elm$html$Html$Attributes$href, href);
+};
+var $aforemny$material_components_web_elm$Material$Button$labelElt = function (label) {
+	return $elm$core$Maybe$Just(
+		A2(
+			$elm$html$Html$span,
+			_List_fromArray(
+				[
+					$elm$html$Html$Attributes$class('mdc-button__label')
+				]),
+			_List_fromArray(
+				[
+					$elm$html$Html$text(label)
+				])));
+};
+var $aforemny$material_components_web_elm$Material$Button$iconElt = function (_v0) {
+	var config_ = _v0.a;
+	return A2(
+		$elm$core$Maybe$map,
+		$elm$html$Html$map($elm$core$Basics$never),
+		function () {
+			var _v1 = config_.icon;
+			if (_v1.$ === 'Just') {
+				if (_v1.a.$ === 'Icon') {
+					var node = _v1.a.a.node;
+					var attributes = _v1.a.a.attributes;
+					var nodes = _v1.a.a.nodes;
+					return $elm$core$Maybe$Just(
+						A2(
+							node,
+							A2(
+								$elm$core$List$cons,
+								$elm$html$Html$Attributes$class('mdc-button__icon'),
+								A2(
+									$elm$core$List$cons,
+									A2($elm$html$Html$Attributes$attribute, 'aria-hidden', 'true'),
+									attributes)),
+							nodes));
+				} else {
+					var node = _v1.a.a.node;
+					var attributes = _v1.a.a.attributes;
+					var nodes = _v1.a.a.nodes;
+					return $elm$core$Maybe$Just(
+						A2(
+							node,
+							A2(
+								$elm$core$List$cons,
+								$elm$svg$Svg$Attributes$class('mdc-button__icon'),
+								A2(
+									$elm$core$List$cons,
+									A2($elm$html$Html$Attributes$attribute, 'aria-hidden', 'true'),
+									attributes)),
+							nodes));
+				}
+			} else {
+				return $elm$core$Maybe$Nothing;
+			}
+		}());
+};
+var $aforemny$material_components_web_elm$Material$Button$leadingIconElt = function (config_) {
+	var trailingIcon = config_.a.trailingIcon;
+	return (!trailingIcon) ? $aforemny$material_components_web_elm$Material$Button$iconElt(config_) : $elm$core$Maybe$Nothing;
+};
+var $aforemny$material_components_web_elm$Material$Button$rippleElt = $elm$core$Maybe$Just(
+	A2(
+		$elm$html$Html$div,
+		_List_fromArray(
+			[
+				$elm$html$Html$Attributes$class('mdc-button__ripple')
+			]),
+		_List_Nil));
+var $aforemny$material_components_web_elm$Material$Button$rootCs = $elm$core$Maybe$Just(
+	$elm$html$Html$Attributes$class('mdc-button'));
+var $aforemny$material_components_web_elm$Material$Button$tabIndexProp = function (_v0) {
+	var disabled = _v0.a.disabled;
+	return disabled ? $elm$core$Maybe$Just(
+		A2(
+			$elm$html$Html$Attributes$property,
+			'tabIndex',
+			$elm$json$Json$Encode$int(-1))) : $elm$core$Maybe$Just(
+		A2(
+			$elm$html$Html$Attributes$property,
+			'tabIndex',
+			$elm$json$Json$Encode$int(0)));
+};
+var $aforemny$material_components_web_elm$Material$Button$targetAttr = function (_v0) {
+	var href = _v0.a.href;
+	var target = _v0.a.target;
+	return (!_Utils_eq(href, $elm$core$Maybe$Nothing)) ? A2($elm$core$Maybe$map, $elm$html$Html$Attributes$target, target) : $elm$core$Maybe$Nothing;
+};
+var $aforemny$material_components_web_elm$Material$Button$touchCs = function (_v0) {
+	var touch = _v0.a.touch;
+	return touch ? $elm$core$Maybe$Just(
+		$elm$html$Html$Attributes$class('mdc-button--touch')) : $elm$core$Maybe$Nothing;
+};
+var $aforemny$material_components_web_elm$Material$Button$touchElt = function (_v0) {
+	var touch = _v0.a.touch;
+	return touch ? $elm$core$Maybe$Just(
+		A2(
+			$elm$html$Html$div,
+			_List_fromArray(
+				[
+					$elm$html$Html$Attributes$class('mdc-button__touch')
+				]),
+			_List_Nil)) : $elm$core$Maybe$Nothing;
+};
+var $aforemny$material_components_web_elm$Material$Button$trailingIconElt = function (config_) {
+	var trailingIcon = config_.a.trailingIcon;
+	return trailingIcon ? $aforemny$material_components_web_elm$Material$Button$iconElt(config_) : $elm$core$Maybe$Nothing;
+};
+var $aforemny$material_components_web_elm$Material$Button$variantCs = function (variant) {
+	switch (variant.$) {
+		case 'Text':
+			return $elm$core$Maybe$Nothing;
+		case 'Raised':
+			return $elm$core$Maybe$Just(
+				$elm$html$Html$Attributes$class('mdc-button--raised'));
+		case 'Unelevated':
+			return $elm$core$Maybe$Just(
+				$elm$html$Html$Attributes$class('mdc-button--unelevated'));
+		default:
+			return $elm$core$Maybe$Just(
+				$elm$html$Html$Attributes$class('mdc-button--outlined'));
+	}
+};
+var $aforemny$material_components_web_elm$Material$Button$button = F3(
+	function (variant, config_, label) {
+		var additionalAttributes = config_.a.additionalAttributes;
+		var touch = config_.a.touch;
+		var href = config_.a.href;
+		var wrapTouch = function (node) {
+			return touch ? A2(
+				$elm$html$Html$div,
+				_List_fromArray(
+					[
+						$elm$html$Html$Attributes$class('mdc-touch-target-wrapper')
+					]),
+				_List_fromArray(
+					[node])) : node;
+		};
+		return wrapTouch(
+			A3(
+				$elm$html$Html$node,
+				'mdc-button',
+				A2(
+					$elm$core$List$filterMap,
+					$elm$core$Basics$identity,
+					_List_fromArray(
+						[
+							$aforemny$material_components_web_elm$Material$Button$disabledProp(config_)
+						])),
+				_List_fromArray(
+					[
+						A2(
+						(!_Utils_eq(href, $elm$core$Maybe$Nothing)) ? $elm$html$Html$a : $elm$html$Html$button,
+						_Utils_ap(
+							A2(
+								$elm$core$List$filterMap,
+								$elm$core$Basics$identity,
+								_List_fromArray(
+									[
+										$aforemny$material_components_web_elm$Material$Button$rootCs,
+										$aforemny$material_components_web_elm$Material$Button$variantCs(variant),
+										$aforemny$material_components_web_elm$Material$Button$denseCs(config_),
+										$aforemny$material_components_web_elm$Material$Button$touchCs(config_),
+										$aforemny$material_components_web_elm$Material$Button$disabledAttr(config_),
+										$aforemny$material_components_web_elm$Material$Button$tabIndexProp(config_),
+										$aforemny$material_components_web_elm$Material$Button$hrefAttr(config_),
+										$aforemny$material_components_web_elm$Material$Button$targetAttr(config_),
+										$aforemny$material_components_web_elm$Material$Button$clickHandler(config_)
+									])),
+							additionalAttributes),
+						A2(
+							$elm$core$List$filterMap,
+							$elm$core$Basics$identity,
+							_List_fromArray(
+								[
+									$aforemny$material_components_web_elm$Material$Button$rippleElt,
+									$aforemny$material_components_web_elm$Material$Button$leadingIconElt(config_),
+									$aforemny$material_components_web_elm$Material$Button$labelElt(label),
+									$aforemny$material_components_web_elm$Material$Button$trailingIconElt(config_),
+									$aforemny$material_components_web_elm$Material$Button$touchElt(config_)
+								])))
+					])));
+	});
+var $aforemny$material_components_web_elm$Material$Button$text = F2(
+	function (config_, label) {
+		return A3($aforemny$material_components_web_elm$Material$Button$button, $aforemny$material_components_web_elm$Material$Button$Text, config_, label);
+	});
 var $aforemny$material_components_web_elm$Material$TopAppBar$title = $elm$html$Html$Attributes$class('mdc-top-app-bar__title');
 var $aforemny$material_components_web_elm$Material$Elevation$z8 = $aforemny$material_components_web_elm$Material$Elevation$z(8);
-var $author$project$Navbar$navbar = F4(
-	function (title, showRecipeButton, menuOpen, activeBrewSession) {
+var $author$project$Navbar$navbar = F5(
+	function (title, showRecipeButton, menuOpen, activeBrewSession, brewSessionCodeValid) {
 		return A2(
 			$aforemny$material_components_web_elm$Material$TopAppBar$regular,
 			$aforemny$material_components_web_elm$Material$TopAppBar$config,
@@ -11900,6 +11252,14 @@ var $author$project$Navbar$navbar = F4(
 								[$aforemny$material_components_web_elm$Material$TopAppBar$alignEnd, $aforemny$material_components_web_elm$Material$Menu$surfaceAnchor]),
 							_List_fromArray(
 								[
+									A2(
+									$aforemny$material_components_web_elm$Material$IconButton$iconButton,
+									A2(
+										$aforemny$material_components_web_elm$Material$IconButton$setOnClick,
+										$author$project$Messages$ShowDialog($author$project$Messages$Security),
+										$aforemny$material_components_web_elm$Material$IconButton$config),
+									$aforemny$material_components_web_elm$Material$IconButton$icon(
+										brewSessionCodeValid ? 'verified_user' : 'vpn_key')),
 									showRecipeButton ? A2(
 									$aforemny$material_components_web_elm$Material$IconButton$iconButton,
 									A2(
@@ -11927,6 +11287,13 @@ var $author$project$Navbar$navbar = F4(
 						]))
 				]));
 	});
+var $elm$core$List$isEmpty = function (xs) {
+	if (!xs.b) {
+		return true;
+	} else {
+		return false;
+	}
+};
 var $rundis$elm_bootstrap$Bootstrap$Utilities$Flex$alignItemsCenter = $elm$html$Html$Attributes$class('align-items-center');
 var $rundis$elm_bootstrap$Bootstrap$Utilities$Flex$block = $elm$html$Html$Attributes$class('d-flex');
 var $author$project$Helpers$center = $elm$html$Html$Attributes$class('varpivo-centered-page');
@@ -12536,6 +11903,11 @@ var $aforemny$material_components_web_elm$Material$Select$Item$config = function
 	return $aforemny$material_components_web_elm$Material$Select$Item$Internal$Config(
 		{additionalAttributes: _List_Nil, disabled: false, value: value});
 };
+var $aforemny$material_components_web_elm$Material$TextField$Config = function (a) {
+	return {$: 'Config', a: a};
+};
+var $aforemny$material_components_web_elm$Material$TextField$config = $aforemny$material_components_web_elm$Material$TextField$Config(
+	{additionalAttributes: _List_Nil, disabled: false, endAligned: false, fullwidth: false, label: $elm$core$Maybe$Nothing, leadingIcon: $elm$core$Maybe$Nothing, max: $elm$core$Maybe$Nothing, maxLength: $elm$core$Maybe$Nothing, min: $elm$core$Maybe$Nothing, minLength: $elm$core$Maybe$Nothing, onChange: $elm$core$Maybe$Nothing, onInput: $elm$core$Maybe$Nothing, pattern: $elm$core$Maybe$Nothing, placeholder: $elm$core$Maybe$Nothing, prefix: $elm$core$Maybe$Nothing, required: false, step: $elm$core$Maybe$Nothing, suffix: $elm$core$Maybe$Nothing, trailingIcon: $elm$core$Maybe$Nothing, type_: $elm$core$Maybe$Nothing, valid: true, value: $elm$core$Maybe$Nothing});
 var $aforemny$material_components_web_elm$Material$TextField$Icon$Internal$Icon = function (a) {
 	return {$: 'Icon', a: a};
 };
@@ -12543,6 +11915,55 @@ var $aforemny$material_components_web_elm$Material$TextField$Icon$customIcon = F
 	function (node, attributes, nodes) {
 		return $aforemny$material_components_web_elm$Material$TextField$Icon$Internal$Icon(
 			{attributes: attributes, disabled: false, node: node, nodes: nodes, onInteraction: $elm$core$Maybe$Nothing});
+	});
+var $aforemny$material_components_web_elm$Material$HelperText$Config = function (a) {
+	return {$: 'Config', a: a};
+};
+var $aforemny$material_components_web_elm$Material$HelperText$config = $aforemny$material_components_web_elm$Material$HelperText$Config(
+	{additionalAttributes: _List_Nil, persistent: false, validation: true});
+var $aforemny$material_components_web_elm$Material$HelperText$helperLineCs = $elm$html$Html$Attributes$class('mdc-text-field-helper-line');
+var $aforemny$material_components_web_elm$Material$HelperText$helperLine = F2(
+	function (additionalAttributes, nodes) {
+		return A2(
+			$elm$html$Html$div,
+			A2($elm$core$List$cons, $aforemny$material_components_web_elm$Material$HelperText$helperLineCs, additionalAttributes),
+			nodes);
+	});
+var $aforemny$material_components_web_elm$Material$HelperText$ariaHiddenAttr = $elm$core$Maybe$Just(
+	A2($elm$html$Html$Attributes$attribute, 'aria-hidden', 'true'));
+var $aforemny$material_components_web_elm$Material$HelperText$helperTextCs = $elm$core$Maybe$Just(
+	$elm$html$Html$Attributes$class('mdc-text-field-helper-text'));
+var $aforemny$material_components_web_elm$Material$HelperText$persistentCs = function (_v0) {
+	var config_ = _v0.a;
+	return config_.persistent ? $elm$core$Maybe$Just(
+		$elm$html$Html$Attributes$class('mdc-text-field-helper-text--persistent')) : $elm$core$Maybe$Nothing;
+};
+var $aforemny$material_components_web_elm$Material$HelperText$validationCs = function (_v0) {
+	var config_ = _v0.a;
+	return config_.validation ? $elm$core$Maybe$Just(
+		$elm$html$Html$Attributes$class('mdc-text-field-helper-text--validation-msg')) : $elm$core$Maybe$Nothing;
+};
+var $aforemny$material_components_web_elm$Material$HelperText$helperText = F2(
+	function (config_, string) {
+		var additionalAttributes = config_.a.additionalAttributes;
+		return A2(
+			$elm$html$Html$div,
+			_Utils_ap(
+				A2(
+					$elm$core$List$filterMap,
+					$elm$core$Basics$identity,
+					_List_fromArray(
+						[
+							$aforemny$material_components_web_elm$Material$HelperText$helperTextCs,
+							$aforemny$material_components_web_elm$Material$HelperText$persistentCs(config_),
+							$aforemny$material_components_web_elm$Material$HelperText$validationCs(config_),
+							$aforemny$material_components_web_elm$Material$HelperText$ariaHiddenAttr
+						])),
+				additionalAttributes),
+			_List_fromArray(
+				[
+					$elm$html$Html$text(string)
+				]));
 	});
 var $author$project$ConnectionsManagement$newApiUrlValidity = function (model) {
 	var _v0 = model.newApiUrlFormError;
@@ -12552,6 +11973,14 @@ var $author$project$ConnectionsManagement$newApiUrlValidity = function (model) {
 		return false;
 	}
 };
+var $aforemny$material_components_web_elm$Material$HelperText$setPersistent = F2(
+	function (persistent, _v0) {
+		var config_ = _v0.a;
+		return $aforemny$material_components_web_elm$Material$HelperText$Config(
+			_Utils_update(
+				config_,
+				{persistent: persistent}));
+	});
 var $aforemny$material_components_web_elm$Material$HelperText$setValidation = F2(
 	function (validation, _v0) {
 		var config_ = _v0.a;
@@ -12628,6 +12057,7 @@ var $aforemny$material_components_web_elm$Material$Select$leadingIconCs = functi
 		},
 		leadingIcon);
 };
+var $elm$html$Html$Events$keyCode = A2($elm$json$Json$Decode$field, 'keyCode', $elm$json$Json$Decode$int);
 var $aforemny$material_components_web_elm$Material$Select$leadingIconElt = function (_v0) {
 	var leadingIcon = _v0.a.leadingIcon;
 	if (leadingIcon.$ === 'Nothing') {
@@ -12892,6 +12322,7 @@ var $aforemny$material_components_web_elm$Material$Select$selectedIndexProp = fu
 			$elm$json$Json$Encode$int(
 				A2($elm$core$Maybe$withDefault, -1, selectedIndex))));
 };
+var $elm$html$Html$input = _VirtualDom_node('input');
 var $elm$html$Html$Attributes$readonly = $elm$html$Html$Attributes$boolProperty('readOnly');
 var $aforemny$material_components_web_elm$Material$Select$selectedTextElt = A2(
 	$elm$html$Html$input,
@@ -12979,6 +12410,554 @@ var $aforemny$material_components_web_elm$Material$Select$outlined = F3(
 	function (config_, firstSelectItem, remainingSelectItems) {
 		return A4($aforemny$material_components_web_elm$Material$Select$select, $aforemny$material_components_web_elm$Material$Select$Outlined, config_, firstSelectItem, remainingSelectItems);
 	});
+var $aforemny$material_components_web_elm$Material$TextField$disabledCs = function (_v0) {
+	var disabled = _v0.a.disabled;
+	return disabled ? $elm$core$Maybe$Just(
+		$elm$html$Html$Attributes$class('mdc-text-field--disabled')) : $elm$core$Maybe$Nothing;
+};
+var $aforemny$material_components_web_elm$Material$TextField$disabledProp = function (_v0) {
+	var disabled = _v0.a.disabled;
+	return $elm$core$Maybe$Just(
+		A2(
+			$elm$html$Html$Attributes$property,
+			'disabled',
+			$elm$json$Json$Encode$bool(disabled)));
+};
+var $aforemny$material_components_web_elm$Material$TextField$endAlignedCs = function (_v0) {
+	var endAligned = _v0.a.endAligned;
+	return endAligned ? $elm$core$Maybe$Just(
+		$elm$html$Html$Attributes$class('mdc-text-field--end-aligned')) : $elm$core$Maybe$Nothing;
+};
+var $aforemny$material_components_web_elm$Material$TextField$filledCs = function (outlined_) {
+	return (!outlined_) ? $elm$core$Maybe$Just(
+		$elm$html$Html$Attributes$class('mdc-text-field--filled')) : $elm$core$Maybe$Nothing;
+};
+var $aforemny$material_components_web_elm$Material$TextField$foucClassNamesProp = $elm$core$Maybe$Just(
+	A2(
+		$elm$html$Html$Attributes$property,
+		'foucClassNames',
+		A2(
+			$elm$json$Json$Encode$list,
+			$elm$json$Json$Encode$string,
+			_List_fromArray(
+				['mdc-text-field--label-floating']))));
+var $aforemny$material_components_web_elm$Material$TextField$fullwidthCs = function (_v0) {
+	var fullwidth = _v0.a.fullwidth;
+	return fullwidth ? $elm$core$Maybe$Just(
+		$elm$html$Html$Attributes$class('mdc-text-field--fullwidth')) : $elm$core$Maybe$Nothing;
+};
+var $aforemny$material_components_web_elm$Material$TextField$ariaLabelAttr = function (_v0) {
+	var fullwidth = _v0.a.fullwidth;
+	var placeholder = _v0.a.placeholder;
+	var label = _v0.a.label;
+	return fullwidth ? A2(
+		$elm$core$Maybe$map,
+		$elm$html$Html$Attributes$attribute('aria-label'),
+		label) : $elm$core$Maybe$Nothing;
+};
+var $elm$html$Html$Events$targetValue = A2(
+	$elm$json$Json$Decode$at,
+	_List_fromArray(
+		['target', 'value']),
+	$elm$json$Json$Decode$string);
+var $aforemny$material_components_web_elm$Material$TextField$changeHandler = function (_v0) {
+	var onChange = _v0.a.onChange;
+	return A2(
+		$elm$core$Maybe$map,
+		function (f) {
+			return A2(
+				$elm$html$Html$Events$on,
+				'change',
+				A2($elm$json$Json$Decode$map, f, $elm$html$Html$Events$targetValue));
+		},
+		onChange);
+};
+var $aforemny$material_components_web_elm$Material$TextField$inputCs = $elm$core$Maybe$Just(
+	$elm$html$Html$Attributes$class('mdc-text-field__input'));
+var $elm$html$Html$Events$alwaysStop = function (x) {
+	return _Utils_Tuple2(x, true);
+};
+var $elm$virtual_dom$VirtualDom$MayStopPropagation = function (a) {
+	return {$: 'MayStopPropagation', a: a};
+};
+var $elm$html$Html$Events$stopPropagationOn = F2(
+	function (event, decoder) {
+		return A2(
+			$elm$virtual_dom$VirtualDom$on,
+			event,
+			$elm$virtual_dom$VirtualDom$MayStopPropagation(decoder));
+	});
+var $elm$html$Html$Events$onInput = function (tagger) {
+	return A2(
+		$elm$html$Html$Events$stopPropagationOn,
+		'input',
+		A2(
+			$elm$json$Json$Decode$map,
+			$elm$html$Html$Events$alwaysStop,
+			A2($elm$json$Json$Decode$map, tagger, $elm$html$Html$Events$targetValue)));
+};
+var $aforemny$material_components_web_elm$Material$TextField$inputHandler = function (_v0) {
+	var onInput = _v0.a.onInput;
+	return A2($elm$core$Maybe$map, $elm$html$Html$Events$onInput, onInput);
+};
+var $aforemny$material_components_web_elm$Material$TextField$maxLengthAttr = function (_v0) {
+	var maxLength = _v0.a.maxLength;
+	return A2(
+		$elm$core$Maybe$map,
+		A2(
+			$elm$core$Basics$composeL,
+			$elm$html$Html$Attributes$attribute('maxLength'),
+			$elm$core$String$fromInt),
+		maxLength);
+};
+var $aforemny$material_components_web_elm$Material$TextField$minLengthAttr = function (_v0) {
+	var minLength = _v0.a.minLength;
+	return A2(
+		$elm$core$Maybe$map,
+		A2(
+			$elm$core$Basics$composeL,
+			$elm$html$Html$Attributes$attribute('minLength'),
+			$elm$core$String$fromInt),
+		minLength);
+};
+var $elm$html$Html$Attributes$placeholder = $elm$html$Html$Attributes$stringProperty('placeholder');
+var $aforemny$material_components_web_elm$Material$TextField$placeholderAttr = function (_v0) {
+	var placeholder = _v0.a.placeholder;
+	return A2($elm$core$Maybe$map, $elm$html$Html$Attributes$placeholder, placeholder);
+};
+var $elm$html$Html$Attributes$type_ = $elm$html$Html$Attributes$stringProperty('type');
+var $aforemny$material_components_web_elm$Material$TextField$typeAttr = function (_v0) {
+	var type_ = _v0.a.type_;
+	return A2($elm$core$Maybe$map, $elm$html$Html$Attributes$type_, type_);
+};
+var $aforemny$material_components_web_elm$Material$TextField$inputElt = function (config_) {
+	return A2(
+		$elm$html$Html$input,
+		A2(
+			$elm$core$List$filterMap,
+			$elm$core$Basics$identity,
+			_List_fromArray(
+				[
+					$aforemny$material_components_web_elm$Material$TextField$inputCs,
+					$aforemny$material_components_web_elm$Material$TextField$typeAttr(config_),
+					$aforemny$material_components_web_elm$Material$TextField$ariaLabelAttr(config_),
+					$aforemny$material_components_web_elm$Material$TextField$placeholderAttr(config_),
+					$aforemny$material_components_web_elm$Material$TextField$inputHandler(config_),
+					$aforemny$material_components_web_elm$Material$TextField$changeHandler(config_),
+					$aforemny$material_components_web_elm$Material$TextField$minLengthAttr(config_),
+					$aforemny$material_components_web_elm$Material$TextField$maxLengthAttr(config_)
+				])),
+		_List_Nil);
+};
+var $aforemny$material_components_web_elm$Material$TextField$labelElt = function (_v0) {
+	var label = _v0.a.label;
+	var value = _v0.a.value;
+	var fullwidth = _v0.a.fullwidth;
+	var floatingLabelFloatAboveCs = 'mdc-floating-label--float-above';
+	var floatingLabelCs = 'mdc-floating-label';
+	var _v1 = _Utils_Tuple2(fullwidth, label);
+	if ((!_v1.a) && (_v1.b.$ === 'Just')) {
+		var str = _v1.b.a;
+		return A2(
+			$elm$html$Html$span,
+			_List_fromArray(
+				[
+					(A2($elm$core$Maybe$withDefault, '', value) !== '') ? $elm$html$Html$Attributes$class(floatingLabelCs + (' ' + floatingLabelFloatAboveCs)) : $elm$html$Html$Attributes$class(floatingLabelCs),
+					A2(
+					$elm$html$Html$Attributes$property,
+					'foucClassNames',
+					A2(
+						$elm$json$Json$Encode$list,
+						$elm$json$Json$Encode$string,
+						_List_fromArray(
+							[floatingLabelFloatAboveCs])))
+				]),
+			_List_fromArray(
+				[
+					$elm$html$Html$text(str)
+				]));
+	} else {
+		return $elm$html$Html$text('');
+	}
+};
+var $aforemny$material_components_web_elm$Material$TextField$labelFloatingCs = function (_v0) {
+	var label = _v0.a.label;
+	var value = _v0.a.value;
+	var fullwidth = _v0.a.fullwidth;
+	return ((!fullwidth) && ((!_Utils_eq(label, $elm$core$Maybe$Nothing)) && (A2($elm$core$Maybe$withDefault, '', value) !== ''))) ? $elm$core$Maybe$Just(
+		$elm$html$Html$Attributes$class('mdc-text-field--label-floating')) : $elm$core$Maybe$Nothing;
+};
+var $aforemny$material_components_web_elm$Material$TextField$iconElt = F2(
+	function (modifierCs, icon_) {
+		if (icon_.$ === 'Nothing') {
+			return $elm$html$Html$text('');
+		} else {
+			if (icon_.a.$ === 'Icon') {
+				var node = icon_.a.a.node;
+				var attributes = icon_.a.a.attributes;
+				var nodes = icon_.a.a.nodes;
+				var onInteraction = icon_.a.a.onInteraction;
+				var disabled = icon_.a.a.disabled;
+				return A2(
+					node,
+					A2(
+						$elm$core$List$cons,
+						$elm$html$Html$Attributes$class('mdc-text-field__icon'),
+						A2(
+							$elm$core$List$cons,
+							$elm$html$Html$Attributes$class(modifierCs),
+							function () {
+								if (onInteraction.$ === 'Just') {
+									var msg = onInteraction.a;
+									return (!disabled) ? A2(
+										$elm$core$List$cons,
+										$elm$html$Html$Attributes$tabindex(0),
+										A2(
+											$elm$core$List$cons,
+											A2($elm$html$Html$Attributes$attribute, 'role', 'button'),
+											A2(
+												$elm$core$List$cons,
+												$elm$html$Html$Events$onClick(msg),
+												A2(
+													$elm$core$List$cons,
+													A2(
+														$elm$html$Html$Events$on,
+														'keydown',
+														A2(
+															$elm$json$Json$Decode$andThen,
+															function (keyCode) {
+																return (keyCode === 13) ? $elm$json$Json$Decode$succeed(msg) : $elm$json$Json$Decode$fail('');
+															},
+															$elm$html$Html$Events$keyCode)),
+													attributes)))) : A2(
+										$elm$core$List$cons,
+										$elm$html$Html$Attributes$tabindex(-1),
+										A2(
+											$elm$core$List$cons,
+											A2($elm$html$Html$Attributes$attribute, 'role', 'button'),
+											attributes));
+								} else {
+									return attributes;
+								}
+							}())),
+					nodes);
+			} else {
+				var node = icon_.a.a.node;
+				var attributes = icon_.a.a.attributes;
+				var nodes = icon_.a.a.nodes;
+				var onInteraction = icon_.a.a.onInteraction;
+				var disabled = icon_.a.a.disabled;
+				return A2(
+					node,
+					A2(
+						$elm$core$List$cons,
+						$elm$svg$Svg$Attributes$class('mdc-text-field__icon'),
+						A2(
+							$elm$core$List$cons,
+							$elm$svg$Svg$Attributes$class(modifierCs),
+							function () {
+								if (onInteraction.$ === 'Just') {
+									var msg = onInteraction.a;
+									return (!disabled) ? A2(
+										$elm$core$List$cons,
+										$elm$html$Html$Attributes$tabindex(0),
+										A2(
+											$elm$core$List$cons,
+											A2($elm$html$Html$Attributes$attribute, 'role', 'button'),
+											A2(
+												$elm$core$List$cons,
+												$elm$html$Html$Events$onClick(msg),
+												A2(
+													$elm$core$List$cons,
+													A2(
+														$elm$html$Html$Events$on,
+														'keydown',
+														A2(
+															$elm$json$Json$Decode$andThen,
+															function (keyCode) {
+																return (keyCode === 13) ? $elm$json$Json$Decode$succeed(msg) : $elm$json$Json$Decode$fail('');
+															},
+															$elm$html$Html$Events$keyCode)),
+													attributes)))) : A2(
+										$elm$core$List$cons,
+										$elm$html$Html$Attributes$tabindex(-1),
+										A2(
+											$elm$core$List$cons,
+											A2($elm$html$Html$Attributes$attribute, 'role', 'button'),
+											attributes));
+								} else {
+									return attributes;
+								}
+							}())),
+					nodes);
+			}
+		}
+	});
+var $aforemny$material_components_web_elm$Material$TextField$leadingIconElt = function (_v0) {
+	var leadingIcon = _v0.a.leadingIcon;
+	return A2($aforemny$material_components_web_elm$Material$TextField$iconElt, 'mdc-text-field__icon--leading', leadingIcon);
+};
+var $aforemny$material_components_web_elm$Material$TextField$lineRippleElt = A2(
+	$elm$html$Html$span,
+	_List_fromArray(
+		[
+			$elm$html$Html$Attributes$class('mdc-line-ripple')
+		]),
+	_List_Nil);
+var $aforemny$material_components_web_elm$Material$TextField$maxLengthProp = function (_v0) {
+	var maxLength = _v0.a.maxLength;
+	return $elm$core$Maybe$Just(
+		A2(
+			$elm$html$Html$Attributes$property,
+			'maxLength',
+			$elm$json$Json$Encode$int(
+				A2($elm$core$Maybe$withDefault, -1, maxLength))));
+};
+var $aforemny$material_components_web_elm$Material$TextField$maxProp = function (_v0) {
+	var max = _v0.a.max;
+	return $elm$core$Maybe$Just(
+		A2(
+			$elm$html$Html$Attributes$property,
+			'max',
+			$elm$json$Json$Encode$string(
+				A2(
+					$elm$core$Maybe$withDefault,
+					'',
+					A2($elm$core$Maybe$map, $elm$core$String$fromInt, max)))));
+};
+var $aforemny$material_components_web_elm$Material$TextField$minLengthProp = function (_v0) {
+	var minLength = _v0.a.minLength;
+	return $elm$core$Maybe$Just(
+		A2(
+			$elm$html$Html$Attributes$property,
+			'minLength',
+			$elm$json$Json$Encode$int(
+				A2($elm$core$Maybe$withDefault, -1, minLength))));
+};
+var $aforemny$material_components_web_elm$Material$TextField$minProp = function (_v0) {
+	var min = _v0.a.min;
+	return $elm$core$Maybe$Just(
+		A2(
+			$elm$html$Html$Attributes$property,
+			'min',
+			$elm$json$Json$Encode$string(
+				A2(
+					$elm$core$Maybe$withDefault,
+					'',
+					A2($elm$core$Maybe$map, $elm$core$String$fromInt, min)))));
+};
+var $aforemny$material_components_web_elm$Material$TextField$noLabelCs = function (_v0) {
+	var label = _v0.a.label;
+	return _Utils_eq(label, $elm$core$Maybe$Nothing) ? $elm$core$Maybe$Just(
+		$elm$html$Html$Attributes$class('mdc-text-field--no-label')) : $elm$core$Maybe$Nothing;
+};
+var $aforemny$material_components_web_elm$Material$TextField$notchedOutlineLeadingElt = A2(
+	$elm$html$Html$span,
+	_List_fromArray(
+		[
+			$elm$html$Html$Attributes$class('mdc-notched-outline__leading')
+		]),
+	_List_Nil);
+var $aforemny$material_components_web_elm$Material$TextField$notchedOutlineNotchElt = function (config_) {
+	return A2(
+		$elm$html$Html$span,
+		_List_fromArray(
+			[
+				$elm$html$Html$Attributes$class('mdc-notched-outline__notch')
+			]),
+		_List_fromArray(
+			[
+				$aforemny$material_components_web_elm$Material$TextField$labelElt(config_)
+			]));
+};
+var $aforemny$material_components_web_elm$Material$TextField$notchedOutlineTrailingElt = A2(
+	$elm$html$Html$span,
+	_List_fromArray(
+		[
+			$elm$html$Html$Attributes$class('mdc-notched-outline__trailing')
+		]),
+	_List_Nil);
+var $aforemny$material_components_web_elm$Material$TextField$notchedOutlineElt = function (config_) {
+	return A2(
+		$elm$html$Html$span,
+		_List_fromArray(
+			[
+				$elm$html$Html$Attributes$class('mdc-notched-outline')
+			]),
+		_List_fromArray(
+			[
+				$aforemny$material_components_web_elm$Material$TextField$notchedOutlineLeadingElt,
+				$aforemny$material_components_web_elm$Material$TextField$notchedOutlineNotchElt(config_),
+				$aforemny$material_components_web_elm$Material$TextField$notchedOutlineTrailingElt
+			]));
+};
+var $aforemny$material_components_web_elm$Material$TextField$outlinedCs = function (outlined_) {
+	return outlined_ ? $elm$core$Maybe$Just(
+		$elm$html$Html$Attributes$class('mdc-text-field--outlined')) : $elm$core$Maybe$Nothing;
+};
+var $elm$json$Json$Encode$null = _Json_encodeNull;
+var $aforemny$material_components_web_elm$Material$TextField$patternProp = function (_v0) {
+	var pattern = _v0.a.pattern;
+	return $elm$core$Maybe$Just(
+		A2(
+			$elm$html$Html$Attributes$property,
+			'pattern',
+			A2(
+				$elm$core$Maybe$withDefault,
+				$elm$json$Json$Encode$null,
+				A2($elm$core$Maybe$map, $elm$json$Json$Encode$string, pattern))));
+};
+var $aforemny$material_components_web_elm$Material$TextField$prefixCs = $elm$html$Html$Attributes$class('mdc-text-field__affix mdc-text-field__affix--prefix');
+var $aforemny$material_components_web_elm$Material$TextField$prefixElt = function (_v0) {
+	var prefix = _v0.a.prefix;
+	if (prefix.$ === 'Just') {
+		var prefixStr = prefix.a;
+		return A2(
+			$elm$html$Html$span,
+			_List_fromArray(
+				[$aforemny$material_components_web_elm$Material$TextField$prefixCs]),
+			_List_fromArray(
+				[
+					$elm$html$Html$text(prefixStr)
+				]));
+	} else {
+		return $elm$html$Html$text('');
+	}
+};
+var $aforemny$material_components_web_elm$Material$TextField$requiredProp = function (_v0) {
+	var required = _v0.a.required;
+	return $elm$core$Maybe$Just(
+		A2(
+			$elm$html$Html$Attributes$property,
+			'required',
+			$elm$json$Json$Encode$bool(required)));
+};
+var $aforemny$material_components_web_elm$Material$TextField$rippleElt = A2(
+	$elm$html$Html$span,
+	_List_fromArray(
+		[
+			$elm$html$Html$Attributes$class('mdc-text-field__ripple')
+		]),
+	_List_Nil);
+var $aforemny$material_components_web_elm$Material$TextField$rootCs = $elm$core$Maybe$Just(
+	$elm$html$Html$Attributes$class('mdc-text-field'));
+var $aforemny$material_components_web_elm$Material$TextField$stepProp = function (_v0) {
+	var step = _v0.a.step;
+	return $elm$core$Maybe$Just(
+		A2(
+			$elm$html$Html$Attributes$property,
+			'step',
+			$elm$json$Json$Encode$string(
+				A2(
+					$elm$core$Maybe$withDefault,
+					'',
+					A2($elm$core$Maybe$map, $elm$core$String$fromInt, step)))));
+};
+var $aforemny$material_components_web_elm$Material$TextField$suffixCs = $elm$html$Html$Attributes$class('mdc-text-field__affix mdc-text-field__affix--suffix');
+var $aforemny$material_components_web_elm$Material$TextField$suffixElt = function (_v0) {
+	var suffix = _v0.a.suffix;
+	if (suffix.$ === 'Just') {
+		var suffixStr = suffix.a;
+		return A2(
+			$elm$html$Html$span,
+			_List_fromArray(
+				[$aforemny$material_components_web_elm$Material$TextField$suffixCs]),
+			_List_fromArray(
+				[
+					$elm$html$Html$text(suffixStr)
+				]));
+	} else {
+		return $elm$html$Html$text('');
+	}
+};
+var $aforemny$material_components_web_elm$Material$TextField$trailingIconElt = function (_v0) {
+	var trailingIcon = _v0.a.trailingIcon;
+	return A2($aforemny$material_components_web_elm$Material$TextField$iconElt, 'mdc-text-field__icon--trailing', trailingIcon);
+};
+var $aforemny$material_components_web_elm$Material$TextField$validProp = function (_v0) {
+	var valid = _v0.a.valid;
+	return $elm$core$Maybe$Just(
+		A2(
+			$elm$html$Html$Attributes$property,
+			'valid',
+			$elm$json$Json$Encode$bool(valid)));
+};
+var $aforemny$material_components_web_elm$Material$TextField$valueProp = function (_v0) {
+	var value = _v0.a.value;
+	return A2(
+		$elm$core$Maybe$map,
+		A2(
+			$elm$core$Basics$composeL,
+			$elm$html$Html$Attributes$property('value'),
+			$elm$json$Json$Encode$string),
+		value);
+};
+var $aforemny$material_components_web_elm$Material$TextField$withLeadingIconCs = function (_v0) {
+	var leadingIcon = _v0.a.leadingIcon;
+	return (!_Utils_eq(leadingIcon, $elm$core$Maybe$Nothing)) ? $elm$core$Maybe$Just(
+		$elm$html$Html$Attributes$class('mdc-text-field--with-leading-icon')) : $elm$core$Maybe$Nothing;
+};
+var $aforemny$material_components_web_elm$Material$TextField$withTrailingIconCs = function (_v0) {
+	var trailingIcon = _v0.a.trailingIcon;
+	return (!_Utils_eq(trailingIcon, $elm$core$Maybe$Nothing)) ? $elm$core$Maybe$Just(
+		$elm$html$Html$Attributes$class('mdc-text-field--with-trailing-icon')) : $elm$core$Maybe$Nothing;
+};
+var $aforemny$material_components_web_elm$Material$TextField$textField = F2(
+	function (outlined_, config_) {
+		var additionalAttributes = config_.a.additionalAttributes;
+		var fullwidth = config_.a.fullwidth;
+		return A3(
+			$elm$html$Html$node,
+			'mdc-text-field',
+			_Utils_ap(
+				A2(
+					$elm$core$List$filterMap,
+					$elm$core$Basics$identity,
+					_List_fromArray(
+						[
+							$aforemny$material_components_web_elm$Material$TextField$rootCs,
+							$aforemny$material_components_web_elm$Material$TextField$noLabelCs(config_),
+							$aforemny$material_components_web_elm$Material$TextField$filledCs(outlined_),
+							$aforemny$material_components_web_elm$Material$TextField$outlinedCs(outlined_),
+							$aforemny$material_components_web_elm$Material$TextField$fullwidthCs(config_),
+							$aforemny$material_components_web_elm$Material$TextField$labelFloatingCs(config_),
+							$aforemny$material_components_web_elm$Material$TextField$foucClassNamesProp,
+							$aforemny$material_components_web_elm$Material$TextField$disabledCs(config_),
+							$aforemny$material_components_web_elm$Material$TextField$withLeadingIconCs(config_),
+							$aforemny$material_components_web_elm$Material$TextField$withTrailingIconCs(config_),
+							$aforemny$material_components_web_elm$Material$TextField$endAlignedCs(config_),
+							$aforemny$material_components_web_elm$Material$TextField$valueProp(config_),
+							$aforemny$material_components_web_elm$Material$TextField$disabledProp(config_),
+							$aforemny$material_components_web_elm$Material$TextField$requiredProp(config_),
+							$aforemny$material_components_web_elm$Material$TextField$validProp(config_),
+							$aforemny$material_components_web_elm$Material$TextField$patternProp(config_),
+							$aforemny$material_components_web_elm$Material$TextField$minLengthProp(config_),
+							$aforemny$material_components_web_elm$Material$TextField$maxLengthProp(config_),
+							$aforemny$material_components_web_elm$Material$TextField$minProp(config_),
+							$aforemny$material_components_web_elm$Material$TextField$maxProp(config_),
+							$aforemny$material_components_web_elm$Material$TextField$stepProp(config_)
+						])),
+				additionalAttributes),
+			outlined_ ? _List_fromArray(
+				[
+					$aforemny$material_components_web_elm$Material$TextField$leadingIconElt(config_),
+					$aforemny$material_components_web_elm$Material$TextField$prefixElt(config_),
+					$aforemny$material_components_web_elm$Material$TextField$inputElt(config_),
+					$aforemny$material_components_web_elm$Material$TextField$suffixElt(config_),
+					$aforemny$material_components_web_elm$Material$TextField$notchedOutlineElt(config_),
+					$aforemny$material_components_web_elm$Material$TextField$trailingIconElt(config_)
+				]) : _List_fromArray(
+				[
+					$aforemny$material_components_web_elm$Material$TextField$rippleElt,
+					$aforemny$material_components_web_elm$Material$TextField$leadingIconElt(config_),
+					$aforemny$material_components_web_elm$Material$TextField$prefixElt(config_),
+					$aforemny$material_components_web_elm$Material$TextField$inputElt(config_),
+					$aforemny$material_components_web_elm$Material$TextField$suffixElt(config_),
+					$aforemny$material_components_web_elm$Material$TextField$labelElt(config_),
+					$aforemny$material_components_web_elm$Material$TextField$lineRippleElt,
+					$aforemny$material_components_web_elm$Material$TextField$trailingIconElt(config_)
+				]));
+	});
 var $aforemny$material_components_web_elm$Material$TextField$outlined = function (config_) {
 	return A2($aforemny$material_components_web_elm$Material$TextField$textField, true, config_);
 };
@@ -13000,6 +12979,14 @@ var $aforemny$material_components_web_elm$Material$Select$setAttributes = F2(
 				config_,
 				{additionalAttributes: additionalAttributes}));
 	});
+var $aforemny$material_components_web_elm$Material$TextField$setAttributes = F2(
+	function (additionalAttributes, _v0) {
+		var config_ = _v0.a;
+		return $aforemny$material_components_web_elm$Material$TextField$Config(
+			_Utils_update(
+				config_,
+				{additionalAttributes: additionalAttributes}));
+	});
 var $aforemny$material_components_web_elm$Material$Button$setDisabled = F2(
 	function (disabled, _v0) {
 		var config_ = _v0.a;
@@ -13016,6 +13003,14 @@ var $aforemny$material_components_web_elm$Material$Select$setLabel = F2(
 				config_,
 				{label: label}));
 	});
+var $aforemny$material_components_web_elm$Material$TextField$setLabel = F2(
+	function (label, _v0) {
+		var config_ = _v0.a;
+		return $aforemny$material_components_web_elm$Material$TextField$Config(
+			_Utils_update(
+				config_,
+				{label: label}));
+	});
 var $aforemny$material_components_web_elm$Material$Select$setOnChange = F2(
 	function (onChange, _v0) {
 		var config_ = _v0.a;
@@ -13025,6 +13020,24 @@ var $aforemny$material_components_web_elm$Material$Select$setOnChange = F2(
 				{
 					onChange: $elm$core$Maybe$Just(onChange)
 				}));
+	});
+var $aforemny$material_components_web_elm$Material$TextField$setOnChange = F2(
+	function (onChange, _v0) {
+		var config_ = _v0.a;
+		return $aforemny$material_components_web_elm$Material$TextField$Config(
+			_Utils_update(
+				config_,
+				{
+					onChange: $elm$core$Maybe$Just(onChange)
+				}));
+	});
+var $aforemny$material_components_web_elm$Material$TextField$setRequired = F2(
+	function (required, _v0) {
+		var config_ = _v0.a;
+		return $aforemny$material_components_web_elm$Material$TextField$Config(
+			_Utils_update(
+				config_,
+				{required: required}));
 	});
 var $aforemny$material_components_web_elm$Material$Select$setSelected = F2(
 	function (selected, _v0) {
@@ -13049,6 +13062,14 @@ var $aforemny$material_components_web_elm$Material$TextField$setTrailingIcon = F
 			_Utils_update(
 				config_,
 				{trailingIcon: trailingIcon}));
+	});
+var $aforemny$material_components_web_elm$Material$TextField$setType = F2(
+	function (type_, _v0) {
+		var config_ = _v0.a;
+		return $aforemny$material_components_web_elm$Material$TextField$Config(
+			_Utils_update(
+				config_,
+				{type_: type_}));
 	});
 var $aforemny$material_components_web_elm$Material$Select$setValid = F2(
 	function (valid, _v0) {
@@ -13076,6 +13097,7 @@ var $author$project$ConnectionsManagement$urlNotSelected = function (model) {
 		return true;
 	}
 };
+var $rundis$elm_bootstrap$Bootstrap$Utilities$Size$w100 = $elm$html$Html$Attributes$class('w-100');
 var $author$project$ConnectionsManagement$noApiUrl = function (model) {
 	var apiUrlToSelectItem = function (apiUrl) {
 		return A2(
@@ -15634,6 +15656,318 @@ var $author$project$Page$page = function (model) {
 };
 var $rundis$elm_bootstrap$Bootstrap$Utilities$Spacing$pt4 = $elm$html$Html$Attributes$class('pt-4');
 var $rundis$elm_bootstrap$Bootstrap$Utilities$Spacing$py5 = $elm$html$Html$Attributes$class('py-5');
+var $author$project$Messages$BrewSessionCodeChange = function (a) {
+	return {$: 'BrewSessionCodeChange', a: a};
+};
+var $author$project$Messages$CloseDialog = function (a) {
+	return {$: 'CloseDialog', a: a};
+};
+var $author$project$Messages$StartCalibration = {$: 'StartCalibration'};
+var $author$project$Messages$CalibrationValueUpdate = function (a) {
+	return {$: 'CalibrationValueUpdate', a: a};
+};
+var $aforemny$material_components_web_elm$Material$TextField$filled = function (config_) {
+	return A2($aforemny$material_components_web_elm$Material$TextField$textField, false, config_);
+};
+var $aforemny$material_components_web_elm$Material$TextField$setEndAligned = F2(
+	function (endAligned, _v0) {
+		var config_ = _v0.a;
+		return $aforemny$material_components_web_elm$Material$TextField$Config(
+			_Utils_update(
+				config_,
+				{endAligned: endAligned}));
+	});
+var $aforemny$material_components_web_elm$Material$TextField$setMax = F2(
+	function (max, _v0) {
+		var config_ = _v0.a;
+		return $aforemny$material_components_web_elm$Material$TextField$Config(
+			_Utils_update(
+				config_,
+				{max: max}));
+	});
+var $aforemny$material_components_web_elm$Material$TextField$setMin = F2(
+	function (min, _v0) {
+		var config_ = _v0.a;
+		return $aforemny$material_components_web_elm$Material$TextField$Config(
+			_Utils_update(
+				config_,
+				{min: min}));
+	});
+var $aforemny$material_components_web_elm$Material$TextField$setStep = F2(
+	function (step, _v0) {
+		var config_ = _v0.a;
+		return $aforemny$material_components_web_elm$Material$TextField$Config(
+			_Utils_update(
+				config_,
+				{step: step}));
+	});
+var $aforemny$material_components_web_elm$Material$TextField$setSuffix = F2(
+	function (suffix, _v0) {
+		var config_ = _v0.a;
+		return $aforemny$material_components_web_elm$Material$TextField$Config(
+			_Utils_update(
+				config_,
+				{suffix: suffix}));
+	});
+var $author$project$Dialog$calibrationDialogContent = _List_fromArray(
+	[
+		A2(
+		$elm$html$Html$p,
+		_List_Nil,
+		_List_fromArray(
+			[
+				$elm$html$Html$text('Enter real weight (grams) for calibration')
+			])),
+		$aforemny$material_components_web_elm$Material$TextField$filled(
+		A2(
+			$aforemny$material_components_web_elm$Material$TextField$setAttributes,
+			_List_fromArray(
+				[$rundis$elm_bootstrap$Bootstrap$Utilities$Size$w100]),
+			A2(
+				$aforemny$material_components_web_elm$Material$TextField$setOnChange,
+				function (value) {
+					return $author$project$Messages$CalibrationValueUpdate(
+						A2(
+							$elm$core$Maybe$withDefault,
+							-1,
+							$elm$core$String$toInt(value)));
+				},
+				A2(
+					$aforemny$material_components_web_elm$Material$TextField$setStep,
+					$elm$core$Maybe$Just(100),
+					A2(
+						$aforemny$material_components_web_elm$Material$TextField$setMax,
+						$elm$core$Maybe$Just(5000),
+						A2(
+							$aforemny$material_components_web_elm$Material$TextField$setMin,
+							$elm$core$Maybe$Just(1),
+							A2(
+								$aforemny$material_components_web_elm$Material$TextField$setType,
+								$elm$core$Maybe$Just('number'),
+								A2(
+									$aforemny$material_components_web_elm$Material$TextField$setEndAligned,
+									true,
+									A2(
+										$aforemny$material_components_web_elm$Material$TextField$setSuffix,
+										$elm$core$Maybe$Just(' g'),
+										A2(
+											$aforemny$material_components_web_elm$Material$TextField$setRequired,
+											true,
+											A2(
+												$aforemny$material_components_web_elm$Material$TextField$setLabel,
+												$elm$core$Maybe$Just('Real weight'),
+												$aforemny$material_components_web_elm$Material$TextField$config))))))))))),
+		A2(
+		$aforemny$material_components_web_elm$Material$HelperText$helperLine,
+		_List_Nil,
+		_List_fromArray(
+			[
+				A2(
+				$aforemny$material_components_web_elm$Material$HelperText$helperText,
+				A2($aforemny$material_components_web_elm$Material$HelperText$setPersistent, true, $aforemny$material_components_web_elm$Material$HelperText$config),
+				'Weight of object used for calibration')
+			]))
+	]);
+var $author$project$Dialog$confirmDialogContent = function (message) {
+	return _List_fromArray(
+		[
+			$elm$html$Html$text(message)
+		]);
+};
+var $aforemny$material_components_web_elm$Material$Dialog$Config = function (a) {
+	return {$: 'Config', a: a};
+};
+var $aforemny$material_components_web_elm$Material$Dialog$config = $aforemny$material_components_web_elm$Material$Dialog$Config(
+	{additionalAttributes: _List_Nil, onClose: $elm$core$Maybe$Nothing, open: false});
+var $aforemny$material_components_web_elm$Material$Dialog$closeHandler = function (_v0) {
+	var onClose = _v0.a.onClose;
+	return A2(
+		$elm$core$Maybe$map,
+		A2(
+			$elm$core$Basics$composeL,
+			$elm$html$Html$Events$on('MDCDialog:close'),
+			$elm$json$Json$Decode$succeed),
+		onClose);
+};
+var $aforemny$material_components_web_elm$Material$Dialog$actionsElt = function (_v0) {
+	var actions = _v0.actions;
+	return $elm$core$List$isEmpty(actions) ? $elm$core$Maybe$Nothing : $elm$core$Maybe$Just(
+		A2(
+			$elm$html$Html$div,
+			_List_fromArray(
+				[
+					$elm$html$Html$Attributes$class('mdc-dialog__actions')
+				]),
+			actions));
+};
+var $aforemny$material_components_web_elm$Material$Dialog$alertDialogRoleAttr = A2($elm$html$Html$Attributes$attribute, 'role', 'alertdialog');
+var $aforemny$material_components_web_elm$Material$Dialog$ariaModalAttr = A2($elm$html$Html$Attributes$attribute, 'aria-modal', 'true');
+var $aforemny$material_components_web_elm$Material$Dialog$contentElt = function (_v0) {
+	var content = _v0.content;
+	return $elm$core$Maybe$Just(
+		A2(
+			$elm$html$Html$div,
+			_List_fromArray(
+				[
+					$elm$html$Html$Attributes$class('mdc-dialog__content')
+				]),
+			content));
+};
+var $aforemny$material_components_web_elm$Material$Dialog$dialogSurfaceCs = $elm$html$Html$Attributes$class('mdc-dialog__surface');
+var $aforemny$material_components_web_elm$Material$Dialog$titleElt = function (_v0) {
+	var title = _v0.title;
+	if (title.$ === 'Just') {
+		var title_ = title.a;
+		return $elm$core$Maybe$Just(
+			A2(
+				$elm$html$Html$div,
+				_List_fromArray(
+					[
+						$elm$html$Html$Attributes$class('mdc-dialog__title')
+					]),
+				_List_fromArray(
+					[
+						$elm$html$Html$text(title_)
+					])));
+	} else {
+		return $elm$core$Maybe$Nothing;
+	}
+};
+var $aforemny$material_components_web_elm$Material$Dialog$surfaceElt = function (content) {
+	return A2(
+		$elm$html$Html$div,
+		_List_fromArray(
+			[$aforemny$material_components_web_elm$Material$Dialog$dialogSurfaceCs, $aforemny$material_components_web_elm$Material$Dialog$alertDialogRoleAttr, $aforemny$material_components_web_elm$Material$Dialog$ariaModalAttr]),
+		A2(
+			$elm$core$List$filterMap,
+			$elm$core$Basics$identity,
+			_List_fromArray(
+				[
+					$aforemny$material_components_web_elm$Material$Dialog$titleElt(content),
+					$aforemny$material_components_web_elm$Material$Dialog$contentElt(content),
+					$aforemny$material_components_web_elm$Material$Dialog$actionsElt(content)
+				])));
+};
+var $aforemny$material_components_web_elm$Material$Dialog$containerElt = function (content) {
+	return A2(
+		$elm$html$Html$div,
+		_List_fromArray(
+			[
+				$elm$html$Html$Attributes$class('mdc-dialog__container')
+			]),
+		_List_fromArray(
+			[
+				$aforemny$material_components_web_elm$Material$Dialog$surfaceElt(content)
+			]));
+};
+var $aforemny$material_components_web_elm$Material$Dialog$openProp = function (_v0) {
+	var open = _v0.a.open;
+	return $elm$core$Maybe$Just(
+		A2(
+			$elm$html$Html$Attributes$property,
+			'open',
+			$elm$json$Json$Encode$bool(open)));
+};
+var $aforemny$material_components_web_elm$Material$Dialog$rootCs = $elm$core$Maybe$Just(
+	$elm$html$Html$Attributes$class('mdc-dialog'));
+var $aforemny$material_components_web_elm$Material$Dialog$scrimElt = A2(
+	$elm$html$Html$div,
+	_List_fromArray(
+		[
+			$elm$html$Html$Attributes$class('mdc-dialog__scrim')
+		]),
+	_List_Nil);
+var $aforemny$material_components_web_elm$Material$Dialog$dialog = F2(
+	function (config_, content) {
+		var additionalAttributes = config_.a.additionalAttributes;
+		return A3(
+			$elm$html$Html$node,
+			'mdc-dialog',
+			_Utils_ap(
+				A2(
+					$elm$core$List$filterMap,
+					$elm$core$Basics$identity,
+					_List_fromArray(
+						[
+							$aforemny$material_components_web_elm$Material$Dialog$rootCs,
+							$aforemny$material_components_web_elm$Material$Dialog$openProp(config_),
+							$aforemny$material_components_web_elm$Material$Dialog$closeHandler(config_)
+						])),
+				additionalAttributes),
+			_List_fromArray(
+				[
+					$aforemny$material_components_web_elm$Material$Dialog$containerElt(content),
+					$aforemny$material_components_web_elm$Material$Dialog$scrimElt
+				]));
+	});
+var $aforemny$material_components_web_elm$Material$Dialog$setOnClose = F2(
+	function (onClose, _v0) {
+		var config_ = _v0.a;
+		return $aforemny$material_components_web_elm$Material$Dialog$Config(
+			_Utils_update(
+				config_,
+				{
+					onClose: $elm$core$Maybe$Just(onClose)
+				}));
+	});
+var $aforemny$material_components_web_elm$Material$Dialog$setOpen = F2(
+	function (open, _v0) {
+		var config_ = _v0.a;
+		return $aforemny$material_components_web_elm$Material$Dialog$Config(
+			_Utils_update(
+				config_,
+				{open: open}));
+	});
+var $author$project$Dialog$dialog = F3(
+	function (content, title, actions) {
+		return A2(
+			$aforemny$material_components_web_elm$Material$Dialog$dialog,
+			A2(
+				$aforemny$material_components_web_elm$Material$Dialog$setOnClose,
+				$author$project$Messages$CloseDialog($elm$core$Maybe$Nothing),
+				A2($aforemny$material_components_web_elm$Material$Dialog$setOpen, true, $aforemny$material_components_web_elm$Material$Dialog$config)),
+			{
+				actions: function () {
+					if (actions.$ === 'Just') {
+						var ac = actions.a;
+						return ac;
+					} else {
+						return _List_fromArray(
+							[
+								A2(
+								$aforemny$material_components_web_elm$Material$Button$text,
+								A2(
+									$aforemny$material_components_web_elm$Material$Button$setOnClick,
+									$author$project$Messages$CloseDialog($elm$core$Maybe$Nothing),
+									$aforemny$material_components_web_elm$Material$Button$config),
+								'Cancel')
+							]);
+					}
+				}(),
+				content: content,
+				title: title
+			});
+	});
+var $author$project$Dialog$dialogActions = F2(
+	function (onConfirm, onClose) {
+		return _List_fromArray(
+			[
+				A2(
+				$aforemny$material_components_web_elm$Material$Button$text,
+				A2(
+					$aforemny$material_components_web_elm$Material$Button$setOnClick,
+					$author$project$Messages$CloseDialog(onConfirm),
+					$aforemny$material_components_web_elm$Material$Button$config),
+				'OK'),
+				A2(
+				$aforemny$material_components_web_elm$Material$Button$text,
+				A2(
+					$aforemny$material_components_web_elm$Material$Button$setOnClick,
+					$author$project$Messages$CloseDialog(onClose),
+					$aforemny$material_components_web_elm$Material$Button$config),
+				'Cancel')
+			]);
+	});
 var $author$project$Dialog$scaleDialogContent = function (value) {
 	return _List_fromArray(
 		[
@@ -15647,6 +15981,359 @@ var $author$project$Dialog$scaleDialogContent = function (value) {
 					$elm$core$String$fromFloat(value) + ' g')
 				]))
 		]);
+};
+var $author$project$Messages$BrewSessionCodeInput = function (a) {
+	return {$: 'BrewSessionCodeInput', a: a};
+};
+var $rundis$elm_bootstrap$Bootstrap$Utilities$Spacing$mt3 = $elm$html$Html$Attributes$class('mt-3');
+var $aforemny$material_components_web_elm$Material$TextField$setOnInput = F2(
+	function (onInput, _v0) {
+		var config_ = _v0.a;
+		return $aforemny$material_components_web_elm$Material$TextField$Config(
+			_Utils_update(
+				config_,
+				{
+					onInput: $elm$core$Maybe$Just(onInput)
+				}));
+	});
+var $aforemny$material_components_web_elm$Material$TextField$setValue = F2(
+	function (value, _v0) {
+		var config_ = _v0.a;
+		return $aforemny$material_components_web_elm$Material$TextField$Config(
+			_Utils_update(
+				config_,
+				{value: value}));
+	});
+var $rundis$elm_bootstrap$Bootstrap$Internal$Role$Success = {$: 'Success'};
+var $rundis$elm_bootstrap$Bootstrap$Alert$Shown = {$: 'Shown'};
+var $rundis$elm_bootstrap$Bootstrap$Alert$Config = function (a) {
+	return {$: 'Config', a: a};
+};
+var $rundis$elm_bootstrap$Bootstrap$Alert$attrs = F2(
+	function (attributes, _v0) {
+		var configRec = _v0.a;
+		return $rundis$elm_bootstrap$Bootstrap$Alert$Config(
+			_Utils_update(
+				configRec,
+				{attributes: attributes}));
+	});
+var $rundis$elm_bootstrap$Bootstrap$Alert$children = F2(
+	function (children_, _v0) {
+		var configRec = _v0.a;
+		return $rundis$elm_bootstrap$Bootstrap$Alert$Config(
+			_Utils_update(
+				configRec,
+				{children: children_}));
+	});
+var $rundis$elm_bootstrap$Bootstrap$Internal$Role$Secondary = {$: 'Secondary'};
+var $rundis$elm_bootstrap$Bootstrap$Alert$config = $rundis$elm_bootstrap$Bootstrap$Alert$Config(
+	{attributes: _List_Nil, children: _List_Nil, dismissable: $elm$core$Maybe$Nothing, role: $rundis$elm_bootstrap$Bootstrap$Internal$Role$Secondary, visibility: $rundis$elm_bootstrap$Bootstrap$Alert$Shown, withAnimation: false});
+var $rundis$elm_bootstrap$Bootstrap$Alert$role = F2(
+	function (role_, _v0) {
+		var configRec = _v0.a;
+		return $rundis$elm_bootstrap$Bootstrap$Alert$Config(
+			_Utils_update(
+				configRec,
+				{role: role_}));
+	});
+var $rundis$elm_bootstrap$Bootstrap$Alert$Closed = {$: 'Closed'};
+var $rundis$elm_bootstrap$Bootstrap$Alert$StartClose = {$: 'StartClose'};
+var $rundis$elm_bootstrap$Bootstrap$Alert$clickHandler = F2(
+	function (visibility, configRec) {
+		var handleClick = F2(
+			function (viz, toMsg) {
+				return $elm$html$Html$Events$onClick(
+					toMsg(viz));
+			});
+		var _v0 = configRec.dismissable;
+		if (_v0.$ === 'Just') {
+			var dismissMsg = _v0.a;
+			return _List_fromArray(
+				[
+					configRec.withAnimation ? A2(handleClick, $rundis$elm_bootstrap$Bootstrap$Alert$StartClose, dismissMsg) : A2(handleClick, $rundis$elm_bootstrap$Bootstrap$Alert$Closed, dismissMsg)
+				]);
+		} else {
+			return _List_Nil;
+		}
+	});
+var $rundis$elm_bootstrap$Bootstrap$Alert$injectButton = F2(
+	function (btn, children_) {
+		if (children_.b) {
+			var head = children_.a;
+			var tail = children_.b;
+			return A2(
+				$elm$core$List$cons,
+				head,
+				A2($elm$core$List$cons, btn, tail));
+		} else {
+			return _List_fromArray(
+				[btn]);
+		}
+	});
+var $rundis$elm_bootstrap$Bootstrap$Alert$isDismissable = function (configRec) {
+	var _v0 = configRec.dismissable;
+	if (_v0.$ === 'Just') {
+		return true;
+	} else {
+		return false;
+	}
+};
+var $rundis$elm_bootstrap$Bootstrap$Alert$maybeAddDismissButton = F3(
+	function (visibilty, configRec, children_) {
+		return $rundis$elm_bootstrap$Bootstrap$Alert$isDismissable(configRec) ? A2(
+			$rundis$elm_bootstrap$Bootstrap$Alert$injectButton,
+			A2(
+				$elm$html$Html$button,
+				_Utils_ap(
+					_List_fromArray(
+						[
+							$elm$html$Html$Attributes$type_('button'),
+							$elm$html$Html$Attributes$class('close'),
+							A2($elm$html$Html$Attributes$attribute, 'aria-label', 'close')
+						]),
+					A2($rundis$elm_bootstrap$Bootstrap$Alert$clickHandler, visibilty, configRec)),
+				_List_fromArray(
+					[
+						A2(
+						$elm$html$Html$span,
+						_List_fromArray(
+							[
+								A2($elm$html$Html$Attributes$attribute, 'aria-hidden', 'true')
+							]),
+						_List_fromArray(
+							[
+								$elm$html$Html$text('×')
+							]))
+					])),
+			children_) : children_;
+	});
+var $elm$core$Tuple$second = function (_v0) {
+	var y = _v0.b;
+	return y;
+};
+var $elm$html$Html$Attributes$classList = function (classes) {
+	return $elm$html$Html$Attributes$class(
+		A2(
+			$elm$core$String$join,
+			' ',
+			A2(
+				$elm$core$List$map,
+				$elm$core$Tuple$first,
+				A2($elm$core$List$filter, $elm$core$Tuple$second, classes))));
+};
+var $rundis$elm_bootstrap$Bootstrap$Internal$Role$toClass = F2(
+	function (prefix, role) {
+		return $elm$html$Html$Attributes$class(
+			prefix + ('-' + function () {
+				switch (role.$) {
+					case 'Primary':
+						return 'primary';
+					case 'Secondary':
+						return 'secondary';
+					case 'Success':
+						return 'success';
+					case 'Info':
+						return 'info';
+					case 'Warning':
+						return 'warning';
+					case 'Danger':
+						return 'danger';
+					case 'Light':
+						return 'light';
+					default:
+						return 'dark';
+				}
+			}()));
+	});
+var $rundis$elm_bootstrap$Bootstrap$Alert$viewAttributes = F2(
+	function (visibility, configRec) {
+		var visibiltyAttributes = _Utils_eq(visibility, $rundis$elm_bootstrap$Bootstrap$Alert$Closed) ? _List_fromArray(
+			[
+				A2($elm$html$Html$Attributes$style, 'display', 'none')
+			]) : _List_Nil;
+		var animationAttributes = function () {
+			if (configRec.withAnimation) {
+				var _v0 = configRec.dismissable;
+				if (_v0.$ === 'Just') {
+					var dismissMsg = _v0.a;
+					return _List_fromArray(
+						[
+							A2(
+							$elm$html$Html$Events$on,
+							'transitionend',
+							$elm$json$Json$Decode$succeed(
+								dismissMsg($rundis$elm_bootstrap$Bootstrap$Alert$Closed)))
+						]);
+				} else {
+					return _List_Nil;
+				}
+			} else {
+				return _List_Nil;
+			}
+		}();
+		var alertAttributes = _List_fromArray(
+			[
+				A2($elm$html$Html$Attributes$attribute, 'role', 'alert'),
+				$elm$html$Html$Attributes$classList(
+				_List_fromArray(
+					[
+						_Utils_Tuple2('alert', true),
+						_Utils_Tuple2(
+						'alert-dismissible',
+						$rundis$elm_bootstrap$Bootstrap$Alert$isDismissable(configRec)),
+						_Utils_Tuple2('fade', configRec.withAnimation),
+						_Utils_Tuple2(
+						'show',
+						_Utils_eq(visibility, $rundis$elm_bootstrap$Bootstrap$Alert$Shown))
+					])),
+				A2($rundis$elm_bootstrap$Bootstrap$Internal$Role$toClass, 'alert', configRec.role)
+			]);
+		return $elm$core$List$concat(
+			_List_fromArray(
+				[configRec.attributes, alertAttributes, visibiltyAttributes, animationAttributes]));
+	});
+var $rundis$elm_bootstrap$Bootstrap$Alert$view = F2(
+	function (visibility, _v0) {
+		var configRec = _v0.a;
+		return A2(
+			$elm$html$Html$div,
+			A2($rundis$elm_bootstrap$Bootstrap$Alert$viewAttributes, visibility, configRec),
+			A3($rundis$elm_bootstrap$Bootstrap$Alert$maybeAddDismissButton, visibility, configRec, configRec.children));
+	});
+var $rundis$elm_bootstrap$Bootstrap$Alert$simple = F3(
+	function (role_, attributes, children_) {
+		return A2(
+			$rundis$elm_bootstrap$Bootstrap$Alert$view,
+			$rundis$elm_bootstrap$Bootstrap$Alert$Shown,
+			A2(
+				$rundis$elm_bootstrap$Bootstrap$Alert$children,
+				children_,
+				A2(
+					$rundis$elm_bootstrap$Bootstrap$Alert$attrs,
+					attributes,
+					A2($rundis$elm_bootstrap$Bootstrap$Alert$role, role_, $rundis$elm_bootstrap$Bootstrap$Alert$config))));
+	});
+var $rundis$elm_bootstrap$Bootstrap$Alert$simpleSuccess = $rundis$elm_bootstrap$Bootstrap$Alert$simple($rundis$elm_bootstrap$Bootstrap$Internal$Role$Success);
+var $author$project$Dialog$securityDialogContent = function (security) {
+	return _List_fromArray(
+		[
+			security.valid ? A2(
+			$rundis$elm_bootstrap$Bootstrap$Alert$simpleSuccess,
+			_List_fromArray(
+				[$aforemny$material_components_web_elm$Material$Typography$body1]),
+			_List_fromArray(
+				[
+					$elm$html$Html$text('Your brew session key seems valid. There is no need to change it right now.')
+				])) : A2($elm$html$Html$div, _List_Nil, _List_Nil),
+			A2(
+			$elm$html$Html$p,
+			_List_fromArray(
+				[$aforemny$material_components_web_elm$Material$Typography$body1]),
+			_List_fromArray(
+				[
+					$elm$html$Html$text('Enter current brew session key code here to be able to control the brewing process.')
+				])),
+			$aforemny$material_components_web_elm$Material$TextField$filled(
+			A2(
+				$aforemny$material_components_web_elm$Material$TextField$setAttributes,
+				_List_fromArray(
+					[$rundis$elm_bootstrap$Bootstrap$Utilities$Size$w100]),
+				A2(
+					$aforemny$material_components_web_elm$Material$TextField$setOnChange,
+					$author$project$Messages$BrewSessionCodeChange,
+					A2(
+						$aforemny$material_components_web_elm$Material$TextField$setValid,
+						security.form.valid,
+						A2(
+							$aforemny$material_components_web_elm$Material$TextField$setOnInput,
+							$author$project$Messages$BrewSessionCodeInput,
+							A2(
+								$aforemny$material_components_web_elm$Material$TextField$setValue,
+								$elm$core$Maybe$Just(security.form.value),
+								A2(
+									$aforemny$material_components_web_elm$Material$TextField$setRequired,
+									true,
+									A2(
+										$aforemny$material_components_web_elm$Material$TextField$setLabel,
+										$elm$core$Maybe$Just('Brew session key code'),
+										$aforemny$material_components_web_elm$Material$TextField$config)))))))),
+			A2(
+			$aforemny$material_components_web_elm$Material$HelperText$helperLine,
+			_List_Nil,
+			_List_fromArray(
+				[
+					A2(
+					$aforemny$material_components_web_elm$Material$HelperText$helperText,
+					A2(
+						$aforemny$material_components_web_elm$Material$HelperText$setValidation,
+						!security.form.valid,
+						A2($aforemny$material_components_web_elm$Material$HelperText$setPersistent, true, $aforemny$material_components_web_elm$Material$HelperText$config)),
+					security.form.valid ? security.form.hint : security.form.error)
+				])),
+			A2(
+			$elm$html$Html$p,
+			_List_fromArray(
+				[$aforemny$material_components_web_elm$Material$Typography$body2, $rundis$elm_bootstrap$Bootstrap$Utilities$Spacing$mt3]),
+			_List_fromArray(
+				[
+					$elm$html$Html$text('You can find the current brew session key code on the device screen. Or use the NFC thing!')
+				]))
+		]);
+};
+var $author$project$Dialog$showDialog = function (model) {
+	var _v0 = model.dialogVariant;
+	if (_v0.$ === 'Nothing') {
+		return A2($elm$html$Html$div, _List_Nil, _List_Nil);
+	} else {
+		switch (_v0.a.$) {
+			case 'Security':
+				var _v1 = _v0.a;
+				return A3(
+					$author$project$Dialog$dialog,
+					$author$project$Dialog$securityDialogContent(model.security),
+					$elm$core$Maybe$Just('Brew session key'),
+					$elm$core$Maybe$Just(
+						A2(
+							$author$project$Dialog$dialogActions,
+							$elm$core$Maybe$Just(
+								$author$project$Messages$BrewSessionCodeChange(model.security.form.value)),
+							$elm$core$Maybe$Just(
+								$author$project$Messages$CloseDialog($elm$core$Maybe$Nothing)))));
+			case 'Scale':
+				var _v2 = _v0.a;
+				return A3(
+					$author$project$Dialog$dialog,
+					$author$project$Dialog$scaleDialogContent(model.weight),
+					$elm$core$Maybe$Just('Scale'),
+					$elm$core$Maybe$Nothing);
+			case 'Confirm':
+				var _v3 = _v0.a.a;
+				var prompt = _v3.a;
+				var action = _v3.b;
+				return A3(
+					$author$project$Dialog$dialog,
+					$author$project$Dialog$confirmDialogContent(prompt),
+					$elm$core$Maybe$Just('Confirm'),
+					$elm$core$Maybe$Just(
+						A2(
+							$author$project$Dialog$dialogActions,
+							$elm$core$Maybe$Just(action),
+							$elm$core$Maybe$Just(
+								$author$project$Messages$CloseDialog($elm$core$Maybe$Nothing)))));
+			default:
+				var _v4 = _v0.a;
+				return A3(
+					$author$project$Dialog$dialog,
+					$author$project$Dialog$calibrationDialogContent,
+					$elm$core$Maybe$Just('Scale calibration'),
+					$elm$core$Maybe$Just(
+						A2(
+							$author$project$Dialog$dialogActions,
+							$elm$core$Maybe$Just($author$project$Messages$StartCalibration),
+							$elm$core$Maybe$Just(
+								$author$project$Messages$CloseDialog($elm$core$Maybe$Nothing)))));
+		}
+	}
 };
 var $aforemny$material_components_web_elm$Material$Snackbar$closeOnEscapeProp = function (_v0) {
 	var closeOnEscape = _v0.a.closeOnEscape;
@@ -15931,54 +16618,14 @@ var $author$project$Main$view = function (model) {
 					[$aforemny$material_components_web_elm$Material$Typography$typography]),
 				_List_fromArray(
 					[
-						A4(
+						A5(
 						$author$project$Navbar$navbar,
 						model.title,
 						$author$project$Main$isRecipeSelected(model),
 						model.menuOpened,
-						!$elm$core$Dict$isEmpty(model.recipeSteps)),
-						function () {
-						var _v0 = model.dialogVariant;
-						if (_v0.$ === 'Nothing') {
-							return A2($elm$html$Html$div, _List_Nil, _List_Nil);
-						} else {
-							switch (_v0.a.$) {
-								case 'Scale':
-									var _v1 = _v0.a;
-									return A3(
-										$author$project$Dialog$dialog,
-										$author$project$Dialog$scaleDialogContent(model.weight),
-										$elm$core$Maybe$Just('Scale'),
-										$elm$core$Maybe$Nothing);
-								case 'Confirm':
-									var _v2 = _v0.a.a;
-									var prompt = _v2.a;
-									var action = _v2.b;
-									return A3(
-										$author$project$Dialog$dialog,
-										$author$project$Dialog$confirmDialogContent(prompt),
-										$elm$core$Maybe$Just('Confirm'),
-										$elm$core$Maybe$Just(
-											A2(
-												$author$project$Dialog$dialogActions,
-												$elm$core$Maybe$Just(action),
-												$elm$core$Maybe$Just(
-													$author$project$Messages$CloseDialog($elm$core$Maybe$Nothing)))));
-								default:
-									var _v3 = _v0.a;
-									return A3(
-										$author$project$Dialog$dialog,
-										$author$project$Dialog$calibrationDialogContent,
-										$elm$core$Maybe$Just('Scale calibration'),
-										$elm$core$Maybe$Just(
-											A2(
-												$author$project$Dialog$dialogActions,
-												$elm$core$Maybe$Just($author$project$Messages$StartCalibration),
-												$elm$core$Maybe$Just(
-													$author$project$Messages$CloseDialog($elm$core$Maybe$Nothing)))));
-							}
-						}
-					}(),
+						!$elm$core$Dict$isEmpty(model.recipeSteps),
+						model.security.valid),
+						$author$project$Dialog$showDialog(model),
 						A2(
 						$rundis$elm_bootstrap$Bootstrap$Grid$container,
 						_List_fromArray(
@@ -16023,21 +16670,26 @@ _Platform_export({'Main':{'init':$author$project$Main$main(
 		function (storedApiUrls) {
 			return A2(
 				$elm$json$Json$Decode$andThen,
-				function (basePath) {
+				function (brewSessionCode) {
 					return A2(
 						$elm$json$Json$Decode$andThen,
-						function (apiDefaultProtocol) {
+						function (basePath) {
 							return A2(
 								$elm$json$Json$Decode$andThen,
-								function (apiBaseUrl) {
-									return $elm$json$Json$Decode$succeed(
-										{apiBaseUrl: apiBaseUrl, apiDefaultProtocol: apiDefaultProtocol, basePath: basePath, storedApiUrls: storedApiUrls});
+								function (apiDefaultProtocol) {
+									return A2(
+										$elm$json$Json$Decode$andThen,
+										function (apiBaseUrl) {
+											return $elm$json$Json$Decode$succeed(
+												{apiBaseUrl: apiBaseUrl, apiDefaultProtocol: apiDefaultProtocol, basePath: basePath, brewSessionCode: brewSessionCode, storedApiUrls: storedApiUrls});
+										},
+										A2($elm$json$Json$Decode$field, 'apiBaseUrl', $elm$json$Json$Decode$string));
 								},
-								A2($elm$json$Json$Decode$field, 'apiBaseUrl', $elm$json$Json$Decode$string));
+								A2($elm$json$Json$Decode$field, 'apiDefaultProtocol', $elm$json$Json$Decode$string));
 						},
-						A2($elm$json$Json$Decode$field, 'apiDefaultProtocol', $elm$json$Json$Decode$string));
+						A2($elm$json$Json$Decode$field, 'basePath', $elm$json$Json$Decode$string));
 				},
-				A2($elm$json$Json$Decode$field, 'basePath', $elm$json$Json$Decode$string));
+				A2($elm$json$Json$Decode$field, 'brewSessionCode', $elm$json$Json$Decode$string));
 		},
 		A2(
 			$elm$json$Json$Decode$field,
