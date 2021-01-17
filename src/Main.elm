@@ -234,9 +234,12 @@ update msg model =
     NewApiUrl string ->
       let
           address =
-            if String.startsWith "http://" string || String.startsWith "https://" string
+            ( if String.startsWith "http://" string || String.startsWith "https://" string
             then string
-            else model.apiDefaultProtocol ++ string
+            else model.apiDefaultProtocol ++ string ) ++
+            ( if String.endsWith "/api" string
+            then ""
+            else "/api")
       in
       case Url.fromString address of
         Just _ ->
@@ -328,7 +331,7 @@ getApiUrlsFromQueryString protocol url =
         decodedUrls =
           Result.withDefault [] (decodeString (list string) (Maybe.withDefault "[]" urls))
       in
-      List.map (\address -> checkApiUrl (protocol ++ address) True) decodedUrls
+      List.map (\address -> checkApiUrl (protocol ++ address ++ "/api") True) decodedUrls
 
     Nothing ->
       [Cmd.none]
