@@ -7001,10 +7001,7 @@ var $author$project$Main$getApiUrlsFromQueryString = F2(
 			return A2(
 				$elm$core$List$map,
 				function (address) {
-					return A2(
-						$author$project$Main$checkApiUrl,
-						_Utils_ap(protocol, address),
-						true);
+					return A2($author$project$Main$checkApiUrl, protocol + (address + '/api'), true);
 				},
 				decodedUrls);
 		} else {
@@ -7086,7 +7083,7 @@ var $author$project$Model$init = F3(
 	function (flags, url, key) {
 		return {
 			apiBaseUrl: flags.apiBaseUrl,
-			apiConnecting: false,
+			apiConnecting: true,
 			apiDefaultProtocol: flags.apiDefaultProtocol,
 			availableRecipes: _List_Nil,
 			basePath: flags.basePath,
@@ -7658,6 +7655,7 @@ var $aforemny$material_components_web_elm$Material$Snackbar$close = F2(
 	});
 var $author$project$Main$connect = _Platform_outgoingPort('connect', $elm$json$Json$Encode$string);
 var $author$project$Main$console = _Platform_outgoingPort('console', $elm$json$Json$Encode$string);
+var $elm$core$String$endsWith = _String_endsWith;
 var $author$project$Messages$SetSteps = function (a) {
 	return {$: 'SetSteps', a: a};
 };
@@ -8994,7 +8992,9 @@ var $author$project$Main$update = F2(
 						}());
 				case 'NewApiUrl':
 					var string = msg.a;
-					var address = (A2($elm$core$String$startsWith, 'http://', string) || A2($elm$core$String$startsWith, 'https://', string)) ? string : _Utils_ap(model.apiDefaultProtocol, string);
+					var address = _Utils_ap(
+						(A2($elm$core$String$startsWith, 'http://', string) || A2($elm$core$String$startsWith, 'https://', string)) ? string : _Utils_ap(model.apiDefaultProtocol, string),
+						A2($elm$core$String$endsWith, '/api', string) ? '' : '/api');
 					var _v13 = $elm$url$Url$fromString(address);
 					if (_v13.$ === 'Just') {
 						return _Utils_Tuple2(
