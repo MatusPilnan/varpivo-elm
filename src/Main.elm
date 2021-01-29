@@ -234,12 +234,12 @@ update msg model =
     NewApiUrl string ->
       let
           address =
-            String.dropRight 1 ( if String.startsWith "http://" string || String.startsWith "https://" string
+            String.dropRight 1 ( ( if String.startsWith "http://" string || String.startsWith "https://" string
             then string
             else model.apiDefaultProtocol ++ string ) ++
             ( if String.endsWith "/api" string || String.endsWith "/" string
             then ""
-            else "/api/")
+            else "/api/"))
       in
       case Url.fromString address of
         Just _ ->
