@@ -7655,6 +7655,10 @@ var $aforemny$material_components_web_elm$Material$Snackbar$close = F2(
 	});
 var $author$project$Main$connect = _Platform_outgoingPort('connect', $elm$json$Json$Encode$string);
 var $author$project$Main$console = _Platform_outgoingPort('console', $elm$json$Json$Encode$string);
+var $elm$core$String$dropRight = F2(
+	function (n, string) {
+		return (n < 1) ? string : A3($elm$core$String$slice, 0, -n, string);
+	});
 var $elm$core$String$endsWith = _String_endsWith;
 var $author$project$Messages$SetSteps = function (a) {
 	return {$: 'SetSteps', a: a};
@@ -8676,7 +8680,7 @@ var $author$project$Main$update = F2(
 					return _Utils_Tuple2(
 						_Utils_update(
 							model,
-							{availableRecipes: list, loading: false, value: model.value + 1}),
+							{apiConnecting: false, availableRecipes: list, loading: false, value: model.value + 1}),
 						$elm$core$Platform$Cmd$none);
 				case 'Recv':
 					var data = msg.a;
@@ -8993,8 +8997,11 @@ var $author$project$Main$update = F2(
 				case 'NewApiUrl':
 					var string = msg.a;
 					var address = _Utils_ap(
-						(A2($elm$core$String$startsWith, 'http://', string) || A2($elm$core$String$startsWith, 'https://', string)) ? string : _Utils_ap(model.apiDefaultProtocol, string),
-						A2($elm$core$String$endsWith, '/api', string) ? '' : '/api');
+						A2(
+							$elm$core$String$dropRight,
+							1,
+							(A2($elm$core$String$startsWith, 'http://', string) || A2($elm$core$String$startsWith, 'https://', string)) ? string : _Utils_ap(model.apiDefaultProtocol, string)),
+						(A2($elm$core$String$endsWith, '/api', string) || A2($elm$core$String$endsWith, '/', string)) ? '' : '/api/');
 					var _v13 = $elm$url$Url$fromString(address);
 					if (_v13.$ === 'Just') {
 						return _Utils_Tuple2(
@@ -9043,7 +9050,7 @@ var $author$project$Main$update = F2(
 								[
 									$author$project$Main$saveConnections(
 									{connections: storedApiUrls, selected: string}),
-									A2($author$project$Main$fetchBrewSession, string, model.security.code),
+									A2($author$project$Main$fetchBrewSession, model.security.code, string),
 									A3(
 									$author$project$Router$navigate,
 									model,
