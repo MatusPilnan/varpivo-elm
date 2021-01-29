@@ -8996,12 +8996,12 @@ var $author$project$Main$update = F2(
 						}());
 				case 'NewApiUrl':
 					var string = msg.a;
-					var address = _Utils_ap(
-						A2(
-							$elm$core$String$dropRight,
-							1,
-							(A2($elm$core$String$startsWith, 'http://', string) || A2($elm$core$String$startsWith, 'https://', string)) ? string : _Utils_ap(model.apiDefaultProtocol, string)),
-						(A2($elm$core$String$endsWith, '/api', string) || A2($elm$core$String$endsWith, '/', string)) ? '' : '/api/');
+					var address = A2(
+						$elm$core$String$dropRight,
+						1,
+						_Utils_ap(
+							(A2($elm$core$String$startsWith, 'http://', string) || A2($elm$core$String$startsWith, 'https://', string)) ? string : _Utils_ap(model.apiDefaultProtocol, string),
+							(A2($elm$core$String$endsWith, '/api', string) || A2($elm$core$String$endsWith, '/', string)) ? '' : '/api/'));
 					var _v13 = $elm$url$Url$fromString(address);
 					if (_v13.$ === 'Just') {
 						return _Utils_Tuple2(
