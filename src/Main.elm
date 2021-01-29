@@ -103,7 +103,7 @@ update msg model =
     FetchRecipes ->
       ({ model | loading = True}, fetchRecipes model.apiBaseUrl)
     SetAvailableRecipes list ->
-      ({ model | value = model.value + 1, availableRecipes = list, loading = False }, Cmd.none)
+      ({ model | value = model.value + 1, availableRecipes = list, loading = False, apiConnecting = False }, Cmd.none)
     Recv data ->
       handleKegMessage data model console notification
     Send ->
@@ -234,12 +234,12 @@ update msg model =
     NewApiUrl string ->
       let
           address =
-            ( if String.startsWith "http://" string || String.startsWith "https://" string
+            String.dropRight 1 ( if String.startsWith "http://" string || String.startsWith "https://" string
             then string
             else model.apiDefaultProtocol ++ string ) ++
-            ( if String.endsWith "/api" string
+            ( if String.endsWith "/api" string || String.endsWith "/" string
             then ""
-            else "/api")
+            else "/api/")
       in
       case Url.fromString address of
         Just _ ->
@@ -263,7 +263,7 @@ update msg model =
         }
       , Cmd.batch
         [ saveConnections {selected = string, connections = storedApiUrls }
-        , fetchBrewSession string model.security.code
+        , fetchBrewSession model.security.code string
         , navigate model [""] []
         , connect (string ++ "/tap")
         ]
