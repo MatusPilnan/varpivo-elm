@@ -50,6 +50,7 @@
 <body>
 <main></main>
 <script src="elm.js"></script>
+<script src="assets/config.js"></script>
 <script>
   const STORED_API_URLS_KEY = 'storedApiUrls'
   const SELECTED_API_URL_KEY = 'selectedApiUrl'
@@ -60,7 +61,7 @@
 
   var apiDefaultProtocol = `${window.location.protocol}//`
 
-  var basePath = '/varpivo-elm'
+  var basePath = config.BASE_PATH
 
   var app = Elm.Main.init({
     node: document.querySelector('main'),
