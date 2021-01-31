@@ -49,7 +49,6 @@ jobs:
         run: |
           mkdir ./public
           mv ./index.html ./public
-          mv ./styles.css ./public
           mv ./elm.js ./public
           mv ./assets/ ./public/
           mv ./manifest.json ./public
