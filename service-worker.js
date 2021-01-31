@@ -7,8 +7,8 @@ self.addEventListener('install', function (e) {
         config.BASE_PATH + '/',
         config.BASE_PATH + '/manifest.json',
         config.BASE_PATH + '/elm.js',
-        config.BASE_PATH + '/assets/image/icon.png',
-        config.BASE_PATH + '/assets/css/styles.css',
+        config.BASE_PATH + '/assets/icon.png',
+        config.BASE_PATH + '/assets/styles/styles.css',
       ]);
     })
   );
