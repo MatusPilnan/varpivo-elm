@@ -52,6 +52,8 @@ jobs:
           mv ./styles.css ./public
           mv ./elm.js ./public
           mv ./assets/ ./public/
+          mv ./manifest.json ./public
+          mv ./service-worker.js ./public
           
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
