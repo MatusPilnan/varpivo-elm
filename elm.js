@@ -11262,9 +11262,13 @@ var $author$project$Navbar$navbar = F5(
 									A2(
 									$aforemny$material_components_web_elm$Material$IconButton$iconButton,
 									A2(
-										$aforemny$material_components_web_elm$Material$IconButton$setOnClick,
-										$author$project$Messages$ShowDialog($author$project$Messages$Security),
-										$aforemny$material_components_web_elm$Material$IconButton$config),
+										$aforemny$material_components_web_elm$Material$IconButton$setAttributes,
+										_List_fromArray(
+											[$aforemny$material_components_web_elm$Material$TopAppBar$navigationIcon]),
+										A2(
+											$aforemny$material_components_web_elm$Material$IconButton$setOnClick,
+											$author$project$Messages$ShowDialog($author$project$Messages$Security),
+											$aforemny$material_components_web_elm$Material$IconButton$config)),
 									$aforemny$material_components_web_elm$Material$IconButton$icon(
 										brewSessionCodeValid ? 'verified_user' : 'vpn_key')),
 									showRecipeButton ? A2(
