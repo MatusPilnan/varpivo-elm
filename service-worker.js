@@ -9,6 +9,7 @@ self.addEventListener('install', function (e) {
         config.BASE_PATH + '/elm.js',
         config.BASE_PATH + '/assets/icon.png',
         config.BASE_PATH + '/assets/styles/styles.css',
+        config.BASE_PATH + '/assets/styles/theme.css'
       ]);
     })
   );
