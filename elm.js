@@ -11274,13 +11274,17 @@ var $author$project$Navbar$navbar = F5(
 									showRecipeButton ? A2(
 									$aforemny$material_components_web_elm$Material$IconButton$iconButton,
 									A2(
-										$aforemny$material_components_web_elm$Material$IconButton$setOnClick,
-										$author$project$Messages$NavigateTo(
-											_Utils_Tuple2(
-												_List_fromArray(
-													['recipe']),
-												_List_Nil)),
-										$aforemny$material_components_web_elm$Material$IconButton$config),
+										$aforemny$material_components_web_elm$Material$IconButton$setAttributes,
+										_List_fromArray(
+											[$aforemny$material_components_web_elm$Material$TopAppBar$navigationIcon]),
+										A2(
+											$aforemny$material_components_web_elm$Material$IconButton$setOnClick,
+											$author$project$Messages$NavigateTo(
+												_Utils_Tuple2(
+													_List_fromArray(
+														['recipe']),
+													_List_Nil)),
+											$aforemny$material_components_web_elm$Material$IconButton$config)),
 									$aforemny$material_components_web_elm$Material$IconButton$icon('menu_book')) : A2($elm$html$Html$div, _List_Nil, _List_Nil),
 									A2(
 									$aforemny$material_components_web_elm$Material$IconButton$iconButton,
