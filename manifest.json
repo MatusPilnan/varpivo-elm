@@ -2,7 +2,7 @@
   "name": "Var:Pivo",
   "short_name": "Var:Pivo",
   "theme_color": "#efc84a",
-  "background_color": "#FFD379",
+  "background_color": "#efc84a",
   "display": "standalone",
   "scope": "./",
   "start_url": "./",

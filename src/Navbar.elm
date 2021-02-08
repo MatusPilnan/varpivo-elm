@@ -30,7 +30,10 @@ navbar title showRecipeButton menuOpen activeBrewSession brewSessionCodeValid =
             |> IconButton.setAttributes [ TopAppBar.navigationIcon ]
           ) (IconButton.icon (if brewSessionCodeValid then "verified_user" else "vpn_key"))
         , if showRecipeButton then
-            IconButton.iconButton (IconButton.config |> IconButton.setOnClick (NavigateTo (["recipe"], [])) )
+            IconButton.iconButton (
+              IconButton.config
+              |> IconButton.setOnClick (NavigateTo (["recipe"], []))
+              |> IconButton.setAttributes [ TopAppBar.navigationIcon ] )
                                 (IconButton.icon "menu_book")
           else Html.div [] []
         , IconButton.iconButton
