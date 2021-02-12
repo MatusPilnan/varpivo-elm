@@ -7,6 +7,7 @@ import Api.Request.Info as InfoApi
 import Api.Request.RecipeSteps as RecipeStepsApi
 import Api.Request.Recipes as RecipesApi
 import Api.Request.Scale as ScaleApi
+import Menu exposing (menuDrawer)
 import SnackbarTools exposing (apiErrorMessage, brewSessionKeyRejectedMessage)
 import BottomToolbar exposing (bottomToolbar)
 import Browser exposing (Document)
@@ -508,22 +509,25 @@ view : Model -> Document Msg
 view model =
   { title = model.title
   , body =
-    [ Html.div [ Typography.typography ]
-      [ navbar model.title (isRecipeSelected model) model.menuOpened ( not (Dict.isEmpty model.recipeSteps) ) model.security.valid
-      , showDialog model
-      , Grid.container [ Spacing.py5 ]
-        [ Grid.row [ Row.attrs [ Spacing.pt4 ] ]
-          [ Grid.col []
-            [ page model ]
+    [ Html.div []
+      ( menuDrawer model ( not (Dict.isEmpty model.recipeSteps) ) ++
+      [ Html.div [ Typography.typography ]
+        [ navbar model.title (isRecipeSelected model) model.security.valid
+        , showDialog model
+        , Grid.container [ Spacing.py5 ]
+          [ Grid.row [ Row.attrs [ Spacing.pt4 ] ]
+            [ Grid.col []
+              [ page model ]
+            ]
           ]
+        , Snackbar.snackbar
+                  (Snackbar.config { onClosed = SnackbarClosed })
+                  model.snackbarQueue
+        , if not (Dict.isEmpty model.recipeSteps) then
+            bottomToolbar model.temperature model.remainingBoilTime model.heating
+          else Html.div [] []
         ]
-      , Snackbar.snackbar
-                (Snackbar.config { onClosed = SnackbarClosed })
-                model.snackbarQueue
-      , if not (Dict.isEmpty model.recipeSteps) then
-          bottomToolbar model.temperature model.remainingBoilTime model.heating
-        else Html.div [] []
-      ]
+      ])
     ]
   }
 

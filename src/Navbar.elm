@@ -1,20 +1,17 @@
 module Navbar exposing (..)
 
-import Bootstrap.Utilities.Spacing as Spacing
-import Html exposing (text)
+import Html
 import Material.Button as Button
 import Material.Elevation as Elevation
 import Material.IconButton as IconButton
-import Material.List as List
-import Material.List.Item as ListItem
 import Material.Menu as Menu
 import Material.Theme as Theme
 import Material.TopAppBar as TopAppBar
 import Messages exposing (DialogVariant(..), Msg(..))
 
 
-navbar : String -> Bool -> Bool -> Bool -> Bool -> Html.Html Msg
-navbar title showRecipeButton menuOpen activeBrewSession brewSessionCodeValid =
+navbar : String -> Bool -> Bool -> Html.Html Msg
+navbar title showRecipeButton brewSessionCodeValid =
   TopAppBar.regular TopAppBar.config
     [ TopAppBar.row [ Elevation.z8 ]
       [ TopAppBar.section [ TopAppBar.alignStart, TopAppBar.title ]
@@ -43,34 +40,6 @@ navbar title showRecipeButton menuOpen activeBrewSession brewSessionCodeValid =
             |> IconButton.setOnClick MenuOpened
           )
             (IconButton.icon "menu")
-        , menu menuOpen activeBrewSession
         ]
-      ]
-    ]
-
-menu : Bool -> Bool -> Html.Html Msg
-menu open activeBrewSession =
-  Html.div []
-    [ Menu.menu
-      (Menu.config
-        |> Menu.setOpen open
-        |> Menu.setOnClose MenuClosed
-        |> Menu.setAttributes [ Spacing.mt5 ]
-      )
-      [ List.list
-        (List.config |> List.setWrapFocus True )
-        (ListItem.listItem (ListItem.config |> ListItem.setOnClick (ShowDialog Scale)) [ text "Mini scale" ]
-        )(
-        [ ListItem.listItem (ListItem.config |> ListItem.setOnClick (ShowDialog Calibration)) [ text "Calibrate scale" ]
-        , ListItem.listItem (ListItem.config |> ListItem.setOnClick (NavigateTo (["scale"], []))) [ text "Scale" ]
-        ] ++ (if activeBrewSession
-          then [ ListItem.listItem (ListItem.config |> ListItem.setOnClick
-                 ( ShowDialog (Confirm ("Do you really want to discard current brew session? This can't be undone!", CancelBrewSession))
-                 )) [ text "Cancel brewing" ]
-               ]
-          else []) ++
-        [ ListItem.listItem (ListItem.config |> ListItem.setOnClick (NavigateTo (["connections"], []))) [ text "Manage connections" ]
-        ]
-        )
       ]
     ]
