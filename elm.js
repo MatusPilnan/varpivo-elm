@@ -11140,7 +11140,7 @@ var $author$project$Menu$subtitle = function (model) {
 					return 'Not connected';
 				} else {
 					var url = _v1;
-					return 'Connected to ' + url;
+					return url;
 				}
 			}
 		}());
@@ -11195,14 +11195,6 @@ var $author$project$Menu$menuDrawer = F2(
 												_List_fromArray(
 													[
 														$elm$html$Html$text('Var:Pivo')
-													])),
-												A2(
-												$elm$html$Html$h6,
-												_List_fromArray(
-													[$aforemny$material_components_web_elm$Material$Drawer$Modal$subtitle]),
-												_List_fromArray(
-													[
-														$author$project$Menu$subtitle(model)
 													]))
 											])),
 										A2(
@@ -11225,6 +11217,14 @@ var $author$project$Menu$menuDrawer = F2(
 												A2($aforemny$material_components_web_elm$Material$IconButton$setOnClick, $author$project$Messages$MenuClosed, $aforemny$material_components_web_elm$Material$IconButton$config),
 												$aforemny$material_components_web_elm$Material$IconButton$icon('close'))
 											]))
+									])),
+								A2(
+								$elm$html$Html$h6,
+								_List_fromArray(
+									[$aforemny$material_components_web_elm$Material$Drawer$Modal$subtitle]),
+								_List_fromArray(
+									[
+										$author$project$Menu$subtitle(model)
 									]))
 							])),
 						A2(
