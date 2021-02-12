@@ -26,7 +26,6 @@ menuDrawer model activeBrewSession =
       [ Grid.row []
         [ Grid.col [ Col.attrs [ Spacing.pr0 ] ]
           [ Html.h3 [ ModalDrawer.title ] [ text "Var:Pivo" ]
-          , Html.h6 [ ModalDrawer.subtitle ] [ subtitle model ]
           ]
         , Grid.col [ Col.xsAuto, Col.attrs [ Spacing.p0, Attributes.align "center" ], Col.middleXs ]
           [ IconButton.iconButton
@@ -34,6 +33,7 @@ menuDrawer model activeBrewSession =
             (IconButton.icon "close")
           ]
         ]
+      , Html.h6 [ ModalDrawer.subtitle ] [ subtitle model ]
       ]
 
     , ModalDrawer.content []
@@ -129,6 +129,6 @@ subtitle model =
           "Not connected"
 
         url ->
-          "Connected to " ++ url
+          url
 
   )
