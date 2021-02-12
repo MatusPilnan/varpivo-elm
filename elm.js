@@ -5426,6 +5426,7 @@ var $elm$core$Task$perform = F2(
 				A2($elm$core$Task$map, toMessage, task)));
 	});
 var $elm$browser$Browser$application = _Browser_application;
+var $elm$json$Json$Decode$bool = _Json_decodeBool;
 var $elm$json$Json$Decode$field = _Json_decodeField;
 var $author$project$Messages$SetTime = function (a) {
 	return {$: 'SetTime', a: a};
@@ -5434,220 +5435,27 @@ var $author$project$Messages$SetTimeZone = function (a) {
 	return {$: 'SetTimeZone', a: a};
 };
 var $elm$core$Platform$Cmd$batch = _Platform_batch;
-var $author$project$Messages$FetchRecipes = {$: 'FetchRecipes'};
-var $author$project$Messages$SetBrewSession = function (a) {
-	return {$: 'SetBrewSession', a: a};
+var $author$project$Messages$RejectApiUrl = function (a) {
+	return {$: 'RejectApiUrl', a: a};
 };
-var $author$project$Api$Data$BrewSession = F4(
-	function (steps, recipe, boilStartedAt, bsCodeValid) {
-		return {boilStartedAt: boilStartedAt, bsCodeValid: bsCodeValid, recipe: recipe, steps: steps};
-	});
-var $elm$json$Json$Decode$bool = _Json_decodeBool;
+var $author$project$Messages$SaveApiUrl = function (a) {
+	return {$: 'SaveApiUrl', a: a};
+};
+var $author$project$Api$Data$Message = function (message) {
+	return {message: message};
+};
 var $author$project$Api$Data$decodeChain = $elm$json$Json$Decode$map2($elm$core$Basics$apR);
 var $author$project$Api$Data$decode = F2(
 	function (key, decoder) {
 		return $author$project$Api$Data$decodeChain(
 			A2($elm$json$Json$Decode$field, key, decoder));
 	});
-var $elm$json$Json$Decode$float = _Json_decodeFloat;
-var $elm$json$Json$Decode$list = _Json_decodeList;
-var $elm$json$Json$Decode$decodeValue = _Json_run;
-var $elm$json$Json$Decode$fail = _Json_fail;
-var $elm$json$Json$Decode$null = _Json_decodeNull;
-var $elm$json$Json$Decode$oneOf = _Json_oneOf;
-var $elm$json$Json$Decode$value = _Json_decodeValue;
-var $author$project$Api$Data$maybeField = F3(
-	function (key, decoder, fallback) {
-		var valueDecoder = $elm$json$Json$Decode$oneOf(
-			_List_fromArray(
-				[
-					A2($elm$json$Json$Decode$map, $elm$core$Maybe$Just, decoder),
-					$elm$json$Json$Decode$null(fallback)
-				]));
-		var fieldDecoder = A2($elm$json$Json$Decode$field, key, $elm$json$Json$Decode$value);
-		var decodeObject = function (rawObject) {
-			var _v0 = A2($elm$json$Json$Decode$decodeValue, fieldDecoder, rawObject);
-			if (_v0.$ === 'Ok') {
-				var rawValue = _v0.a;
-				var _v1 = A2($elm$json$Json$Decode$decodeValue, valueDecoder, rawValue);
-				if (_v1.$ === 'Ok') {
-					var value = _v1.a;
-					return $elm$json$Json$Decode$succeed(value);
-				} else {
-					var error = _v1.a;
-					return $elm$json$Json$Decode$fail(
-						$elm$json$Json$Decode$errorToString(error));
-				}
-			} else {
-				return $elm$json$Json$Decode$succeed(fallback);
-			}
-		};
-		return A2($elm$json$Json$Decode$andThen, decodeObject, $elm$json$Json$Decode$value);
-	});
-var $author$project$Api$Data$maybeDecode = F3(
-	function (key, decoder, fallback) {
-		return $author$project$Api$Data$decodeChain(
-			A3($author$project$Api$Data$maybeField, key, decoder, fallback));
-	});
-var $author$project$Api$Data$Recipe = F5(
-	function (name, id, style, ingredients, boilTime) {
-		return {boilTime: boilTime, id: id, ingredients: ingredients, name: name, style: style};
-	});
-var $author$project$Api$Data$Ingredient = F3(
-	function (name, unit, amount) {
-		return {amount: amount, name: name, unit: unit};
-	});
 var $elm$json$Json$Decode$string = _Json_decodeString;
-var $author$project$Api$Data$ingredientDecoder = A3(
+var $author$project$Api$Data$messageDecoder = A3(
 	$author$project$Api$Data$decode,
-	'amount',
-	$elm$json$Json$Decode$float,
-	A3(
-		$author$project$Api$Data$decode,
-		'unit',
-		$elm$json$Json$Decode$string,
-		A3(
-			$author$project$Api$Data$decode,
-			'name',
-			$elm$json$Json$Decode$string,
-			$elm$json$Json$Decode$succeed($author$project$Api$Data$Ingredient))));
-var $author$project$Api$Data$RecipeListStyle = F2(
-	function (name, type_) {
-		return {name: name, type_: type_};
-	});
-var $author$project$Api$Data$recipeListStyleDecoder = A3(
-	$author$project$Api$Data$decode,
-	'type',
+	'message',
 	$elm$json$Json$Decode$string,
-	A3(
-		$author$project$Api$Data$decode,
-		'name',
-		$elm$json$Json$Decode$string,
-		$elm$json$Json$Decode$succeed($author$project$Api$Data$RecipeListStyle)));
-var $author$project$Api$Data$recipeDecoder = A4(
-	$author$project$Api$Data$maybeDecode,
-	'boil_time',
-	$elm$json$Json$Decode$float,
-	$elm$core$Maybe$Nothing,
-	A3(
-		$author$project$Api$Data$decode,
-		'ingredients',
-		$elm$json$Json$Decode$list($author$project$Api$Data$ingredientDecoder),
-		A3(
-			$author$project$Api$Data$decode,
-			'style',
-			$author$project$Api$Data$recipeListStyleDecoder,
-			A3(
-				$author$project$Api$Data$decode,
-				'id',
-				$elm$json$Json$Decode$string,
-				A3(
-					$author$project$Api$Data$decode,
-					'name',
-					$elm$json$Json$Decode$string,
-					$elm$json$Json$Decode$succeed($author$project$Api$Data$Recipe))))));
-var $author$project$Api$Data$RecipeStep = function (id) {
-	return function (started) {
-		return function (finished) {
-			return function (progress) {
-				return function (estimation) {
-					return function (description) {
-						return function (durationMins) {
-							return function (name) {
-								return function (available) {
-									return function (kind) {
-										return function (target) {
-											return {available: available, description: description, durationMins: durationMins, estimation: estimation, finished: finished, id: id, kind: kind, name: name, progress: progress, started: started, target: target};
-										};
-									};
-								};
-							};
-						};
-					};
-				};
-			};
-		};
-	};
-};
-var $author$project$Api$Data$recipeStepDecoder = A4(
-	$author$project$Api$Data$maybeDecode,
-	'target',
-	$elm$json$Json$Decode$float,
-	$elm$core$Maybe$Nothing,
-	A3(
-		$author$project$Api$Data$decode,
-		'kind',
-		$elm$json$Json$Decode$string,
-		A3(
-			$author$project$Api$Data$decode,
-			'available',
-			$elm$json$Json$Decode$bool,
-			A3(
-				$author$project$Api$Data$decode,
-				'name',
-				$elm$json$Json$Decode$string,
-				A4(
-					$author$project$Api$Data$maybeDecode,
-					'duration_mins',
-					$elm$json$Json$Decode$float,
-					$elm$core$Maybe$Nothing,
-					A3(
-						$author$project$Api$Data$decode,
-						'description',
-						$elm$json$Json$Decode$string,
-						A4(
-							$author$project$Api$Data$maybeDecode,
-							'estimation',
-							$elm$json$Json$Decode$float,
-							$elm$core$Maybe$Nothing,
-							A4(
-								$author$project$Api$Data$maybeDecode,
-								'progress',
-								$elm$json$Json$Decode$float,
-								$elm$core$Maybe$Nothing,
-								A4(
-									$author$project$Api$Data$maybeDecode,
-									'finished',
-									$elm$json$Json$Decode$float,
-									$elm$core$Maybe$Nothing,
-									A4(
-										$author$project$Api$Data$maybeDecode,
-										'started',
-										$elm$json$Json$Decode$float,
-										$elm$core$Maybe$Nothing,
-										A3(
-											$author$project$Api$Data$decode,
-											'id',
-											$elm$json$Json$Decode$string,
-											$elm$json$Json$Decode$succeed($author$project$Api$Data$RecipeStep))))))))))));
-var $author$project$Api$Data$brewSessionDecoder = A3(
-	$author$project$Api$Data$decode,
-	'bs_code_valid',
-	$elm$json$Json$Decode$bool,
-	A4(
-		$author$project$Api$Data$maybeDecode,
-		'boil_started_at',
-		$elm$json$Json$Decode$float,
-		$elm$core$Maybe$Nothing,
-		A3(
-			$author$project$Api$Data$decode,
-			'recipe',
-			$author$project$Api$Data$recipeDecoder,
-			A3(
-				$author$project$Api$Data$decode,
-				'steps',
-				$elm$json$Json$Decode$list($author$project$Api$Data$recipeStepDecoder),
-				$elm$json$Json$Decode$succeed($author$project$Api$Data$BrewSession)))));
-var $elm$core$Maybe$map = F2(
-	function (f, maybe) {
-		if (maybe.$ === 'Just') {
-			var value = maybe.a;
-			return $elm$core$Maybe$Just(
-				f(value));
-		} else {
-			return $elm$core$Maybe$Nothing;
-		}
-	});
+	$elm$json$Json$Decode$succeed($author$project$Api$Data$Message));
 var $author$project$Api$Request = function (a) {
 	return {$: 'Request', a: a};
 };
@@ -6217,6 +6025,16 @@ var $elm$http$Http$Header = F2(
 		return {$: 'Header', a: a, b: b};
 	});
 var $elm$http$Http$header = $elm$http$Http$Header;
+var $elm$core$Maybe$map = F2(
+	function (f, maybe) {
+		if (maybe.$ === 'Just') {
+			var value = maybe.a;
+			return $elm$core$Maybe$Just(
+				f(value));
+		} else {
+			return $elm$core$Maybe$Nothing;
+		}
+	});
 var $author$project$Api$headers = $elm$core$List$filterMap(
 	function (_v0) {
 		var key = _v0.a;
@@ -6324,121 +6142,7 @@ var $author$project$Api$request = F7(
 				tracker: $elm$core$Maybe$Nothing
 			});
 	});
-var $author$project$Api$Request$BrewSessionStatus$getBrewStatus = function (authorization_header) {
-	return A7(
-		$author$project$Api$request,
-		'GET',
-		'/status',
-		_List_Nil,
-		_List_Nil,
-		_List_fromArray(
-			[
-				_Utils_Tuple2(
-				'Authorization',
-				A2($elm$core$Maybe$map, $elm$core$Basics$identity, authorization_header))
-			]),
-		$elm$core$Maybe$Nothing,
-		$author$project$Api$Data$brewSessionDecoder);
-};
-var $author$project$Data$Conversions$apiRecipeToRecipe = function (a) {
-	return {
-		boil_time: a.boilTime,
-		id: a.id,
-		ingredients: A2(
-			$elm$core$List$map,
-			function (i) {
-				return {amount: i.amount, name: i.name, unit: i.unit};
-			},
-			a.ingredients),
-		name: a.name,
-		style_name: a.style.name,
-		style_type: a.style.type_
-	};
-};
-var $author$project$Data$Step$Generic = {$: 'Generic'};
-var $author$project$Data$Step$Hop = {$: 'Hop'};
-var $author$project$Data$Step$KeepTemperature = {$: 'KeepTemperature'};
-var $author$project$Data$Step$Misc = {$: 'Misc'};
-var $author$project$Data$Step$SetTemperature = {$: 'SetTemperature'};
-var $author$project$Data$Step$Water = {$: 'Water'};
-var $author$project$Data$Step$Weight = {$: 'Weight'};
-var $author$project$Data$Conversions$apiStepToRecipeStep = function (entry) {
-	return {
-		available: entry.available,
-		description: entry.description,
-		duration: entry.durationMins,
-		estimation: entry.estimation,
-		finished: entry.finished,
-		id: entry.id,
-		kind: function () {
-			var _v0 = entry.kind;
-			switch (_v0) {
-				case 'generic':
-					return $author$project$Data$Step$Generic;
-				case 'hop':
-					return $author$project$Data$Step$Hop;
-				case 'misc':
-					return $author$project$Data$Step$Misc;
-				case 'set_temperature':
-					return $author$project$Data$Step$SetTemperature;
-				case 'keep_temperature':
-					return $author$project$Data$Step$KeepTemperature;
-				case 'water':
-					return $author$project$Data$Step$Water;
-				case 'weight':
-					return $author$project$Data$Step$Weight;
-				default:
-					return $author$project$Data$Step$Generic;
-			}
-		}(),
-		name: entry.name,
-		progress: entry.progress,
-		started: entry.started,
-		target: entry.target
-	};
-};
-var $elm$core$Dict$fromList = function (assocs) {
-	return A3(
-		$elm$core$List$foldl,
-		F2(
-			function (_v0, dict) {
-				var key = _v0.a;
-				var value = _v0.b;
-				return A3($elm$core$Dict$insert, key, value, dict);
-			}),
-		$elm$core$Dict$empty,
-		assocs);
-};
-var $elm$core$Basics$round = _Basics_round;
-var $author$project$Main$handleBrewSession = function (response) {
-	if (response.$ === 'Ok') {
-		var value = response.a;
-		return $elm$core$Maybe$Just(
-			{
-				boilStartedAt: A2($elm$core$Maybe$map, $elm$core$Basics$round, value.boilStartedAt),
-				brewSessionCodeValid: value.bsCodeValid,
-				recipeListEntry: $elm$core$Maybe$Just(
-					$author$project$Data$Conversions$apiRecipeToRecipe(value.recipe)),
-				stepIds: A2(
-					$elm$core$List$map,
-					function (step) {
-						return step.id;
-					},
-					value.steps),
-				steps: $elm$core$Dict$fromList(
-					A2(
-						$elm$core$List$map,
-						function (step) {
-							return _Utils_Tuple2(
-								step.id,
-								$author$project$Data$Conversions$apiStepToRecipeStep(step));
-						},
-						value.steps))
-			});
-	} else {
-		return $elm$core$Maybe$Nothing;
-	}
-};
+var $author$project$Api$Request$Info$getDiscover = A7($author$project$Api$request, 'GET', '/discover-varpivo', _List_Nil, _List_Nil, _List_Nil, $elm$core$Maybe$Nothing, $author$project$Api$Data$messageDecoder);
 var $elm$url$Url$Builder$toQueryPair = function (_v0) {
 	var key = _v0.a;
 	var value = _v0.b;
@@ -6720,6 +6424,7 @@ var $author$project$Api$send = F2(
 	function (toMsg, req) {
 		return A3($author$project$Api$sendWithCustomError, $elm$core$Basics$identity, toMsg, req);
 	});
+var $elm$core$Debug$toString = _Debug_toString;
 var $author$project$Api$withBasePath = F2(
 	function (basePath, _v0) {
 		var req = _v0.a;
@@ -6728,41 +6433,6 @@ var $author$project$Api$withBasePath = F2(
 				req,
 				{basePath: basePath}));
 	});
-var $author$project$Main$fetchBrewSession = F2(
-	function (brewSessionCode, basePath) {
-		return A2(
-			$author$project$Api$send,
-			function (response) {
-				var _v0 = $author$project$Main$handleBrewSession(response);
-				if (_v0.$ === 'Nothing') {
-					return $author$project$Messages$FetchRecipes;
-				} else {
-					var result = _v0.a;
-					return $author$project$Messages$SetBrewSession(result);
-				}
-			},
-			A2(
-				$author$project$Api$withBasePath,
-				basePath,
-				$author$project$Api$Request$BrewSessionStatus$getBrewStatus(
-					$elm$core$Maybe$Just(brewSessionCode))));
-	});
-var $author$project$Messages$RejectApiUrl = function (a) {
-	return {$: 'RejectApiUrl', a: a};
-};
-var $author$project$Messages$SaveApiUrl = function (a) {
-	return {$: 'SaveApiUrl', a: a};
-};
-var $author$project$Api$Data$Message = function (message) {
-	return {message: message};
-};
-var $author$project$Api$Data$messageDecoder = A3(
-	$author$project$Api$Data$decode,
-	'message',
-	$elm$json$Json$Decode$string,
-	$elm$json$Json$Decode$succeed($author$project$Api$Data$Message));
-var $author$project$Api$Request$Info$getDiscover = A7($author$project$Api$request, 'GET', '/discover-varpivo', _List_Nil, _List_Nil, _List_Nil, $elm$core$Maybe$Nothing, $author$project$Api$Data$messageDecoder);
-var $elm$core$Debug$toString = _Debug_toString;
 var $author$project$Main$checkApiUrl = F2(
 	function (basePath, autoCheck) {
 		return A2(
@@ -6798,7 +6468,7 @@ var $author$project$Main$checkApiUrl = F2(
 			},
 			A2($author$project$Api$withBasePath, basePath, $author$project$Api$Request$Info$getDiscover));
 	});
-var $elm$core$Platform$Cmd$none = $elm$core$Platform$Cmd$batch(_List_Nil);
+var $elm$json$Json$Decode$list = _Json_decodeList;
 var $elm$url$Url$Parser$State = F5(
 	function (visited, unvisited, params, frag, value) {
 		return {frag: frag, params: params, unvisited: unvisited, value: value, visited: visited};
@@ -6979,35 +6649,395 @@ var $elm$core$Result$withDefault = F2(
 			return def;
 		}
 	});
-var $author$project$Main$getApiUrlsFromQueryString = F2(
+var $author$project$Model$getApiUrlsFromQueryString = function (url) {
+	var queryParser = $elm$url$Url$Parser$query(
+		$elm$url$Url$Parser$Query$string('connections'));
+	var _v0 = A2(
+		$elm$url$Url$Parser$parse,
+		queryParser,
+		_Utils_update(
+			url,
+			{path: ''}));
+	if (_v0.$ === 'Just') {
+		var urls = _v0.a;
+		return A2(
+			$elm$core$Result$withDefault,
+			_List_Nil,
+			A2(
+				$elm$json$Json$Decode$decodeString,
+				$elm$json$Json$Decode$list($elm$json$Json$Decode$string),
+				A2($elm$core$Maybe$withDefault, '[]', urls)));
+	} else {
+		return _List_Nil;
+	}
+};
+var $elm$core$List$isEmpty = function (xs) {
+	if (!xs.b) {
+		return true;
+	} else {
+		return false;
+	}
+};
+var $elm$core$Platform$Cmd$none = $elm$core$Platform$Cmd$batch(_List_Nil);
+var $elm$core$Basics$negate = function (n) {
+	return -n;
+};
+var $elm$core$String$dropRight = F2(
+	function (n, string) {
+		return (n < 1) ? string : A3($elm$core$String$slice, 0, -n, string);
+	});
+var $elm$core$String$endsWith = _String_endsWith;
+var $author$project$Main$prepareAddress = F2(
+	function (protocol, address) {
+		return A2(
+			$elm$core$String$dropRight,
+			1,
+			_Utils_ap(
+				(A2($elm$core$String$startsWith, 'http://', address) || A2($elm$core$String$startsWith, 'https://', address)) ? address : _Utils_ap(protocol, address),
+				(A2($elm$core$String$endsWith, '/api', address) || A2($elm$core$String$endsWith, '/', address)) ? (A2($elm$core$String$endsWith, '/', address) ? '' : ' ') : '/api/'));
+	});
+var $author$project$Main$checkApiUrlsFromQueryString = F2(
 	function (protocol, url) {
-		var queryParser = $elm$url$Url$Parser$query(
-			$elm$url$Url$Parser$Query$string('connections'));
-		var _v0 = A2(
-			$elm$url$Url$Parser$parse,
-			queryParser,
-			_Utils_update(
-				url,
-				{path: ''}));
-		if (_v0.$ === 'Just') {
-			var urls = _v0.a;
-			var decodedUrls = A2(
-				$elm$core$Result$withDefault,
-				_List_Nil,
-				A2(
-					$elm$json$Json$Decode$decodeString,
-					$elm$json$Json$Decode$list($elm$json$Json$Decode$string),
-					A2($elm$core$Maybe$withDefault, '[]', urls)));
-			return A2(
-				$elm$core$List$map,
-				function (address) {
-					return A2($author$project$Main$checkApiUrl, protocol + (address + '/api'), true);
-				},
-				decodedUrls);
-		} else {
-			return _List_fromArray(
-				[$elm$core$Platform$Cmd$none]);
-		}
+		var decodedUrls = $author$project$Model$getApiUrlsFromQueryString(url);
+		return $elm$core$List$isEmpty(decodedUrls) ? _List_fromArray(
+			[$elm$core$Platform$Cmd$none]) : A2(
+			$elm$core$List$map,
+			function (address) {
+				return A2(
+					$author$project$Main$checkApiUrl,
+					A2($author$project$Main$prepareAddress, protocol, address),
+					true);
+			},
+			decodedUrls);
+	});
+var $author$project$Messages$FetchRecipes = {$: 'FetchRecipes'};
+var $author$project$Messages$SetBrewSession = function (a) {
+	return {$: 'SetBrewSession', a: a};
+};
+var $author$project$Api$Data$BrewSession = F4(
+	function (steps, recipe, boilStartedAt, bsCodeValid) {
+		return {boilStartedAt: boilStartedAt, bsCodeValid: bsCodeValid, recipe: recipe, steps: steps};
+	});
+var $elm$json$Json$Decode$float = _Json_decodeFloat;
+var $elm$json$Json$Decode$decodeValue = _Json_run;
+var $elm$json$Json$Decode$fail = _Json_fail;
+var $elm$json$Json$Decode$null = _Json_decodeNull;
+var $elm$json$Json$Decode$oneOf = _Json_oneOf;
+var $elm$json$Json$Decode$value = _Json_decodeValue;
+var $author$project$Api$Data$maybeField = F3(
+	function (key, decoder, fallback) {
+		var valueDecoder = $elm$json$Json$Decode$oneOf(
+			_List_fromArray(
+				[
+					A2($elm$json$Json$Decode$map, $elm$core$Maybe$Just, decoder),
+					$elm$json$Json$Decode$null(fallback)
+				]));
+		var fieldDecoder = A2($elm$json$Json$Decode$field, key, $elm$json$Json$Decode$value);
+		var decodeObject = function (rawObject) {
+			var _v0 = A2($elm$json$Json$Decode$decodeValue, fieldDecoder, rawObject);
+			if (_v0.$ === 'Ok') {
+				var rawValue = _v0.a;
+				var _v1 = A2($elm$json$Json$Decode$decodeValue, valueDecoder, rawValue);
+				if (_v1.$ === 'Ok') {
+					var value = _v1.a;
+					return $elm$json$Json$Decode$succeed(value);
+				} else {
+					var error = _v1.a;
+					return $elm$json$Json$Decode$fail(
+						$elm$json$Json$Decode$errorToString(error));
+				}
+			} else {
+				return $elm$json$Json$Decode$succeed(fallback);
+			}
+		};
+		return A2($elm$json$Json$Decode$andThen, decodeObject, $elm$json$Json$Decode$value);
+	});
+var $author$project$Api$Data$maybeDecode = F3(
+	function (key, decoder, fallback) {
+		return $author$project$Api$Data$decodeChain(
+			A3($author$project$Api$Data$maybeField, key, decoder, fallback));
+	});
+var $author$project$Api$Data$Recipe = F5(
+	function (name, id, style, ingredients, boilTime) {
+		return {boilTime: boilTime, id: id, ingredients: ingredients, name: name, style: style};
+	});
+var $author$project$Api$Data$Ingredient = F3(
+	function (name, unit, amount) {
+		return {amount: amount, name: name, unit: unit};
+	});
+var $author$project$Api$Data$ingredientDecoder = A3(
+	$author$project$Api$Data$decode,
+	'amount',
+	$elm$json$Json$Decode$float,
+	A3(
+		$author$project$Api$Data$decode,
+		'unit',
+		$elm$json$Json$Decode$string,
+		A3(
+			$author$project$Api$Data$decode,
+			'name',
+			$elm$json$Json$Decode$string,
+			$elm$json$Json$Decode$succeed($author$project$Api$Data$Ingredient))));
+var $author$project$Api$Data$RecipeListStyle = F2(
+	function (name, type_) {
+		return {name: name, type_: type_};
+	});
+var $author$project$Api$Data$recipeListStyleDecoder = A3(
+	$author$project$Api$Data$decode,
+	'type',
+	$elm$json$Json$Decode$string,
+	A3(
+		$author$project$Api$Data$decode,
+		'name',
+		$elm$json$Json$Decode$string,
+		$elm$json$Json$Decode$succeed($author$project$Api$Data$RecipeListStyle)));
+var $author$project$Api$Data$recipeDecoder = A4(
+	$author$project$Api$Data$maybeDecode,
+	'boil_time',
+	$elm$json$Json$Decode$float,
+	$elm$core$Maybe$Nothing,
+	A3(
+		$author$project$Api$Data$decode,
+		'ingredients',
+		$elm$json$Json$Decode$list($author$project$Api$Data$ingredientDecoder),
+		A3(
+			$author$project$Api$Data$decode,
+			'style',
+			$author$project$Api$Data$recipeListStyleDecoder,
+			A3(
+				$author$project$Api$Data$decode,
+				'id',
+				$elm$json$Json$Decode$string,
+				A3(
+					$author$project$Api$Data$decode,
+					'name',
+					$elm$json$Json$Decode$string,
+					$elm$json$Json$Decode$succeed($author$project$Api$Data$Recipe))))));
+var $author$project$Api$Data$RecipeStep = function (id) {
+	return function (started) {
+		return function (finished) {
+			return function (progress) {
+				return function (estimation) {
+					return function (description) {
+						return function (durationMins) {
+							return function (name) {
+								return function (available) {
+									return function (kind) {
+										return function (target) {
+											return {available: available, description: description, durationMins: durationMins, estimation: estimation, finished: finished, id: id, kind: kind, name: name, progress: progress, started: started, target: target};
+										};
+									};
+								};
+							};
+						};
+					};
+				};
+			};
+		};
+	};
+};
+var $author$project$Api$Data$recipeStepDecoder = A4(
+	$author$project$Api$Data$maybeDecode,
+	'target',
+	$elm$json$Json$Decode$float,
+	$elm$core$Maybe$Nothing,
+	A3(
+		$author$project$Api$Data$decode,
+		'kind',
+		$elm$json$Json$Decode$string,
+		A3(
+			$author$project$Api$Data$decode,
+			'available',
+			$elm$json$Json$Decode$bool,
+			A3(
+				$author$project$Api$Data$decode,
+				'name',
+				$elm$json$Json$Decode$string,
+				A4(
+					$author$project$Api$Data$maybeDecode,
+					'duration_mins',
+					$elm$json$Json$Decode$float,
+					$elm$core$Maybe$Nothing,
+					A3(
+						$author$project$Api$Data$decode,
+						'description',
+						$elm$json$Json$Decode$string,
+						A4(
+							$author$project$Api$Data$maybeDecode,
+							'estimation',
+							$elm$json$Json$Decode$float,
+							$elm$core$Maybe$Nothing,
+							A4(
+								$author$project$Api$Data$maybeDecode,
+								'progress',
+								$elm$json$Json$Decode$float,
+								$elm$core$Maybe$Nothing,
+								A4(
+									$author$project$Api$Data$maybeDecode,
+									'finished',
+									$elm$json$Json$Decode$float,
+									$elm$core$Maybe$Nothing,
+									A4(
+										$author$project$Api$Data$maybeDecode,
+										'started',
+										$elm$json$Json$Decode$float,
+										$elm$core$Maybe$Nothing,
+										A3(
+											$author$project$Api$Data$decode,
+											'id',
+											$elm$json$Json$Decode$string,
+											$elm$json$Json$Decode$succeed($author$project$Api$Data$RecipeStep))))))))))));
+var $author$project$Api$Data$brewSessionDecoder = A3(
+	$author$project$Api$Data$decode,
+	'bs_code_valid',
+	$elm$json$Json$Decode$bool,
+	A4(
+		$author$project$Api$Data$maybeDecode,
+		'boil_started_at',
+		$elm$json$Json$Decode$float,
+		$elm$core$Maybe$Nothing,
+		A3(
+			$author$project$Api$Data$decode,
+			'recipe',
+			$author$project$Api$Data$recipeDecoder,
+			A3(
+				$author$project$Api$Data$decode,
+				'steps',
+				$elm$json$Json$Decode$list($author$project$Api$Data$recipeStepDecoder),
+				$elm$json$Json$Decode$succeed($author$project$Api$Data$BrewSession)))));
+var $author$project$Api$Request$BrewSessionStatus$getBrewStatus = function (authorization_header) {
+	return A7(
+		$author$project$Api$request,
+		'GET',
+		'/status',
+		_List_Nil,
+		_List_Nil,
+		_List_fromArray(
+			[
+				_Utils_Tuple2(
+				'Authorization',
+				A2($elm$core$Maybe$map, $elm$core$Basics$identity, authorization_header))
+			]),
+		$elm$core$Maybe$Nothing,
+		$author$project$Api$Data$brewSessionDecoder);
+};
+var $author$project$Data$Conversions$apiRecipeToRecipe = function (a) {
+	return {
+		boil_time: a.boilTime,
+		id: a.id,
+		ingredients: A2(
+			$elm$core$List$map,
+			function (i) {
+				return {amount: i.amount, name: i.name, unit: i.unit};
+			},
+			a.ingredients),
+		name: a.name,
+		style_name: a.style.name,
+		style_type: a.style.type_
+	};
+};
+var $author$project$Data$Step$Generic = {$: 'Generic'};
+var $author$project$Data$Step$Hop = {$: 'Hop'};
+var $author$project$Data$Step$KeepTemperature = {$: 'KeepTemperature'};
+var $author$project$Data$Step$Misc = {$: 'Misc'};
+var $author$project$Data$Step$SetTemperature = {$: 'SetTemperature'};
+var $author$project$Data$Step$Water = {$: 'Water'};
+var $author$project$Data$Step$Weight = {$: 'Weight'};
+var $author$project$Data$Conversions$apiStepToRecipeStep = function (entry) {
+	return {
+		available: entry.available,
+		description: entry.description,
+		duration: entry.durationMins,
+		estimation: entry.estimation,
+		finished: entry.finished,
+		id: entry.id,
+		kind: function () {
+			var _v0 = entry.kind;
+			switch (_v0) {
+				case 'generic':
+					return $author$project$Data$Step$Generic;
+				case 'hop':
+					return $author$project$Data$Step$Hop;
+				case 'misc':
+					return $author$project$Data$Step$Misc;
+				case 'set_temperature':
+					return $author$project$Data$Step$SetTemperature;
+				case 'keep_temperature':
+					return $author$project$Data$Step$KeepTemperature;
+				case 'water':
+					return $author$project$Data$Step$Water;
+				case 'weight':
+					return $author$project$Data$Step$Weight;
+				default:
+					return $author$project$Data$Step$Generic;
+			}
+		}(),
+		name: entry.name,
+		progress: entry.progress,
+		started: entry.started,
+		target: entry.target
+	};
+};
+var $elm$core$Dict$fromList = function (assocs) {
+	return A3(
+		$elm$core$List$foldl,
+		F2(
+			function (_v0, dict) {
+				var key = _v0.a;
+				var value = _v0.b;
+				return A3($elm$core$Dict$insert, key, value, dict);
+			}),
+		$elm$core$Dict$empty,
+		assocs);
+};
+var $elm$core$Basics$round = _Basics_round;
+var $author$project$Main$handleBrewSession = function (response) {
+	if (response.$ === 'Ok') {
+		var value = response.a;
+		return $elm$core$Maybe$Just(
+			{
+				boilStartedAt: A2($elm$core$Maybe$map, $elm$core$Basics$round, value.boilStartedAt),
+				brewSessionCodeValid: value.bsCodeValid,
+				recipeListEntry: $elm$core$Maybe$Just(
+					$author$project$Data$Conversions$apiRecipeToRecipe(value.recipe)),
+				stepIds: A2(
+					$elm$core$List$map,
+					function (step) {
+						return step.id;
+					},
+					value.steps),
+				steps: $elm$core$Dict$fromList(
+					A2(
+						$elm$core$List$map,
+						function (step) {
+							return _Utils_Tuple2(
+								step.id,
+								$author$project$Data$Conversions$apiStepToRecipeStep(step));
+						},
+						value.steps))
+			});
+	} else {
+		return $elm$core$Maybe$Nothing;
+	}
+};
+var $author$project$Main$fetchBrewSession = F2(
+	function (brewSessionCode, basePath) {
+		return A2(
+			$author$project$Api$send,
+			function (response) {
+				var _v0 = $author$project$Main$handleBrewSession(response);
+				if (_v0.$ === 'Nothing') {
+					return $author$project$Messages$FetchRecipes;
+				} else {
+					var result = _v0.a;
+					return $author$project$Messages$SetBrewSession(result);
+				}
+			},
+			A2(
+				$author$project$Api$withBasePath,
+				basePath,
+				$author$project$Api$Request$BrewSessionStatus$getBrewStatus(
+					$elm$core$Maybe$Just(brewSessionCode))));
 	});
 var $elm$time$Time$Name = function (a) {
 	return {$: 'Name', a: a};
@@ -7044,6 +7074,7 @@ var $author$project$Model$defaultSecurity = F2(
 		return {
 			code: A2($elm$core$Maybe$withDefault, flags.brewSessionCode, codeFromUrl),
 			form: $author$project$Model$defaultSecurityFormState,
+			shareSecurityCode: false,
 			valid: function () {
 				if (codeFromUrl.$ === 'Just') {
 					return true;
@@ -7075,15 +7106,14 @@ var $aforemny$material_components_web_elm$Material$Snackbar$initialQueue = $afor
 		messages: _List_Nil,
 		nextMessageId: $aforemny$material_components_web_elm$Material$Snackbar$MessageId(0)
 	});
-var $elm$core$Basics$negate = function (n) {
-	return -n;
-};
 var $elm$core$Basics$not = _Basics_not;
 var $author$project$Model$init = F3(
 	function (flags, url, key) {
+		var apiUrlsInQuery = !$elm$core$List$isEmpty(
+			$author$project$Model$getApiUrlsFromQueryString(url));
 		return {
 			apiBaseUrl: flags.apiBaseUrl,
-			apiConnecting: true,
+			apiConnecting: apiUrlsInQuery ? true : false,
 			apiDefaultProtocol: flags.apiDefaultProtocol,
 			availableRecipes: _List_Nil,
 			basePath: flags.basePath,
@@ -7101,12 +7131,14 @@ var $author$project$Model$init = F3(
 			loading: true,
 			menuOpened: false,
 			newApiUrlFormError: $elm$core$Maybe$Nothing,
+			origin: flags.origin,
 			recipeSteps: $elm$core$Dict$empty,
 			remainingBoilTime: $elm$core$Maybe$Nothing,
 			route: $author$project$Router$Home,
 			security: A2($author$project$Model$defaultSecurity, url, flags),
 			selectedApiUrl: $elm$core$Maybe$Nothing,
 			selectedRecipe: $elm$core$Maybe$Nothing,
+			sharingSupported: flags.sharingSupported,
 			snackbarQueue: $aforemny$material_components_web_elm$Material$Snackbar$initialQueue,
 			stepsOrder: _List_Nil,
 			storedApiUrls: flags.storedApiUrls,
@@ -7136,7 +7168,7 @@ var $author$project$Main$init = F3(
 							A2($elm$core$Task$perform, $author$project$Messages$SetTimeZone, $elm$time$Time$here),
 							A2($elm$core$Task$perform, $author$project$Messages$SetTime, $elm$time$Time$now)
 						]),
-					A2($author$project$Main$getApiUrlsFromQueryString, flags.apiDefaultProtocol, url))));
+					A2($author$project$Main$checkApiUrlsFromQueryString, flags.apiDefaultProtocol, url))));
 	});
 var $author$project$Messages$NavigateTo = function (a) {
 	return {$: 'NavigateTo', a: a};
@@ -7431,6 +7463,10 @@ var $aforemny$material_components_web_elm$Material$Snackbar$addMessage = F2(
 					nextMessageId: $aforemny$material_components_web_elm$Material$Snackbar$inc(queue.nextMessageId)
 				}));
 	});
+var $author$project$Messages$Security = {$: 'Security'};
+var $author$project$Messages$ShowDialog = function (a) {
+	return {$: 'ShowDialog', a: a};
+};
 var $elm$json$Json$Encode$string = _Json_wrap;
 var $elm$html$Html$Attributes$stringProperty = F2(
 	function (key, string) {
@@ -7480,25 +7516,6 @@ var $aforemny$material_components_web_elm$Material$Snackbar$message = function (
 			timeoutMs: $elm$core$Maybe$Just(5000)
 		});
 };
-var $aforemny$material_components_web_elm$Material$Snackbar$setActionIcon = F2(
-	function (actionIcon, _v0) {
-		var message_ = _v0.a;
-		return $aforemny$material_components_web_elm$Material$Snackbar$Message(
-			_Utils_update(
-				message_,
-				{actionIcon: actionIcon}));
-	});
-var $author$project$SnackbarTools$apiErrorMessage = function (message) {
-	return A2(
-		$aforemny$material_components_web_elm$Material$Snackbar$setActionIcon,
-		$elm$core$Maybe$Just(
-			$aforemny$material_components_web_elm$Material$Snackbar$icon('close')),
-		$aforemny$material_components_web_elm$Material$Snackbar$message(message));
-};
-var $author$project$Messages$Security = {$: 'Security'};
-var $author$project$Messages$ShowDialog = function (a) {
-	return {$: 'ShowDialog', a: a};
-};
 var $aforemny$material_components_web_elm$Material$Snackbar$setActionButton = F2(
 	function (actionButton, _v0) {
 		var message_ = _v0.a;
@@ -7506,6 +7523,14 @@ var $aforemny$material_components_web_elm$Material$Snackbar$setActionButton = F2
 			_Utils_update(
 				message_,
 				{actionButton: actionButton}));
+	});
+var $aforemny$material_components_web_elm$Material$Snackbar$setActionIcon = F2(
+	function (actionIcon, _v0) {
+		var message_ = _v0.a;
+		return $aforemny$material_components_web_elm$Material$Snackbar$Message(
+			_Utils_update(
+				message_,
+				{actionIcon: actionIcon}));
 	});
 var $aforemny$material_components_web_elm$Material$Snackbar$setOnActionButtonClick = F2(
 	function (onActionButtonClick, _v0) {
@@ -7542,6 +7567,32 @@ var $author$project$SnackbarTools$brewSessionKeyRejectedMessage = function (mess
 					$elm$core$Maybe$Just(
 						$aforemny$material_components_web_elm$Material$Snackbar$icon('close')),
 					$aforemny$material_components_web_elm$Material$Snackbar$message(message)))));
+};
+var $elm$json$Json$Encode$list = F2(
+	function (func, entries) {
+		return _Json_wrap(
+			A3(
+				$elm$core$List$foldl,
+				_Json_addEntry(func),
+				_Json_emptyArray(_Utils_Tuple0),
+				entries));
+	});
+var $author$project$ConnectionsManagement$brewSessionLink = function (model) {
+	var base = _Utils_ap(model.origin, model.basePath);
+	var _v0 = model.apiBaseUrl;
+	if (_v0 === '') {
+		return base;
+	} else {
+		var url = _v0;
+		return base + ('?connections=' + (A2(
+			$elm$json$Json$Encode$encode,
+			0,
+			A2(
+				$elm$json$Json$Encode$list,
+				$elm$json$Json$Encode$string,
+				_List_fromArray(
+					[url]))) + ((model.security.valid && model.security.shareSecurityCode) ? ('&brewSessionCode=' + model.security.code) : '')));
+	}
 };
 var $author$project$Messages$ShowSnackbar = function (a) {
 	return {$: 'ShowSnackbar', a: a};
@@ -7655,11 +7706,6 @@ var $aforemny$material_components_web_elm$Material$Snackbar$close = F2(
 	});
 var $author$project$Main$connect = _Platform_outgoingPort('connect', $elm$json$Json$Encode$string);
 var $author$project$Main$console = _Platform_outgoingPort('console', $elm$json$Json$Encode$string);
-var $elm$core$String$dropRight = F2(
-	function (n, string) {
-		return (n < 1) ? string : A3($elm$core$String$slice, 0, -n, string);
-	});
-var $elm$core$String$endsWith = _String_endsWith;
 var $author$project$Messages$SetSteps = function (a) {
 	return {$: 'SetSteps', a: a};
 };
@@ -8437,15 +8483,6 @@ var $author$project$Router$route = F3(
 		}
 	});
 var $author$project$Main$saveBrewSessionCode = _Platform_outgoingPort('saveBrewSessionCode', $elm$json$Json$Encode$string);
-var $elm$json$Json$Encode$list = F2(
-	function (func, entries) {
-		return _Json_wrap(
-			A3(
-				$elm$core$List$foldl,
-				_Json_addEntry(func),
-				_Json_emptyArray(_Utils_Tuple0),
-				entries));
-	});
 var $author$project$Main$saveConnections = _Platform_outgoingPort(
 	'saveConnections',
 	function ($) {
@@ -8461,6 +8498,14 @@ var $author$project$Main$saveConnections = _Platform_outgoingPort(
 				]));
 	});
 var $author$project$Main$sendMessage = _Platform_outgoingPort('sendMessage', $elm$json$Json$Encode$string);
+var $author$project$Main$shareLink = _Platform_outgoingPort('shareLink', $elm$json$Json$Encode$string);
+var $author$project$SnackbarTools$simpleMessage = function (message) {
+	return A2(
+		$aforemny$material_components_web_elm$Material$Snackbar$setActionIcon,
+		$elm$core$Maybe$Just(
+			$aforemny$material_components_web_elm$Material$Snackbar$icon('close')),
+		$aforemny$material_components_web_elm$Material$Snackbar$message(message));
+};
 var $author$project$Api$Request$Scale$patchScaleRes = F2(
 	function (grams_query, authorization_header) {
 		return A7(
@@ -8755,7 +8800,7 @@ var $author$project$Main$update = F2(
 								loading: false,
 								snackbarQueue: A2(
 									$aforemny$material_components_web_elm$Material$Snackbar$addMessage,
-									$author$project$SnackbarTools$apiErrorMessage(string),
+									$author$project$SnackbarTools$simpleMessage(string),
 									model.snackbarQueue)
 							}),
 						$elm$core$Platform$Cmd$none);
@@ -8996,12 +9041,7 @@ var $author$project$Main$update = F2(
 						}());
 				case 'NewApiUrl':
 					var string = msg.a;
-					var address = A2(
-						$elm$core$String$dropRight,
-						1,
-						_Utils_ap(
-							(A2($elm$core$String$startsWith, 'http://', string) || A2($elm$core$String$startsWith, 'https://', string)) ? string : _Utils_ap(model.apiDefaultProtocol, string),
-							(A2($elm$core$String$endsWith, '/api', string) || A2($elm$core$String$endsWith, '/', string)) ? '' : '/api/'));
+					var address = A2($author$project$Main$prepareAddress, model.apiDefaultProtocol, string);
 					var _v13 = $elm$url$Url$fromString(address);
 					if (_v13.$ === 'Just') {
 						return _Utils_Tuple2(
@@ -9142,7 +9182,7 @@ var $author$project$Main$update = F2(
 									})
 							}),
 						$author$project$Main$saveBrewSessionCode(newCode));
-				default:
+				case 'BrewSessionCodeRejected':
 					var _v16 = msg.a;
 					var rejectionMessage = _v16.a;
 					var currentIsInvalid = _v16.b;
@@ -9166,6 +9206,35 @@ var $author$project$Main$update = F2(
 									model.snackbarQueue)
 							}),
 						$elm$core$Platform$Cmd$none);
+				case 'CheckingUrlsFromQuery':
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{apiConnecting: true}),
+						$elm$core$Platform$Cmd$none);
+				case 'ToggleCodeSharing':
+					var oldSecurity = model.security;
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								security: _Utils_update(
+									oldSecurity,
+									{shareSecurityCode: !oldSecurity.shareSecurityCode})
+							}),
+						$elm$core$Platform$Cmd$none);
+				default:
+					return _Utils_Tuple2(
+						model.sharingSupported ? model : _Utils_update(
+							model,
+							{
+								snackbarQueue: A2(
+									$aforemny$material_components_web_elm$Material$Snackbar$addMessage,
+									$author$project$SnackbarTools$simpleMessage('Link copied.'),
+									model.snackbarQueue)
+							}),
+						$author$project$Main$shareLink(
+							$author$project$ConnectionsManagement$brewSessionLink(model)));
 			}
 		}
 	});
@@ -10245,137 +10314,9 @@ var $author$project$Main$isRecipeSelected = function (model) {
 		return false;
 	}
 };
-var $author$project$Messages$MenuOpened = {$: 'MenuOpened'};
-var $aforemny$material_components_web_elm$Material$TopAppBar$alignEnd = $elm$html$Html$Attributes$class('mdc-top-app-bar__section--align-end');
-var $aforemny$material_components_web_elm$Material$TopAppBar$alignStart = $elm$html$Html$Attributes$class('mdc-top-app-bar__section--align-start');
-var $aforemny$material_components_web_elm$Material$Button$Internal$Config = function (a) {
-	return {$: 'Config', a: a};
-};
-var $aforemny$material_components_web_elm$Material$Button$config = $aforemny$material_components_web_elm$Material$Button$Internal$Config(
-	{additionalAttributes: _List_Nil, dense: false, disabled: false, href: $elm$core$Maybe$Nothing, icon: $elm$core$Maybe$Nothing, onClick: $elm$core$Maybe$Nothing, target: $elm$core$Maybe$Nothing, touch: true, trailingIcon: false});
-var $aforemny$material_components_web_elm$Material$IconButton$Internal$Config = function (a) {
-	return {$: 'Config', a: a};
-};
-var $aforemny$material_components_web_elm$Material$IconButton$config = $aforemny$material_components_web_elm$Material$IconButton$Internal$Config(
-	{additionalAttributes: _List_Nil, disabled: false, label: $elm$core$Maybe$Nothing, onClick: $elm$core$Maybe$Nothing});
-var $aforemny$material_components_web_elm$Material$TopAppBar$Config = function (a) {
-	return {$: 'Config', a: a};
-};
-var $aforemny$material_components_web_elm$Material$TopAppBar$config = $aforemny$material_components_web_elm$Material$TopAppBar$Config(
-	{additionalAttributes: _List_Nil, dense: false, fixed: false});
-var $aforemny$material_components_web_elm$Material$IconButton$Internal$Icon = function (a) {
-	return {$: 'Icon', a: a};
-};
-var $aforemny$material_components_web_elm$Material$IconButton$customIcon = F3(
-	function (node, attributes, nodes) {
-		return $aforemny$material_components_web_elm$Material$IconButton$Internal$Icon(
-			{attributes: attributes, node: node, nodes: nodes});
-	});
-var $aforemny$material_components_web_elm$Material$IconButton$icon = function (iconName) {
-	return A3(
-		$aforemny$material_components_web_elm$Material$IconButton$customIcon,
-		$elm$html$Html$i,
-		_List_fromArray(
-			[
-				$elm$html$Html$Attributes$class('material-icons')
-			]),
-		_List_fromArray(
-			[
-				$elm$html$Html$text(iconName)
-			]));
-};
-var $elm$svg$Svg$Attributes$class = _VirtualDom_attribute('class');
-var $elm$virtual_dom$VirtualDom$Normal = function (a) {
-	return {$: 'Normal', a: a};
-};
-var $elm$virtual_dom$VirtualDom$on = _VirtualDom_on;
-var $elm$html$Html$Events$on = F2(
-	function (event, decoder) {
-		return A2(
-			$elm$virtual_dom$VirtualDom$on,
-			event,
-			$elm$virtual_dom$VirtualDom$Normal(decoder));
-	});
-var $elm$html$Html$Events$onClick = function (msg) {
-	return A2(
-		$elm$html$Html$Events$on,
-		'click',
-		$elm$json$Json$Decode$succeed(msg));
-};
-var $aforemny$material_components_web_elm$Material$IconButton$clickHandler = function (_v0) {
-	var onClick = _v0.a.onClick;
-	return A2($elm$core$Maybe$map, $elm$html$Html$Events$onClick, onClick);
-};
-var $elm$virtual_dom$VirtualDom$map = _VirtualDom_map;
-var $elm$html$Html$map = $elm$virtual_dom$VirtualDom$map;
-var $elm$virtual_dom$VirtualDom$node = function (tag) {
-	return _VirtualDom_node(
-		_VirtualDom_noScript(tag));
-};
-var $elm$html$Html$node = $elm$virtual_dom$VirtualDom$node;
-var $aforemny$material_components_web_elm$Material$IconButton$rootCs = $elm$core$Maybe$Just(
-	$elm$html$Html$Attributes$class('mdc-icon-button'));
-var $elm$html$Html$Attributes$tabindex = function (n) {
-	return A2(
-		_VirtualDom_attribute,
-		'tabIndex',
-		$elm$core$String$fromInt(n));
-};
-var $aforemny$material_components_web_elm$Material$IconButton$tabIndexProp = $elm$core$Maybe$Just(
-	$elm$html$Html$Attributes$tabindex(0));
-var $aforemny$material_components_web_elm$Material$IconButton$iconButton = F2(
-	function (config_, icon_) {
-		var additionalAttributes = config_.a.additionalAttributes;
-		return A3(
-			$elm$html$Html$node,
-			'mdc-icon-button',
-			_Utils_ap(
-				A2(
-					$elm$core$List$filterMap,
-					$elm$core$Basics$identity,
-					_List_fromArray(
-						[
-							$aforemny$material_components_web_elm$Material$IconButton$rootCs,
-							$aforemny$material_components_web_elm$Material$IconButton$tabIndexProp,
-							$aforemny$material_components_web_elm$Material$IconButton$clickHandler(config_)
-						])),
-				additionalAttributes),
-			_List_fromArray(
-				[
-					A2(
-					$elm$html$Html$map,
-					$elm$core$Basics$never,
-					function () {
-						if (icon_.$ === 'Icon') {
-							var node = icon_.a.node;
-							var attributes = icon_.a.attributes;
-							var nodes = icon_.a.nodes;
-							return A2(
-								node,
-								A2(
-									$elm$core$List$cons,
-									$elm$html$Html$Attributes$class('mdc-icon-button__icon'),
-									attributes),
-								nodes);
-						} else {
-							var node = icon_.a.node;
-							var attributes = icon_.a.attributes;
-							var nodes = icon_.a.nodes;
-							return A2(
-								node,
-								A2(
-									$elm$core$List$cons,
-									$elm$svg$Svg$Attributes$class('mdc-icon-button__icon'),
-									attributes),
-								nodes);
-						}
-					}())
-				]));
-	});
-var $author$project$Messages$Calibration = {$: 'Calibration'};
-var $author$project$Messages$CancelBrewSession = {$: 'CancelBrewSession'};
 var $author$project$Messages$MenuClosed = {$: 'MenuClosed'};
-var $author$project$Messages$Scale = {$: 'Scale'};
+var $author$project$Messages$CancelBrewSession = {$: 'CancelBrewSession'};
+var $author$project$Messages$Invite = {$: 'Invite'};
 var $aforemny$material_components_web_elm$Material$List$Config = function (a) {
 	return {$: 'Config', a: a};
 };
@@ -10394,11 +10335,34 @@ var $aforemny$material_components_web_elm$Material$List$Item$config = $aforemny$
 		selection: $elm$core$Maybe$Nothing,
 		target: $elm$core$Maybe$Nothing
 	});
-var $aforemny$material_components_web_elm$Material$Menu$Config = function (a) {
-	return {$: 'Config', a: a};
+var $elm$html$Html$hr = _VirtualDom_node('hr');
+var $aforemny$material_components_web_elm$Material$List$Divider$listDividerCs = $elm$core$Maybe$Just(
+	$elm$html$Html$Attributes$class('mdc-list-divider'));
+var $aforemny$material_components_web_elm$Material$List$Divider$group = function (additionalAttributes) {
+	return A2(
+		$elm$html$Html$hr,
+		_Utils_ap(
+			A2(
+				$elm$core$List$filterMap,
+				$elm$core$Basics$identity,
+				_List_fromArray(
+					[$aforemny$material_components_web_elm$Material$List$Divider$listDividerCs])),
+			additionalAttributes),
+		_List_Nil);
 };
-var $aforemny$material_components_web_elm$Material$Menu$config = $aforemny$material_components_web_elm$Material$Menu$Config(
-	{additionalAttributes: _List_Nil, onClose: $elm$core$Maybe$Nothing, open: false, quickOpen: false});
+var $aforemny$material_components_web_elm$Material$Icon$icon = F2(
+	function (additionalAttributes, iconName) {
+		return A2(
+			$elm$html$Html$i,
+			A2(
+				$elm$core$List$cons,
+				$elm$html$Html$Attributes$class('material-icons'),
+				additionalAttributes),
+			_List_fromArray(
+				[
+					$elm$html$Html$text(iconName)
+				]));
+	});
 var $aforemny$material_components_web_elm$Material$List$avatarListCs = function (_v0) {
 	var avatarList = _v0.a.avatarList;
 	return avatarList ? $elm$core$Maybe$Just(
@@ -10426,6 +10390,17 @@ var $elm$core$List$head = function (list) {
 		return $elm$core$Maybe$Nothing;
 	}
 };
+var $elm$virtual_dom$VirtualDom$Normal = function (a) {
+	return {$: 'Normal', a: a};
+};
+var $elm$virtual_dom$VirtualDom$on = _VirtualDom_on;
+var $elm$html$Html$Events$on = F2(
+	function (event, decoder) {
+		return A2(
+			$elm$virtual_dom$VirtualDom$on,
+			event,
+			$elm$virtual_dom$VirtualDom$Normal(decoder));
+	});
 var $aforemny$material_components_web_elm$Material$List$clickHandler = function (listItems) {
 	var getOnClick = function (listItem_) {
 		switch (listItem_.$) {
@@ -10475,6 +10450,11 @@ var $aforemny$material_components_web_elm$Material$List$denseCs = function (_v0)
 	return dense ? $elm$core$Maybe$Just(
 		$elm$html$Html$Attributes$class('mdc-list--dense')) : $elm$core$Maybe$Nothing;
 };
+var $elm$virtual_dom$VirtualDom$node = function (tag) {
+	return _VirtualDom_node(
+		_VirtualDom_noScript(tag));
+};
+var $elm$html$Html$node = $elm$virtual_dom$VirtualDom$node;
 var $aforemny$material_components_web_elm$Material$List$nonInteractiveCs = function (_v0) {
 	var nonInteractive = _v0.a.nonInteractive;
 	return nonInteractive ? $elm$core$Maybe$Just(
@@ -10684,62 +10664,15 @@ var $aforemny$material_components_web_elm$Material$List$Item$listItem = F2(
 							nodes)
 					})));
 	});
-var $aforemny$material_components_web_elm$Material$Menu$closeHandler = function (_v0) {
-	var onClose = _v0.a.onClose;
-	return A2(
-		$elm$core$Maybe$map,
-		A2(
-			$elm$core$Basics$composeL,
-			$elm$html$Html$Events$on('MDCMenuSurface:close'),
-			$elm$json$Json$Decode$succeed),
-		onClose);
-};
-var $aforemny$material_components_web_elm$Material$Menu$openProp = function (_v0) {
-	var open = _v0.a.open;
-	return $elm$core$Maybe$Just(
-		A2(
-			$elm$html$Html$Attributes$property,
-			'open',
-			$elm$json$Json$Encode$bool(open)));
-};
-var $aforemny$material_components_web_elm$Material$Menu$quickOpenProp = function (_v0) {
-	var quickOpen = _v0.a.quickOpen;
-	return $elm$core$Maybe$Just(
-		A2(
-			$elm$html$Html$Attributes$property,
-			'quickOpen',
-			$elm$json$Json$Encode$bool(quickOpen)));
-};
-var $aforemny$material_components_web_elm$Material$Menu$rootCs = $elm$core$Maybe$Just(
-	$elm$html$Html$Attributes$class('mdc-menu mdc-menu-surface'));
-var $aforemny$material_components_web_elm$Material$Menu$menu = F2(
-	function (config_, nodes) {
-		var additionalAttributes = config_.a.additionalAttributes;
-		return A3(
-			$elm$html$Html$node,
-			'mdc-menu',
-			_Utils_ap(
-				A2(
-					$elm$core$List$filterMap,
-					$elm$core$Basics$identity,
-					_List_fromArray(
-						[
-							$aforemny$material_components_web_elm$Material$Menu$rootCs,
-							$aforemny$material_components_web_elm$Material$Menu$openProp(config_),
-							$aforemny$material_components_web_elm$Material$Menu$quickOpenProp(config_),
-							$aforemny$material_components_web_elm$Material$Menu$closeHandler(config_)
-						])),
+var $aforemny$material_components_web_elm$Material$List$Item$meta = F2(
+	function (additionalAttributes, nodes) {
+		return A2(
+			$elm$html$Html$div,
+			A2(
+				$elm$core$List$cons,
+				$elm$html$Html$Attributes$class('mdc-list-item__meta'),
 				additionalAttributes),
 			nodes);
-	});
-var $rundis$elm_bootstrap$Bootstrap$Utilities$Spacing$mt5 = $elm$html$Html$Attributes$class('mt-5');
-var $aforemny$material_components_web_elm$Material$Menu$setAttributes = F2(
-	function (additionalAttributes, _v0) {
-		var config_ = _v0.a;
-		return $aforemny$material_components_web_elm$Material$Menu$Config(
-			_Utils_update(
-				config_,
-				{additionalAttributes: additionalAttributes}));
 	});
 var $aforemny$material_components_web_elm$Material$List$Item$setOnClick = F2(
 	function (onClick, _v0) {
@@ -10751,24 +10684,6 @@ var $aforemny$material_components_web_elm$Material$List$Item$setOnClick = F2(
 					onClick: $elm$core$Maybe$Just(onClick)
 				}));
 	});
-var $aforemny$material_components_web_elm$Material$Menu$setOnClose = F2(
-	function (onClose, _v0) {
-		var config_ = _v0.a;
-		return $aforemny$material_components_web_elm$Material$Menu$Config(
-			_Utils_update(
-				config_,
-				{
-					onClose: $elm$core$Maybe$Just(onClose)
-				}));
-	});
-var $aforemny$material_components_web_elm$Material$Menu$setOpen = F2(
-	function (open, _v0) {
-		var config_ = _v0.a;
-		return $aforemny$material_components_web_elm$Material$Menu$Config(
-			_Utils_update(
-				config_,
-				{open: open}));
-	});
 var $aforemny$material_components_web_elm$Material$List$setWrapFocus = F2(
 	function (wrapFocus, _v0) {
 		var config_ = _v0.a;
@@ -10777,102 +10692,572 @@ var $aforemny$material_components_web_elm$Material$List$setWrapFocus = F2(
 				config_,
 				{wrapFocus: wrapFocus}));
 	});
-var $author$project$Navbar$menu = F2(
-	function (open, activeBrewSession) {
+var $aforemny$material_components_web_elm$Material$List$listGroupSubheaderCs = $elm$html$Html$Attributes$class('mdc-list-group__subheader');
+var $elm$html$Html$span = _VirtualDom_node('span');
+var $aforemny$material_components_web_elm$Material$List$subheader = F2(
+	function (additionalAttributes, nodes) {
 		return A2(
-			$elm$html$Html$div,
+			$elm$html$Html$span,
+			A2($elm$core$List$cons, $aforemny$material_components_web_elm$Material$List$listGroupSubheaderCs, additionalAttributes),
+			nodes);
+	});
+var $author$project$Menu$brewSessionGroup = function (activeBrewSession) {
+	return _List_fromArray(
+		[
+			$aforemny$material_components_web_elm$Material$List$Divider$group(_List_Nil),
+			A2(
+			$aforemny$material_components_web_elm$Material$List$subheader,
 			_List_Nil,
 			_List_fromArray(
 				[
-					A2(
-					$aforemny$material_components_web_elm$Material$Menu$menu,
-					A2(
-						$aforemny$material_components_web_elm$Material$Menu$setAttributes,
-						_List_fromArray(
-							[$rundis$elm_bootstrap$Bootstrap$Utilities$Spacing$mt5]),
+					$elm$html$Html$text('Brew Session')
+				])),
+			A3(
+			$aforemny$material_components_web_elm$Material$List$list,
+			A2($aforemny$material_components_web_elm$Material$List$setWrapFocus, true, $aforemny$material_components_web_elm$Material$List$config),
+			A2(
+				$aforemny$material_components_web_elm$Material$List$Item$listItem,
+				A2(
+					$aforemny$material_components_web_elm$Material$List$Item$setOnClick,
+					$author$project$Messages$ShowDialog($author$project$Messages$Invite),
+					$aforemny$material_components_web_elm$Material$List$Item$config),
+				_List_fromArray(
+					[
+						$elm$html$Html$text('Invite friends'),
 						A2(
-							$aforemny$material_components_web_elm$Material$Menu$setOnClose,
-							$author$project$Messages$MenuClosed,
-							A2($aforemny$material_components_web_elm$Material$Menu$setOpen, open, $aforemny$material_components_web_elm$Material$Menu$config))),
+						$aforemny$material_components_web_elm$Material$List$Item$meta,
+						_List_Nil,
+						_List_fromArray(
+							[
+								A2($aforemny$material_components_web_elm$Material$Icon$icon, _List_Nil, 'person_add')
+							]))
+					])),
+			activeBrewSession ? _List_fromArray(
+				[
+					A2(
+					$aforemny$material_components_web_elm$Material$List$Item$listItem,
+					A2(
+						$aforemny$material_components_web_elm$Material$List$Item$setOnClick,
+						$author$project$Messages$ShowDialog(
+							$author$project$Messages$Confirm(
+								_Utils_Tuple2('Do you really want to discard current brew session? This can\'t be undone!', $author$project$Messages$CancelBrewSession))),
+						$aforemny$material_components_web_elm$Material$List$Item$config),
 					_List_fromArray(
 						[
-							A3(
-							$aforemny$material_components_web_elm$Material$List$list,
-							A2($aforemny$material_components_web_elm$Material$List$setWrapFocus, true, $aforemny$material_components_web_elm$Material$List$config),
+							$elm$html$Html$text('Cancel brewing'),
 							A2(
-								$aforemny$material_components_web_elm$Material$List$Item$listItem,
-								A2(
-									$aforemny$material_components_web_elm$Material$List$Item$setOnClick,
-									$author$project$Messages$ShowDialog($author$project$Messages$Scale),
-									$aforemny$material_components_web_elm$Material$List$Item$config),
-								_List_fromArray(
-									[
-										$elm$html$Html$text('Mini scale')
-									])),
-							_Utils_ap(
-								_List_fromArray(
-									[
-										A2(
-										$aforemny$material_components_web_elm$Material$List$Item$listItem,
-										A2(
-											$aforemny$material_components_web_elm$Material$List$Item$setOnClick,
-											$author$project$Messages$ShowDialog($author$project$Messages$Calibration),
-											$aforemny$material_components_web_elm$Material$List$Item$config),
-										_List_fromArray(
-											[
-												$elm$html$Html$text('Calibrate scale')
-											])),
-										A2(
-										$aforemny$material_components_web_elm$Material$List$Item$listItem,
-										A2(
-											$aforemny$material_components_web_elm$Material$List$Item$setOnClick,
-											$author$project$Messages$NavigateTo(
-												_Utils_Tuple2(
-													_List_fromArray(
-														['scale']),
-													_List_Nil)),
-											$aforemny$material_components_web_elm$Material$List$Item$config),
-										_List_fromArray(
-											[
-												$elm$html$Html$text('Scale')
-											]))
-									]),
-								_Utils_ap(
-									activeBrewSession ? _List_fromArray(
-										[
-											A2(
-											$aforemny$material_components_web_elm$Material$List$Item$listItem,
-											A2(
-												$aforemny$material_components_web_elm$Material$List$Item$setOnClick,
-												$author$project$Messages$ShowDialog(
-													$author$project$Messages$Confirm(
-														_Utils_Tuple2('Do you really want to discard current brew session? This can\'t be undone!', $author$project$Messages$CancelBrewSession))),
-												$aforemny$material_components_web_elm$Material$List$Item$config),
-											_List_fromArray(
-												[
-													$elm$html$Html$text('Cancel brewing')
-												]))
-										]) : _List_Nil,
-									_List_fromArray(
-										[
-											A2(
-											$aforemny$material_components_web_elm$Material$List$Item$listItem,
-											A2(
-												$aforemny$material_components_web_elm$Material$List$Item$setOnClick,
-												$author$project$Messages$NavigateTo(
-													_Utils_Tuple2(
-														_List_fromArray(
-															['connections']),
-														_List_Nil)),
-												$aforemny$material_components_web_elm$Material$List$Item$config),
-											_List_fromArray(
-												[
-													$elm$html$Html$text('Manage connections')
-												]))
-										]))))
+							$aforemny$material_components_web_elm$Material$List$Item$meta,
+							_List_Nil,
+							_List_fromArray(
+								[
+									A2($aforemny$material_components_web_elm$Material$Icon$icon, _List_Nil, 'delete')
+								]))
 						]))
+				]) : _List_Nil)
+		]);
+};
+var $aforemny$material_components_web_elm$Material$Drawer$Modal$Config = function (a) {
+	return {$: 'Config', a: a};
+};
+var $aforemny$material_components_web_elm$Material$Drawer$Modal$config = $aforemny$material_components_web_elm$Material$Drawer$Modal$Config(
+	{additionalAttributes: _List_Nil, onClose: $elm$core$Maybe$Nothing, open: false});
+var $aforemny$material_components_web_elm$Material$IconButton$Internal$Config = function (a) {
+	return {$: 'Config', a: a};
+};
+var $aforemny$material_components_web_elm$Material$IconButton$config = $aforemny$material_components_web_elm$Material$IconButton$Internal$Config(
+	{additionalAttributes: _List_Nil, disabled: false, label: $elm$core$Maybe$Nothing, onClick: $elm$core$Maybe$Nothing});
+var $aforemny$material_components_web_elm$Material$Drawer$Modal$content = F2(
+	function (attributes, nodes) {
+		return A2(
+			$elm$html$Html$div,
+			A2(
+				$elm$core$List$cons,
+				$elm$html$Html$Attributes$class('mdc-drawer__content'),
+				attributes),
+			nodes);
+	});
+var $aforemny$material_components_web_elm$Material$Drawer$Modal$closeHandler = function (_v0) {
+	var onClose = _v0.a.onClose;
+	return A2(
+		$elm$core$Maybe$map,
+		A2(
+			$elm$core$Basics$composeL,
+			$elm$html$Html$Events$on('MDCDrawer:close'),
+			$elm$json$Json$Decode$succeed),
+		onClose);
+};
+var $aforemny$material_components_web_elm$Material$Drawer$Modal$modalCs = $elm$core$Maybe$Just(
+	$elm$html$Html$Attributes$class('mdc-drawer--modal'));
+var $aforemny$material_components_web_elm$Material$Drawer$Modal$openProp = function (_v0) {
+	var open = _v0.a.open;
+	return $elm$core$Maybe$Just(
+		A2(
+			$elm$html$Html$Attributes$property,
+			'open',
+			$elm$json$Json$Encode$bool(open)));
+};
+var $aforemny$material_components_web_elm$Material$Drawer$Modal$rootCs = $elm$core$Maybe$Just(
+	$elm$html$Html$Attributes$class('mdc-drawer'));
+var $aforemny$material_components_web_elm$Material$Drawer$Modal$drawer = F2(
+	function (config_, nodes) {
+		var additionalAttributes = config_.a.additionalAttributes;
+		return A3(
+			$elm$html$Html$node,
+			'mdc-drawer',
+			_Utils_ap(
+				A2(
+					$elm$core$List$filterMap,
+					$elm$core$Basics$identity,
+					_List_fromArray(
+						[
+							$aforemny$material_components_web_elm$Material$Drawer$Modal$rootCs,
+							$aforemny$material_components_web_elm$Material$Drawer$Modal$modalCs,
+							$aforemny$material_components_web_elm$Material$Drawer$Modal$openProp(config_),
+							$aforemny$material_components_web_elm$Material$Drawer$Modal$closeHandler(config_)
+						])),
+				additionalAttributes),
+			nodes);
+	});
+var $aforemny$material_components_web_elm$Material$List$listGroupCs = $elm$html$Html$Attributes$class('mdc-list-group');
+var $aforemny$material_components_web_elm$Material$List$group = F2(
+	function (additionalAttributes, nodes) {
+		return A2(
+			$elm$html$Html$div,
+			A2($elm$core$List$cons, $aforemny$material_components_web_elm$Material$List$listGroupCs, additionalAttributes),
+			nodes);
+	});
+var $elm$html$Html$h3 = _VirtualDom_node('h3');
+var $elm$html$Html$h6 = _VirtualDom_node('h6');
+var $aforemny$material_components_web_elm$Material$Drawer$Modal$header = F2(
+	function (additionalAttributes, nodes) {
+		return A2(
+			$elm$html$Html$div,
+			A2(
+				$elm$core$List$cons,
+				$elm$html$Html$Attributes$class('mdc-drawer__header'),
+				additionalAttributes),
+			nodes);
+	});
+var $aforemny$material_components_web_elm$Material$IconButton$Internal$Icon = function (a) {
+	return {$: 'Icon', a: a};
+};
+var $aforemny$material_components_web_elm$Material$IconButton$customIcon = F3(
+	function (node, attributes, nodes) {
+		return $aforemny$material_components_web_elm$Material$IconButton$Internal$Icon(
+			{attributes: attributes, node: node, nodes: nodes});
+	});
+var $aforemny$material_components_web_elm$Material$IconButton$icon = function (iconName) {
+	return A3(
+		$aforemny$material_components_web_elm$Material$IconButton$customIcon,
+		$elm$html$Html$i,
+		_List_fromArray(
+			[
+				$elm$html$Html$Attributes$class('material-icons')
+			]),
+		_List_fromArray(
+			[
+				$elm$html$Html$text(iconName)
+			]));
+};
+var $elm$svg$Svg$Attributes$class = _VirtualDom_attribute('class');
+var $elm$html$Html$Events$onClick = function (msg) {
+	return A2(
+		$elm$html$Html$Events$on,
+		'click',
+		$elm$json$Json$Decode$succeed(msg));
+};
+var $aforemny$material_components_web_elm$Material$IconButton$clickHandler = function (_v0) {
+	var onClick = _v0.a.onClick;
+	return A2($elm$core$Maybe$map, $elm$html$Html$Events$onClick, onClick);
+};
+var $elm$virtual_dom$VirtualDom$map = _VirtualDom_map;
+var $elm$html$Html$map = $elm$virtual_dom$VirtualDom$map;
+var $aforemny$material_components_web_elm$Material$IconButton$rootCs = $elm$core$Maybe$Just(
+	$elm$html$Html$Attributes$class('mdc-icon-button'));
+var $elm$html$Html$Attributes$tabindex = function (n) {
+	return A2(
+		_VirtualDom_attribute,
+		'tabIndex',
+		$elm$core$String$fromInt(n));
+};
+var $aforemny$material_components_web_elm$Material$IconButton$tabIndexProp = $elm$core$Maybe$Just(
+	$elm$html$Html$Attributes$tabindex(0));
+var $aforemny$material_components_web_elm$Material$IconButton$iconButton = F2(
+	function (config_, icon_) {
+		var additionalAttributes = config_.a.additionalAttributes;
+		return A3(
+			$elm$html$Html$node,
+			'mdc-icon-button',
+			_Utils_ap(
+				A2(
+					$elm$core$List$filterMap,
+					$elm$core$Basics$identity,
+					_List_fromArray(
+						[
+							$aforemny$material_components_web_elm$Material$IconButton$rootCs,
+							$aforemny$material_components_web_elm$Material$IconButton$tabIndexProp,
+							$aforemny$material_components_web_elm$Material$IconButton$clickHandler(config_)
+						])),
+				additionalAttributes),
+			_List_fromArray(
+				[
+					A2(
+					$elm$html$Html$map,
+					$elm$core$Basics$never,
+					function () {
+						if (icon_.$ === 'Icon') {
+							var node = icon_.a.node;
+							var attributes = icon_.a.attributes;
+							var nodes = icon_.a.nodes;
+							return A2(
+								node,
+								A2(
+									$elm$core$List$cons,
+									$elm$html$Html$Attributes$class('mdc-icon-button__icon'),
+									attributes),
+								nodes);
+						} else {
+							var node = icon_.a.node;
+							var attributes = icon_.a.attributes;
+							var nodes = icon_.a.nodes;
+							return A2(
+								node,
+								A2(
+									$elm$core$List$cons,
+									$elm$svg$Svg$Attributes$class('mdc-icon-button__icon'),
+									attributes),
+								nodes);
+						}
+					}())
 				]));
 	});
+var $rundis$elm_bootstrap$Bootstrap$Utilities$Spacing$p0 = $elm$html$Html$Attributes$class('p-0');
+var $rundis$elm_bootstrap$Bootstrap$Utilities$Spacing$pr0 = $elm$html$Html$Attributes$class('pr-0');
+var $author$project$Messages$Calibration = {$: 'Calibration'};
+var $author$project$Messages$Scale = {$: 'Scale'};
+var $author$project$Menu$scaleGroup = _List_fromArray(
+	[
+		$aforemny$material_components_web_elm$Material$List$Divider$group(_List_Nil),
+		A2(
+		$aforemny$material_components_web_elm$Material$List$subheader,
+		_List_Nil,
+		_List_fromArray(
+			[
+				$elm$html$Html$text('Scale')
+			])),
+		A3(
+		$aforemny$material_components_web_elm$Material$List$list,
+		A2($aforemny$material_components_web_elm$Material$List$setWrapFocus, true, $aforemny$material_components_web_elm$Material$List$config),
+		A2(
+			$aforemny$material_components_web_elm$Material$List$Item$listItem,
+			A2(
+				$aforemny$material_components_web_elm$Material$List$Item$setOnClick,
+				$author$project$Messages$ShowDialog($author$project$Messages$Scale),
+				$aforemny$material_components_web_elm$Material$List$Item$config),
+			_List_fromArray(
+				[
+					$elm$html$Html$text('Mini scale'),
+					A2(
+					$aforemny$material_components_web_elm$Material$List$Item$meta,
+					_List_Nil,
+					_List_fromArray(
+						[
+							A2(
+							$elm$html$Html$i,
+							_List_fromArray(
+								[
+									$elm$html$Html$Attributes$class('fas'),
+									$elm$html$Html$Attributes$class('fa-balance-scale-right')
+								]),
+							_List_Nil)
+						]))
+				])),
+		_List_fromArray(
+			[
+				A2(
+				$aforemny$material_components_web_elm$Material$List$Item$listItem,
+				A2(
+					$aforemny$material_components_web_elm$Material$List$Item$setOnClick,
+					$author$project$Messages$ShowDialog($author$project$Messages$Calibration),
+					$aforemny$material_components_web_elm$Material$List$Item$config),
+				_List_fromArray(
+					[
+						$elm$html$Html$text('Calibrate scale'),
+						A2(
+						$aforemny$material_components_web_elm$Material$List$Item$meta,
+						_List_Nil,
+						_List_fromArray(
+							[
+								A2(
+								$elm$html$Html$i,
+								_List_fromArray(
+									[
+										$elm$html$Html$Attributes$class('fas'),
+										$elm$html$Html$Attributes$class('fa-balance-scale')
+									]),
+								_List_Nil)
+							]))
+					])),
+				A2(
+				$aforemny$material_components_web_elm$Material$List$Item$listItem,
+				A2(
+					$aforemny$material_components_web_elm$Material$List$Item$setOnClick,
+					$author$project$Messages$NavigateTo(
+						_Utils_Tuple2(
+							_List_fromArray(
+								['scale']),
+							_List_Nil)),
+					$aforemny$material_components_web_elm$Material$List$Item$config),
+				_List_fromArray(
+					[
+						$elm$html$Html$text('Scale'),
+						A2(
+						$aforemny$material_components_web_elm$Material$List$Item$meta,
+						_List_Nil,
+						_List_fromArray(
+							[
+								A2(
+								$elm$html$Html$i,
+								_List_fromArray(
+									[
+										$elm$html$Html$Attributes$class('fas'),
+										$elm$html$Html$Attributes$class('fa-balance-scale-left')
+									]),
+								_List_Nil)
+							]))
+					]))
+			]))
+	]);
+var $aforemny$material_components_web_elm$Material$Drawer$Modal$scrim = F2(
+	function (additionalAttributes, nodes) {
+		return A2(
+			$elm$html$Html$div,
+			A2(
+				$elm$core$List$cons,
+				$elm$html$Html$Attributes$class('mdc-drawer-scrim'),
+				additionalAttributes),
+			nodes);
+	});
+var $aforemny$material_components_web_elm$Material$IconButton$setOnClick = F2(
+	function (onClick, _v0) {
+		var config_ = _v0.a;
+		return $aforemny$material_components_web_elm$Material$IconButton$Internal$Config(
+			_Utils_update(
+				config_,
+				{
+					onClick: $elm$core$Maybe$Just(onClick)
+				}));
+	});
+var $aforemny$material_components_web_elm$Material$Drawer$Modal$setOnClose = F2(
+	function (onClose, _v0) {
+		var config_ = _v0.a;
+		return $aforemny$material_components_web_elm$Material$Drawer$Modal$Config(
+			_Utils_update(
+				config_,
+				{
+					onClose: $elm$core$Maybe$Just(onClose)
+				}));
+	});
+var $aforemny$material_components_web_elm$Material$Drawer$Modal$setOpen = F2(
+	function (open, _v0) {
+		var config_ = _v0.a;
+		return $aforemny$material_components_web_elm$Material$Drawer$Modal$Config(
+			_Utils_update(
+				config_,
+				{open: open}));
+	});
+var $author$project$Menu$settingsGroup = function (brewSessionCodeValid) {
+	return _List_fromArray(
+		[
+			$aforemny$material_components_web_elm$Material$List$Divider$group(_List_Nil),
+			A2(
+			$aforemny$material_components_web_elm$Material$List$subheader,
+			_List_Nil,
+			_List_fromArray(
+				[
+					$elm$html$Html$text('Settings')
+				])),
+			A3(
+			$aforemny$material_components_web_elm$Material$List$list,
+			A2($aforemny$material_components_web_elm$Material$List$setWrapFocus, true, $aforemny$material_components_web_elm$Material$List$config),
+			A2(
+				$aforemny$material_components_web_elm$Material$List$Item$listItem,
+				A2(
+					$aforemny$material_components_web_elm$Material$List$Item$setOnClick,
+					$author$project$Messages$NavigateTo(
+						_Utils_Tuple2(
+							_List_fromArray(
+								['connections']),
+							_List_Nil)),
+					$aforemny$material_components_web_elm$Material$List$Item$config),
+				_List_fromArray(
+					[
+						$elm$html$Html$text('Manage connections'),
+						A2(
+						$aforemny$material_components_web_elm$Material$List$Item$meta,
+						_List_Nil,
+						_List_fromArray(
+							[
+								A2($aforemny$material_components_web_elm$Material$Icon$icon, _List_Nil, 'wifi')
+							]))
+					])),
+			_List_fromArray(
+				[
+					A2(
+					$aforemny$material_components_web_elm$Material$List$Item$listItem,
+					A2(
+						$aforemny$material_components_web_elm$Material$List$Item$setOnClick,
+						$author$project$Messages$ShowDialog($author$project$Messages$Security),
+						$aforemny$material_components_web_elm$Material$List$Item$config),
+					_List_fromArray(
+						[
+							$elm$html$Html$text('Edit brew session key'),
+							A2(
+							$aforemny$material_components_web_elm$Material$List$Item$meta,
+							_List_Nil,
+							_List_fromArray(
+								[
+									A2(
+									$aforemny$material_components_web_elm$Material$Icon$icon,
+									_List_Nil,
+									brewSessionCodeValid ? 'verified_user' : 'vpn_key')
+								]))
+						]))
+				]))
+		]);
+};
+var $aforemny$material_components_web_elm$Material$Drawer$Modal$subtitle = $elm$html$Html$Attributes$class('mdc-drawer__subtitle');
+var $author$project$Menu$subtitle = function (model) {
+	return $elm$html$Html$text(
+		function () {
+			var _v0 = model.selectedRecipe;
+			if (_v0.$ === 'Just') {
+				var recipe = _v0.a;
+				return 'Brewing ' + recipe.name;
+			} else {
+				var _v1 = model.apiBaseUrl;
+				if (_v1 === '') {
+					return 'Not connected';
+				} else {
+					var url = _v1;
+					return 'Connected to ' + url;
+				}
+			}
+		}());
+};
+var $aforemny$material_components_web_elm$Material$Drawer$Modal$title = $elm$html$Html$Attributes$class('mdc-drawer__title');
+var $rundis$elm_bootstrap$Bootstrap$Grid$Internal$ColAuto = {$: 'ColAuto'};
+var $rundis$elm_bootstrap$Bootstrap$Grid$Internal$ColWidth = function (a) {
+	return {$: 'ColWidth', a: a};
+};
+var $rundis$elm_bootstrap$Bootstrap$Grid$Internal$width = F2(
+	function (size, count) {
+		return $rundis$elm_bootstrap$Bootstrap$Grid$Internal$ColWidth(
+			A2($rundis$elm_bootstrap$Bootstrap$Grid$Internal$Width, size, count));
+	});
+var $rundis$elm_bootstrap$Bootstrap$Grid$Col$xsAuto = A2($rundis$elm_bootstrap$Bootstrap$Grid$Internal$width, $rundis$elm_bootstrap$Bootstrap$General$Internal$XS, $rundis$elm_bootstrap$Bootstrap$Grid$Internal$ColAuto);
+var $author$project$Menu$menuDrawer = F2(
+	function (model, activeBrewSession) {
+		return _List_fromArray(
+			[
+				A2(
+				$aforemny$material_components_web_elm$Material$Drawer$Modal$drawer,
+				A2(
+					$aforemny$material_components_web_elm$Material$Drawer$Modal$setOnClose,
+					$author$project$Messages$MenuClosed,
+					A2($aforemny$material_components_web_elm$Material$Drawer$Modal$setOpen, model.menuOpened, $aforemny$material_components_web_elm$Material$Drawer$Modal$config)),
+				_List_fromArray(
+					[
+						A2(
+						$aforemny$material_components_web_elm$Material$Drawer$Modal$header,
+						_List_Nil,
+						_List_fromArray(
+							[
+								A2(
+								$rundis$elm_bootstrap$Bootstrap$Grid$row,
+								_List_Nil,
+								_List_fromArray(
+									[
+										A2(
+										$rundis$elm_bootstrap$Bootstrap$Grid$col,
+										_List_fromArray(
+											[
+												$rundis$elm_bootstrap$Bootstrap$Grid$Col$attrs(
+												_List_fromArray(
+													[$rundis$elm_bootstrap$Bootstrap$Utilities$Spacing$pr0]))
+											]),
+										_List_fromArray(
+											[
+												A2(
+												$elm$html$Html$h3,
+												_List_fromArray(
+													[$aforemny$material_components_web_elm$Material$Drawer$Modal$title]),
+												_List_fromArray(
+													[
+														$elm$html$Html$text('Var:Pivo')
+													])),
+												A2(
+												$elm$html$Html$h6,
+												_List_fromArray(
+													[$aforemny$material_components_web_elm$Material$Drawer$Modal$subtitle]),
+												_List_fromArray(
+													[
+														$author$project$Menu$subtitle(model)
+													]))
+											])),
+										A2(
+										$rundis$elm_bootstrap$Bootstrap$Grid$col,
+										_List_fromArray(
+											[
+												$rundis$elm_bootstrap$Bootstrap$Grid$Col$xsAuto,
+												$rundis$elm_bootstrap$Bootstrap$Grid$Col$attrs(
+												_List_fromArray(
+													[
+														$rundis$elm_bootstrap$Bootstrap$Utilities$Spacing$p0,
+														$elm$html$Html$Attributes$align('center')
+													])),
+												$rundis$elm_bootstrap$Bootstrap$Grid$Col$middleXs
+											]),
+										_List_fromArray(
+											[
+												A2(
+												$aforemny$material_components_web_elm$Material$IconButton$iconButton,
+												A2($aforemny$material_components_web_elm$Material$IconButton$setOnClick, $author$project$Messages$MenuClosed, $aforemny$material_components_web_elm$Material$IconButton$config),
+												$aforemny$material_components_web_elm$Material$IconButton$icon('close'))
+											]))
+									]))
+							])),
+						A2(
+						$aforemny$material_components_web_elm$Material$Drawer$Modal$content,
+						_List_Nil,
+						_List_fromArray(
+							[
+								A2(
+								$aforemny$material_components_web_elm$Material$List$group,
+								_List_Nil,
+								_Utils_ap(
+									$author$project$Menu$brewSessionGroup(activeBrewSession),
+									_Utils_ap(
+										$author$project$Menu$scaleGroup,
+										$author$project$Menu$settingsGroup(model.security.valid))))
+							]))
+					])),
+				A2($aforemny$material_components_web_elm$Material$Drawer$Modal$scrim, _List_Nil, _List_Nil)
+			]);
+	});
+var $author$project$Messages$MenuOpened = {$: 'MenuOpened'};
+var $aforemny$material_components_web_elm$Material$TopAppBar$alignEnd = $elm$html$Html$Attributes$class('mdc-top-app-bar__section--align-end');
+var $aforemny$material_components_web_elm$Material$TopAppBar$alignStart = $elm$html$Html$Attributes$class('mdc-top-app-bar__section--align-start');
+var $aforemny$material_components_web_elm$Material$Button$Internal$Config = function (a) {
+	return {$: 'Config', a: a};
+};
+var $aforemny$material_components_web_elm$Material$Button$config = $aforemny$material_components_web_elm$Material$Button$Internal$Config(
+	{additionalAttributes: _List_Nil, dense: false, disabled: false, href: $elm$core$Maybe$Nothing, icon: $elm$core$Maybe$Nothing, onClick: $elm$core$Maybe$Nothing, target: $elm$core$Maybe$Nothing, touch: true, trailingIcon: false});
+var $aforemny$material_components_web_elm$Material$TopAppBar$Config = function (a) {
+	return {$: 'Config', a: a};
+};
+var $aforemny$material_components_web_elm$Material$TopAppBar$config = $aforemny$material_components_web_elm$Material$TopAppBar$Config(
+	{additionalAttributes: _List_Nil, dense: false, fixed: false});
 var $aforemny$material_components_web_elm$Material$TopAppBar$navigationIcon = $elm$html$Html$Attributes$class('mdc-top-app-bar__navigation-icon');
 var $aforemny$material_components_web_elm$Material$Theme$onPrimary = $elm$html$Html$Attributes$class('mdc-theme--on-primary');
 var $aforemny$material_components_web_elm$Material$TopAppBar$Regular = {$: 'Regular'};
@@ -10978,17 +11363,6 @@ var $aforemny$material_components_web_elm$Material$Button$setOnClick = F2(
 					onClick: $elm$core$Maybe$Just(onClick)
 				}));
 	});
-var $aforemny$material_components_web_elm$Material$IconButton$setOnClick = F2(
-	function (onClick, _v0) {
-		var config_ = _v0.a;
-		return $aforemny$material_components_web_elm$Material$IconButton$Internal$Config(
-			_Utils_update(
-				config_,
-				{
-					onClick: $elm$core$Maybe$Just(onClick)
-				}));
-	});
-var $elm$html$Html$span = _VirtualDom_node('span');
 var $aforemny$material_components_web_elm$Material$Menu$surfaceAnchor = $elm$html$Html$Attributes$class('mdc-menu-surface--anchor');
 var $aforemny$material_components_web_elm$Material$Button$Text = {$: 'Text'};
 var $elm$html$Html$button = _VirtualDom_node('button');
@@ -11215,8 +11589,8 @@ var $aforemny$material_components_web_elm$Material$Button$text = F2(
 	});
 var $aforemny$material_components_web_elm$Material$TopAppBar$title = $elm$html$Html$Attributes$class('mdc-top-app-bar__title');
 var $aforemny$material_components_web_elm$Material$Elevation$z8 = $aforemny$material_components_web_elm$Material$Elevation$z(8);
-var $author$project$Navbar$navbar = F5(
-	function (title, showRecipeButton, menuOpen, activeBrewSession, brewSessionCodeValid) {
+var $author$project$Navbar$navbar = F3(
+	function (title, showRecipeButton, brewSessionCodeValid) {
 		return A2(
 			$aforemny$material_components_web_elm$Material$TopAppBar$regular,
 			$aforemny$material_components_web_elm$Material$TopAppBar$config,
@@ -11296,19 +11670,11 @@ var $author$project$Navbar$navbar = F5(
 											_List_fromArray(
 												[$aforemny$material_components_web_elm$Material$TopAppBar$navigationIcon]),
 											$aforemny$material_components_web_elm$Material$IconButton$config)),
-									$aforemny$material_components_web_elm$Material$IconButton$icon('menu')),
-									A2($author$project$Navbar$menu, menuOpen, activeBrewSession)
+									$aforemny$material_components_web_elm$Material$IconButton$icon('menu'))
 								]))
 						]))
 				]));
 	});
-var $elm$core$List$isEmpty = function (xs) {
-	if (!xs.b) {
-		return true;
-	} else {
-		return false;
-	}
-};
 var $rundis$elm_bootstrap$Bootstrap$Utilities$Flex$alignItemsCenter = $elm$html$Html$Attributes$class('align-items-center');
 var $rundis$elm_bootstrap$Bootstrap$Utilities$Flex$block = $elm$html$Html$Attributes$class('d-flex');
 var $author$project$Helpers$center = $elm$html$Html$Attributes$class('varpivo-centered-page');
@@ -11680,6 +12046,7 @@ var $author$project$Page$loading = A2(
 			A2($aforemny$material_components_web_elm$Material$CircularProgress$setFourColored, true, $aforemny$material_components_web_elm$Material$CircularProgress$config))
 		]));
 var $aforemny$material_components_web_elm$Material$Typography$body2 = $elm$html$Html$Attributes$class('mdc-typography--body2');
+var $rundis$elm_bootstrap$Bootstrap$Utilities$Spacing$mt5 = $elm$html$Html$Attributes$class('mt-5');
 var $aforemny$material_components_web_elm$Material$Button$Outlined = {$: 'Outlined'};
 var $aforemny$material_components_web_elm$Material$Button$outlined = F2(
 	function (config_, label) {
@@ -12181,6 +12548,11 @@ var $aforemny$material_components_web_elm$Material$Select$lineRippleElt = A2(
 			$elm$html$Html$Attributes$class('mdc-line-ripple')
 		]),
 	_List_Nil);
+var $aforemny$material_components_web_elm$Material$Menu$Config = function (a) {
+	return {$: 'Config', a: a};
+};
+var $aforemny$material_components_web_elm$Material$Menu$config = $aforemny$material_components_web_elm$Material$Menu$Config(
+	{additionalAttributes: _List_Nil, onClose: $elm$core$Maybe$Nothing, open: false, quickOpen: false});
 var $aforemny$material_components_web_elm$Material$List$Item$graphic = F2(
 	function (additionalAttributes, nodes) {
 		return A2(
@@ -12237,6 +12609,62 @@ var $aforemny$material_components_web_elm$Material$Select$listItem = F4(
 				$elm$core$List$cons,
 				A2($aforemny$material_components_web_elm$Material$List$Item$graphic, _List_Nil, _List_Nil),
 				nodes) : nodes);
+	});
+var $aforemny$material_components_web_elm$Material$Menu$closeHandler = function (_v0) {
+	var onClose = _v0.a.onClose;
+	return A2(
+		$elm$core$Maybe$map,
+		A2(
+			$elm$core$Basics$composeL,
+			$elm$html$Html$Events$on('MDCMenuSurface:close'),
+			$elm$json$Json$Decode$succeed),
+		onClose);
+};
+var $aforemny$material_components_web_elm$Material$Menu$openProp = function (_v0) {
+	var open = _v0.a.open;
+	return $elm$core$Maybe$Just(
+		A2(
+			$elm$html$Html$Attributes$property,
+			'open',
+			$elm$json$Json$Encode$bool(open)));
+};
+var $aforemny$material_components_web_elm$Material$Menu$quickOpenProp = function (_v0) {
+	var quickOpen = _v0.a.quickOpen;
+	return $elm$core$Maybe$Just(
+		A2(
+			$elm$html$Html$Attributes$property,
+			'quickOpen',
+			$elm$json$Json$Encode$bool(quickOpen)));
+};
+var $aforemny$material_components_web_elm$Material$Menu$rootCs = $elm$core$Maybe$Just(
+	$elm$html$Html$Attributes$class('mdc-menu mdc-menu-surface'));
+var $aforemny$material_components_web_elm$Material$Menu$menu = F2(
+	function (config_, nodes) {
+		var additionalAttributes = config_.a.additionalAttributes;
+		return A3(
+			$elm$html$Html$node,
+			'mdc-menu',
+			_Utils_ap(
+				A2(
+					$elm$core$List$filterMap,
+					$elm$core$Basics$identity,
+					_List_fromArray(
+						[
+							$aforemny$material_components_web_elm$Material$Menu$rootCs,
+							$aforemny$material_components_web_elm$Material$Menu$openProp(config_),
+							$aforemny$material_components_web_elm$Material$Menu$quickOpenProp(config_),
+							$aforemny$material_components_web_elm$Material$Menu$closeHandler(config_)
+						])),
+				additionalAttributes),
+			nodes);
+	});
+var $aforemny$material_components_web_elm$Material$Menu$setAttributes = F2(
+	function (additionalAttributes, _v0) {
+		var config_ = _v0.a;
+		return $aforemny$material_components_web_elm$Material$Menu$Config(
+			_Utils_update(
+				config_,
+				{additionalAttributes: additionalAttributes}));
 	});
 var $aforemny$material_components_web_elm$Material$Select$menuElt = F5(
 	function (leadingIcon, selected, onChange, firstSelectItem, remainingSelectItems) {
@@ -14296,19 +14724,6 @@ var $author$project$Messages$Multiple = function (a) {
 var $author$project$Messages$TareScale = {$: 'TareScale'};
 var $elm$html$Html$h2 = _VirtualDom_node('h2');
 var $aforemny$material_components_web_elm$Material$Typography$headline1 = $elm$html$Html$Attributes$class('mdc-typography--headline1');
-var $aforemny$material_components_web_elm$Material$Icon$icon = F2(
-	function (additionalAttributes, iconName) {
-		return A2(
-			$elm$html$Html$i,
-			A2(
-				$elm$core$List$cons,
-				$elm$html$Html$Attributes$class('material-icons'),
-				additionalAttributes),
-			_List_fromArray(
-				[
-					$elm$html$Html$text(iconName)
-				]));
-	});
 var $rundis$elm_bootstrap$Bootstrap$Utilities$Flex$justifyBetween = $elm$html$Html$Attributes$class('justify-content-between');
 var $elm$core$Dict$member = F2(
 	function (key, dict) {
@@ -14325,14 +14740,6 @@ var $aforemny$material_components_web_elm$Material$Button$unelevated = F2(
 		return A3($aforemny$material_components_web_elm$Material$Button$button, $aforemny$material_components_web_elm$Material$Button$Unelevated, config_, label);
 	});
 var $rundis$elm_bootstrap$Bootstrap$Grid$Internal$Col10 = {$: 'Col10'};
-var $rundis$elm_bootstrap$Bootstrap$Grid$Internal$ColWidth = function (a) {
-	return {$: 'ColWidth', a: a};
-};
-var $rundis$elm_bootstrap$Bootstrap$Grid$Internal$width = F2(
-	function (size, count) {
-		return $rundis$elm_bootstrap$Bootstrap$Grid$Internal$ColWidth(
-			A2($rundis$elm_bootstrap$Bootstrap$Grid$Internal$Width, size, count));
-	});
 var $rundis$elm_bootstrap$Bootstrap$Grid$Col$xs10 = A2($rundis$elm_bootstrap$Bootstrap$Grid$Internal$width, $rundis$elm_bootstrap$Bootstrap$General$Internal$XS, $rundis$elm_bootstrap$Bootstrap$Grid$Internal$Col10);
 var $rundis$elm_bootstrap$Bootstrap$Grid$Internal$Col2 = {$: 'Col2'};
 var $rundis$elm_bootstrap$Bootstrap$Grid$Col$xs2 = A2($rundis$elm_bootstrap$Bootstrap$Grid$Internal$width, $rundis$elm_bootstrap$Bootstrap$General$Internal$XS, $rundis$elm_bootstrap$Bootstrap$Grid$Internal$Col2);
@@ -14865,9 +15272,6 @@ var $author$project$Steps$stepCardBackground = function (step) {
 	}
 };
 var $aforemny$material_components_web_elm$Material$Card$block = $aforemny$material_components_web_elm$Material$Card$Block;
-var $elm$html$Html$h3 = _VirtualDom_node('h3');
-var $rundis$elm_bootstrap$Bootstrap$Utilities$Spacing$p0 = $elm$html$Html$Attributes$class('p-0');
-var $rundis$elm_bootstrap$Bootstrap$Utilities$Spacing$pr0 = $elm$html$Html$Attributes$class('pr-0');
 var $rundis$elm_bootstrap$Bootstrap$Utilities$Spacing$pr3 = $elm$html$Html$Attributes$class('pr-3');
 var $author$project$Steps$stepIcon = function (stepKind) {
 	switch (stepKind.$) {
@@ -14938,8 +15342,6 @@ var $author$project$Steps$stepIcon = function (stepKind) {
 	}
 };
 var $aforemny$material_components_web_elm$Material$Typography$subtitle2 = $elm$html$Html$Attributes$class('mdc-typography--subtitle2');
-var $rundis$elm_bootstrap$Bootstrap$Grid$Internal$ColAuto = {$: 'ColAuto'};
-var $rundis$elm_bootstrap$Bootstrap$Grid$Col$xsAuto = A2($rundis$elm_bootstrap$Bootstrap$Grid$Internal$width, $rundis$elm_bootstrap$Bootstrap$General$Internal$XS, $rundis$elm_bootstrap$Bootstrap$Grid$Internal$ColAuto);
 var $author$project$Steps$stepHeading = function (step) {
 	return $aforemny$material_components_web_elm$Material$Card$block(
 		A2(
@@ -15983,43 +16385,56 @@ var $author$project$Dialog$dialogActions = F2(
 				'Cancel')
 			]);
 	});
-var $author$project$Dialog$scaleDialogContent = function (value) {
+var $author$project$Messages$ShareLink = {$: 'ShareLink'};
+var $author$project$Dialog$inviteDialogActions = function (sharingSupported) {
 	return _List_fromArray(
 		[
 			A2(
-			$elm$html$Html$p,
-			_List_fromArray(
-				[$aforemny$material_components_web_elm$Material$Typography$headline6]),
-			_List_fromArray(
-				[
-					$elm$html$Html$text(
-					$elm$core$String$fromFloat(value) + ' g')
-				]))
+			$aforemny$material_components_web_elm$Material$Button$text,
+			A2(
+				$aforemny$material_components_web_elm$Material$Button$setOnClick,
+				$author$project$Messages$CloseDialog(
+					$elm$core$Maybe$Just($author$project$Messages$ShareLink)),
+				$aforemny$material_components_web_elm$Material$Button$config),
+			sharingSupported ? 'Share' : 'Copy'),
+			A2(
+			$aforemny$material_components_web_elm$Material$Button$text,
+			A2(
+				$aforemny$material_components_web_elm$Material$Button$setOnClick,
+				$author$project$Messages$CloseDialog($elm$core$Maybe$Nothing),
+				$aforemny$material_components_web_elm$Material$Button$config),
+			'Cancel')
 		]);
 };
-var $author$project$Messages$BrewSessionCodeInput = function (a) {
-	return {$: 'BrewSessionCodeInput', a: a};
+var $author$project$Messages$ToggleCodeSharing = {$: 'ToggleCodeSharing'};
+var $aforemny$material_components_web_elm$Material$Switch$Config = function (a) {
+	return {$: 'Config', a: a};
 };
+var $aforemny$material_components_web_elm$Material$Switch$config = $aforemny$material_components_web_elm$Material$Switch$Config(
+	{additionalAttributes: _List_Nil, checked: false, disabled: false, onChange: $elm$core$Maybe$Nothing});
 var $rundis$elm_bootstrap$Bootstrap$Utilities$Spacing$mt3 = $elm$html$Html$Attributes$class('mt-3');
-var $aforemny$material_components_web_elm$Material$TextField$setOnInput = F2(
-	function (onInput, _v0) {
+var $rundis$elm_bootstrap$Bootstrap$Utilities$Spacing$p1 = $elm$html$Html$Attributes$class('p-1');
+var $rundis$elm_bootstrap$Bootstrap$Utilities$Spacing$px2 = $elm$html$Html$Attributes$class('px-2');
+var $rundis$elm_bootstrap$Bootstrap$Utilities$Spacing$py1 = $elm$html$Html$Attributes$class('py-1');
+var $aforemny$material_components_web_elm$Material$Switch$setChecked = F2(
+	function (checked, _v0) {
 		var config_ = _v0.a;
-		return $aforemny$material_components_web_elm$Material$TextField$Config(
+		return $aforemny$material_components_web_elm$Material$Switch$Config(
+			_Utils_update(
+				config_,
+				{checked: checked}));
+	});
+var $aforemny$material_components_web_elm$Material$Switch$setOnChange = F2(
+	function (onChange, _v0) {
+		var config_ = _v0.a;
+		return $aforemny$material_components_web_elm$Material$Switch$Config(
 			_Utils_update(
 				config_,
 				{
-					onInput: $elm$core$Maybe$Just(onInput)
+					onChange: $elm$core$Maybe$Just(onChange)
 				}));
 	});
-var $aforemny$material_components_web_elm$Material$TextField$setValue = F2(
-	function (value, _v0) {
-		var config_ = _v0.a;
-		return $aforemny$material_components_web_elm$Material$TextField$Config(
-			_Utils_update(
-				config_,
-				{value: value}));
-	});
-var $rundis$elm_bootstrap$Bootstrap$Internal$Role$Success = {$: 'Success'};
+var $rundis$elm_bootstrap$Bootstrap$Internal$Role$Dark = {$: 'Dark'};
 var $rundis$elm_bootstrap$Bootstrap$Alert$Shown = {$: 'Shown'};
 var $rundis$elm_bootstrap$Bootstrap$Alert$Config = function (a) {
 	return {$: 'Config', a: a};
@@ -16228,6 +16643,230 @@ var $rundis$elm_bootstrap$Bootstrap$Alert$simple = F3(
 					attributes,
 					A2($rundis$elm_bootstrap$Bootstrap$Alert$role, role_, $rundis$elm_bootstrap$Bootstrap$Alert$config))));
 	});
+var $rundis$elm_bootstrap$Bootstrap$Alert$simpleDark = $rundis$elm_bootstrap$Bootstrap$Alert$simple($rundis$elm_bootstrap$Bootstrap$Internal$Role$Dark);
+var $rundis$elm_bootstrap$Bootstrap$Internal$Role$Warning = {$: 'Warning'};
+var $rundis$elm_bootstrap$Bootstrap$Alert$simpleWarning = $rundis$elm_bootstrap$Bootstrap$Alert$simple($rundis$elm_bootstrap$Bootstrap$Internal$Role$Warning);
+var $aforemny$material_components_web_elm$Material$Switch$checkedProp = function (_v0) {
+	var checked = _v0.a.checked;
+	return $elm$core$Maybe$Just(
+		A2(
+			$elm$html$Html$Attributes$property,
+			'checked',
+			$elm$json$Json$Encode$bool(checked)));
+};
+var $aforemny$material_components_web_elm$Material$Switch$disabledProp = function (_v0) {
+	var disabled = _v0.a.disabled;
+	return $elm$core$Maybe$Just(
+		A2(
+			$elm$html$Html$Attributes$property,
+			'disabled',
+			$elm$json$Json$Encode$bool(disabled)));
+};
+var $aforemny$material_components_web_elm$Material$Switch$rootCs = $elm$core$Maybe$Just(
+	$elm$html$Html$Attributes$class('mdc-switch'));
+var $aforemny$material_components_web_elm$Material$Switch$changeHandler = function (_v0) {
+	var onChange = _v0.a.onChange;
+	return A2(
+		$elm$core$Maybe$map,
+		A2(
+			$elm$core$Basics$composeL,
+			$elm$html$Html$Events$on('change'),
+			$elm$json$Json$Decode$succeed),
+		onChange);
+};
+var $aforemny$material_components_web_elm$Material$Switch$checkboxTypeAttr = $elm$core$Maybe$Just(
+	$elm$html$Html$Attributes$type_('checkbox'));
+var $aforemny$material_components_web_elm$Material$Switch$nativeControlCs = $elm$core$Maybe$Just(
+	$elm$html$Html$Attributes$class('mdc-switch__native-control'));
+var $aforemny$material_components_web_elm$Material$Switch$switchRoleAttr = $elm$core$Maybe$Just(
+	A2($elm$html$Html$Attributes$attribute, 'role', 'switch'));
+var $aforemny$material_components_web_elm$Material$Switch$nativeControlElt = function (config_) {
+	return A2(
+		$elm$html$Html$input,
+		A2(
+			$elm$core$List$filterMap,
+			$elm$core$Basics$identity,
+			_List_fromArray(
+				[
+					$aforemny$material_components_web_elm$Material$Switch$nativeControlCs,
+					$aforemny$material_components_web_elm$Material$Switch$checkboxTypeAttr,
+					$aforemny$material_components_web_elm$Material$Switch$switchRoleAttr,
+					$aforemny$material_components_web_elm$Material$Switch$checkedProp(config_),
+					$aforemny$material_components_web_elm$Material$Switch$changeHandler(config_)
+				])),
+		_List_Nil);
+};
+var $aforemny$material_components_web_elm$Material$Switch$thumbElt = A2(
+	$elm$html$Html$div,
+	_List_fromArray(
+		[
+			$elm$html$Html$Attributes$class('mdc-switch__thumb')
+		]),
+	_List_Nil);
+var $aforemny$material_components_web_elm$Material$Switch$thumbUnderlayElt = function (config_) {
+	return A2(
+		$elm$html$Html$div,
+		_List_fromArray(
+			[
+				$elm$html$Html$Attributes$class('mdc-switch__thumb-underlay')
+			]),
+		_List_fromArray(
+			[
+				$aforemny$material_components_web_elm$Material$Switch$thumbElt,
+				$aforemny$material_components_web_elm$Material$Switch$nativeControlElt(config_)
+			]));
+};
+var $aforemny$material_components_web_elm$Material$Switch$trackElt = A2(
+	$elm$html$Html$div,
+	_List_fromArray(
+		[
+			$elm$html$Html$Attributes$class('mdc-switch__track')
+		]),
+	_List_Nil);
+var $aforemny$material_components_web_elm$Material$Switch$switch = function (config_) {
+	var additionalAttributes = config_.a.additionalAttributes;
+	return A3(
+		$elm$html$Html$node,
+		'mdc-switch',
+		_Utils_ap(
+			A2(
+				$elm$core$List$filterMap,
+				$elm$core$Basics$identity,
+				_List_fromArray(
+					[
+						$aforemny$material_components_web_elm$Material$Switch$rootCs,
+						$aforemny$material_components_web_elm$Material$Switch$checkedProp(config_),
+						$aforemny$material_components_web_elm$Material$Switch$disabledProp(config_)
+					])),
+			additionalAttributes),
+		_List_fromArray(
+			[
+				$aforemny$material_components_web_elm$Material$Switch$trackElt,
+				$aforemny$material_components_web_elm$Material$Switch$thumbUnderlayElt(config_)
+			]));
+};
+var $author$project$Dialog$inviteDialogContent = function (model) {
+	return _Utils_ap(
+		_List_fromArray(
+			[
+				A2(
+				$elm$html$Html$p,
+				_List_fromArray(
+					[$aforemny$material_components_web_elm$Material$Typography$body1]),
+				_List_fromArray(
+					[
+						$elm$html$Html$text('Share this link with a friend to invite them to the brew session.')
+					])),
+				A2(
+				$rundis$elm_bootstrap$Bootstrap$Alert$simpleDark,
+				_List_fromArray(
+					[$rundis$elm_bootstrap$Bootstrap$Utilities$Spacing$p1, $rundis$elm_bootstrap$Bootstrap$Utilities$Spacing$px2]),
+				_List_fromArray(
+					[
+						A2(
+						$elm$html$Html$p,
+						_List_fromArray(
+							[
+								A2($elm$html$Html$Attributes$style, 'overflow', 'scroll'),
+								A2($elm$html$Html$Attributes$style, 'white-space', 'nowrap'),
+								$rundis$elm_bootstrap$Bootstrap$Utilities$Spacing$m0,
+								$rundis$elm_bootstrap$Bootstrap$Utilities$Spacing$py1
+							]),
+						_List_fromArray(
+							[
+								$elm$html$Html$text(
+								$author$project$ConnectionsManagement$brewSessionLink(model))
+							]))
+					]))
+			]),
+		model.security.valid ? _List_fromArray(
+			[
+				A2(
+				$rundis$elm_bootstrap$Bootstrap$Grid$row,
+				_List_Nil,
+				_List_fromArray(
+					[
+						A2(
+						$rundis$elm_bootstrap$Bootstrap$Grid$col,
+						_List_Nil,
+						_List_fromArray(
+							[
+								A2(
+								$elm$html$Html$p,
+								_List_fromArray(
+									[$aforemny$material_components_web_elm$Material$Typography$body1, $rundis$elm_bootstrap$Bootstrap$Utilities$Spacing$m0]),
+								_List_fromArray(
+									[
+										$elm$html$Html$text('Share with brew session code')
+									]))
+							])),
+						A2(
+						$rundis$elm_bootstrap$Bootstrap$Grid$col,
+						_List_fromArray(
+							[
+								$rundis$elm_bootstrap$Bootstrap$Grid$Col$xsAuto,
+								$rundis$elm_bootstrap$Bootstrap$Grid$Col$attrs(
+								_List_fromArray(
+									[
+										$elm$html$Html$Attributes$align('center')
+									])),
+								$rundis$elm_bootstrap$Bootstrap$Grid$Col$middleXs
+							]),
+						_List_fromArray(
+							[
+								$aforemny$material_components_web_elm$Material$Switch$switch(
+								A2(
+									$aforemny$material_components_web_elm$Material$Switch$setOnChange,
+									$author$project$Messages$ToggleCodeSharing,
+									A2($aforemny$material_components_web_elm$Material$Switch$setChecked, model.security.shareSecurityCode, $aforemny$material_components_web_elm$Material$Switch$config)))
+							]))
+					])),
+				model.security.shareSecurityCode ? A2(
+				$rundis$elm_bootstrap$Bootstrap$Alert$simpleWarning,
+				_List_fromArray(
+					[$aforemny$material_components_web_elm$Material$Typography$body2, $rundis$elm_bootstrap$Bootstrap$Utilities$Spacing$p2, $rundis$elm_bootstrap$Bootstrap$Utilities$Spacing$mt3]),
+				_List_fromArray(
+					[
+						$elm$html$Html$text('Careful! Sharing your brew session code will allow the user to control your brew session.')
+					])) : A2($elm$html$Html$div, _List_Nil, _List_Nil)
+			]) : _List_Nil);
+};
+var $author$project$Dialog$scaleDialogContent = function (value) {
+	return _List_fromArray(
+		[
+			A2(
+			$elm$html$Html$p,
+			_List_fromArray(
+				[$aforemny$material_components_web_elm$Material$Typography$headline6]),
+			_List_fromArray(
+				[
+					$elm$html$Html$text(
+					$elm$core$String$fromFloat(value) + ' g')
+				]))
+		]);
+};
+var $author$project$Messages$BrewSessionCodeInput = function (a) {
+	return {$: 'BrewSessionCodeInput', a: a};
+};
+var $aforemny$material_components_web_elm$Material$TextField$setOnInput = F2(
+	function (onInput, _v0) {
+		var config_ = _v0.a;
+		return $aforemny$material_components_web_elm$Material$TextField$Config(
+			_Utils_update(
+				config_,
+				{
+					onInput: $elm$core$Maybe$Just(onInput)
+				}));
+	});
+var $aforemny$material_components_web_elm$Material$TextField$setValue = F2(
+	function (value, _v0) {
+		var config_ = _v0.a;
+		return $aforemny$material_components_web_elm$Material$TextField$Config(
+			_Utils_update(
+				config_,
+				{value: value}));
+	});
+var $rundis$elm_bootstrap$Bootstrap$Internal$Role$Success = {$: 'Success'};
 var $rundis$elm_bootstrap$Bootstrap$Alert$simpleSuccess = $rundis$elm_bootstrap$Bootstrap$Alert$simple($rundis$elm_bootstrap$Bootstrap$Internal$Role$Success);
 var $author$project$Dialog$securityDialogContent = function (security) {
 	return _List_fromArray(
@@ -16335,7 +16974,7 @@ var $author$project$Dialog$showDialog = function (model) {
 							$elm$core$Maybe$Just(action),
 							$elm$core$Maybe$Just(
 								$author$project$Messages$CloseDialog($elm$core$Maybe$Nothing)))));
-			default:
+			case 'Calibration':
 				var _v4 = _v0.a;
 				return A3(
 					$author$project$Dialog$dialog,
@@ -16347,6 +16986,14 @@ var $author$project$Dialog$showDialog = function (model) {
 							$elm$core$Maybe$Just($author$project$Messages$StartCalibration),
 							$elm$core$Maybe$Just(
 								$author$project$Messages$CloseDialog($elm$core$Maybe$Nothing)))));
+			default:
+				var _v5 = _v0.a;
+				return A3(
+					$author$project$Dialog$dialog,
+					$author$project$Dialog$inviteDialogContent(model),
+					$elm$core$Maybe$Just('Invite a friend'),
+					$elm$core$Maybe$Just(
+						$author$project$Dialog$inviteDialogActions(model.sharingSupported)));
 		}
 	}
 };
@@ -16629,50 +17276,59 @@ var $author$project$Main$view = function (model) {
 			[
 				A2(
 				$elm$html$Html$div,
-				_List_fromArray(
-					[$aforemny$material_components_web_elm$Material$Typography$typography]),
-				_List_fromArray(
-					[
-						A5(
-						$author$project$Navbar$navbar,
-						model.title,
-						$author$project$Main$isRecipeSelected(model),
-						model.menuOpened,
-						!$elm$core$Dict$isEmpty(model.recipeSteps),
-						model.security.valid),
-						$author$project$Dialog$showDialog(model),
-						A2(
-						$rundis$elm_bootstrap$Bootstrap$Grid$container,
-						_List_fromArray(
-							[$rundis$elm_bootstrap$Bootstrap$Utilities$Spacing$py5]),
-						_List_fromArray(
-							[
-								A2(
-								$rundis$elm_bootstrap$Bootstrap$Grid$row,
-								_List_fromArray(
-									[
-										$rundis$elm_bootstrap$Bootstrap$Grid$Row$attrs(
-										_List_fromArray(
-											[$rundis$elm_bootstrap$Bootstrap$Utilities$Spacing$pt4]))
-									]),
-								_List_fromArray(
-									[
-										A2(
-										$rundis$elm_bootstrap$Bootstrap$Grid$col,
-										_List_Nil,
-										_List_fromArray(
-											[
-												$author$project$Page$page(model)
-											]))
-									]))
-							])),
-						A2(
-						$aforemny$material_components_web_elm$Material$Snackbar$snackbar,
-						$aforemny$material_components_web_elm$Material$Snackbar$config(
-							{onClosed: $author$project$Messages$SnackbarClosed}),
-						model.snackbarQueue),
-						(!$elm$core$Dict$isEmpty(model.recipeSteps)) ? A3($author$project$BottomToolbar$bottomToolbar, model.temperature, model.remainingBoilTime, model.heating) : A2($elm$html$Html$div, _List_Nil, _List_Nil)
-					]))
+				_List_Nil,
+				_Utils_ap(
+					A2(
+						$author$project$Menu$menuDrawer,
+						model,
+						!$elm$core$Dict$isEmpty(model.recipeSteps)),
+					_List_fromArray(
+						[
+							A2(
+							$elm$html$Html$div,
+							_List_fromArray(
+								[$aforemny$material_components_web_elm$Material$Typography$typography]),
+							_List_fromArray(
+								[
+									A3(
+									$author$project$Navbar$navbar,
+									model.title,
+									$author$project$Main$isRecipeSelected(model),
+									model.security.valid),
+									$author$project$Dialog$showDialog(model),
+									A2(
+									$rundis$elm_bootstrap$Bootstrap$Grid$container,
+									_List_fromArray(
+										[$rundis$elm_bootstrap$Bootstrap$Utilities$Spacing$py5]),
+									_List_fromArray(
+										[
+											A2(
+											$rundis$elm_bootstrap$Bootstrap$Grid$row,
+											_List_fromArray(
+												[
+													$rundis$elm_bootstrap$Bootstrap$Grid$Row$attrs(
+													_List_fromArray(
+														[$rundis$elm_bootstrap$Bootstrap$Utilities$Spacing$pt4]))
+												]),
+											_List_fromArray(
+												[
+													A2(
+													$rundis$elm_bootstrap$Bootstrap$Grid$col,
+													_List_Nil,
+													_List_fromArray(
+														[
+															$author$project$Page$page(model)
+														]))
+												]))
+										])),
+									A2(
+									$aforemny$material_components_web_elm$Material$Snackbar$snackbar,
+									$aforemny$material_components_web_elm$Material$Snackbar$config(
+										{onClosed: $author$project$Messages$SnackbarClosed}),
+									model.snackbarQueue),
+									(!$elm$core$Dict$isEmpty(model.recipeSteps)) ? A3($author$project$BottomToolbar$bottomToolbar, model.temperature, model.remainingBoilTime, model.heating) : A2($elm$html$Html$div, _List_Nil, _List_Nil)
+								]))
+						])))
 			]),
 		title: model.title
 	};
@@ -16685,26 +17341,36 @@ _Platform_export({'Main':{'init':$author$project$Main$main(
 		function (storedApiUrls) {
 			return A2(
 				$elm$json$Json$Decode$andThen,
-				function (brewSessionCode) {
+				function (sharingSupported) {
 					return A2(
 						$elm$json$Json$Decode$andThen,
-						function (basePath) {
+						function (origin) {
 							return A2(
 								$elm$json$Json$Decode$andThen,
-								function (apiDefaultProtocol) {
+								function (brewSessionCode) {
 									return A2(
 										$elm$json$Json$Decode$andThen,
-										function (apiBaseUrl) {
-											return $elm$json$Json$Decode$succeed(
-												{apiBaseUrl: apiBaseUrl, apiDefaultProtocol: apiDefaultProtocol, basePath: basePath, brewSessionCode: brewSessionCode, storedApiUrls: storedApiUrls});
+										function (basePath) {
+											return A2(
+												$elm$json$Json$Decode$andThen,
+												function (apiDefaultProtocol) {
+													return A2(
+														$elm$json$Json$Decode$andThen,
+														function (apiBaseUrl) {
+															return $elm$json$Json$Decode$succeed(
+																{apiBaseUrl: apiBaseUrl, apiDefaultProtocol: apiDefaultProtocol, basePath: basePath, brewSessionCode: brewSessionCode, origin: origin, sharingSupported: sharingSupported, storedApiUrls: storedApiUrls});
+														},
+														A2($elm$json$Json$Decode$field, 'apiBaseUrl', $elm$json$Json$Decode$string));
+												},
+												A2($elm$json$Json$Decode$field, 'apiDefaultProtocol', $elm$json$Json$Decode$string));
 										},
-										A2($elm$json$Json$Decode$field, 'apiBaseUrl', $elm$json$Json$Decode$string));
+										A2($elm$json$Json$Decode$field, 'basePath', $elm$json$Json$Decode$string));
 								},
-								A2($elm$json$Json$Decode$field, 'apiDefaultProtocol', $elm$json$Json$Decode$string));
+								A2($elm$json$Json$Decode$field, 'brewSessionCode', $elm$json$Json$Decode$string));
 						},
-						A2($elm$json$Json$Decode$field, 'basePath', $elm$json$Json$Decode$string));
+						A2($elm$json$Json$Decode$field, 'origin', $elm$json$Json$Decode$string));
 				},
-				A2($elm$json$Json$Decode$field, 'brewSessionCode', $elm$json$Json$Decode$string));
+				A2($elm$json$Json$Decode$field, 'sharingSupported', $elm$json$Json$Decode$bool));
 		},
 		A2(
 			$elm$json$Json$Decode$field,

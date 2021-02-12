@@ -40,3 +40,21 @@ i.varpivo-heater-off {
     color: lightgrey;
     opacity: 50%;
 }
+
+.mdc-drawer--animate {
+    transform: translateX(100%);
+}
+
+.mdc-drawer--opening {
+    transform: translateX(0%);
+}
+
+.mdc-drawer--modal {
+    left: initial;
+    right: 0;
+}
+
+.mdc-drawer--closing {
+    transform: translateX(100%);
+}
+
