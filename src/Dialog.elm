@@ -1,12 +1,17 @@
 module Dialog exposing (..)
 
 import Bootstrap.Alert as Alert
+import Bootstrap.Grid as Grid
+import Bootstrap.Grid.Col as Col
 import Bootstrap.Utilities.Size as Size
 import Bootstrap.Utilities.Spacing as Spacing
+import ConnectionsManagement exposing (brewSessionLink)
 import Html
+import Html.Attributes as Attributes
 import Material.Button as Button
 import Material.Dialog as Dialog
 import Material.HelperText as HelperText
+import Material.Switch as Switch
 import Material.TextField as TextField
 import Material.Typography as Typography
 import Maybe exposing (withDefault)
@@ -92,6 +97,47 @@ securityDialogContent security =
  ]
 
 
+inviteDialogActions sharingSupported =
+  [ Button.text
+    (Button.config |> Button.setOnClick ( CloseDialog (Just ShareLink) ))
+    (if sharingSupported then "Share" else "Copy")
+  , Button.text
+    (Button.config |> Button.setOnClick ( CloseDialog Nothing ))
+    "Cancel"
+  ]
+
+
+inviteDialogContent model =
+  [ Html.p [ Typography.body1 ] [ Html.text "Share this link with a friend to invite them to the brew session." ]
+  , Alert.simpleDark [ Spacing.p1, Spacing.px2 ]
+    [ Html.p
+      [ Attributes.style "overflow" "scroll"
+      , Attributes.style "white-space" "nowrap"
+      , Spacing.m0, Spacing.py1
+      ] [ Html.text <| brewSessionLink model ] ]
+  ] ++ ( if model.security.valid
+  then
+  [ Grid.row []
+    [ Grid.col []
+      [ Html.p [ Typography.body1, Spacing.m0 ] [ Html.text "Share with brew session code" ]
+      ]
+    , Grid.col [ Col.xsAuto, Col.attrs [ Attributes.align "center" ], Col.middleXs  ]
+      [ Switch.switch
+        ( Switch.config
+          |> Switch.setChecked model.security.shareSecurityCode
+          |> Switch.setOnChange ToggleCodeSharing
+        )
+      ]
+    ]
+  , if model.security.shareSecurityCode
+    then Alert.simpleWarning [ Typography.body2, Spacing.p2, Spacing.mt3 ] [ Html.text "Careful! Sharing your brew session code will allow the user to control your brew session." ]
+    else Html.div [] []
+  ]
+  else []
+  )
+
+
+
 showDialog : Model -> Html.Html Msg
 showDialog model =
   case model.dialogVariant of
@@ -109,3 +155,6 @@ showDialog model =
 
     Just Calibration ->
       dialog (calibrationDialogContent) (Just "Scale calibration") (Just (dialogActions (Just StartCalibration) ( Just (CloseDialog Nothing)) ))
+
+    Just Invite ->
+      dialog (inviteDialogContent model) (Just "Invite a friend") (Just (inviteDialogActions model.sharingSupported))

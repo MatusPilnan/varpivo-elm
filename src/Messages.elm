@@ -10,7 +10,7 @@ import Url
 import Url.Builder exposing (QueryParameter)
 
 
-type DialogVariant = Scale | Confirm ( String, Msg ) | Calibration | Security
+type DialogVariant = Scale | Confirm ( String, Msg ) | Calibration | Security | Invite
 
 type Msg = Increment
   | Decrement
@@ -52,3 +52,6 @@ type Msg = Increment
   | BrewSessionCodeChange String
   | BrewSessionCodeVerified String
   | BrewSessionCodeRejected (String, Bool)
+  | CheckingUrlsFromQuery
+  | ToggleCodeSharing
+  | ShareLink

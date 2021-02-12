@@ -75,7 +75,7 @@ brewSessionGroup activeBrewSession =
       ( List.config |> List.setWrapFocus True )
       ( ListItem.listItem
         ( ListItem.config
-          --|> ListItem.setOnClick
+          |> ListItem.setOnClick (ShowDialog Invite)
         )
         [ text "Invite friends"
         , ListItem.meta [] [ Icon.icon [] "person_add" ]
@@ -124,10 +124,11 @@ subtitle model =
     Just recipe ->
       "Brewing " ++ recipe.name
     Nothing ->
-      case model.selectedApiUrl of
-        Just url ->
+      case model.apiBaseUrl of
+        "" ->
+          "Not connected"
+
+        url ->
           "Connected to " ++ url
 
-        Nothing ->
-          "Not connected"
   )

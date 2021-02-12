@@ -6,6 +6,7 @@ import Data.Recipe exposing (RecipeListEntry)
 import Data.Step exposing (RecipeStep)
 import Dict exposing (Dict)
 import Duration exposing (Duration)
+import Json.Decode exposing (decodeString, list, string)
 import Material.Snackbar as Snackbar
 import Messages exposing (DialogVariant, Msg)
 import Router exposing (Route(..))
@@ -26,6 +27,7 @@ type alias Model =
     , selectedApiUrl: Maybe String
     , basePath : String
     , basePathList : List String
+    , origin : String
     , title : String
     , value : Float
     , weight : Float
@@ -45,6 +47,7 @@ type alias Model =
     , calibrationValue : Int
     , route: Route
     , security : BrewSessionSecurity
+    , sharingSupported : Bool
     }
 
 type alias BrewSessionSecurity =
@@ -56,6 +59,7 @@ type alias BrewSessionSecurity =
     , error : String
     , hint : String
     }
+  , shareSecurityCode : Bool
   }
 
 type alias Flags =
@@ -64,40 +68,49 @@ type alias Flags =
   , storedApiUrls: List String
   , apiDefaultProtocol: String
   , brewSessionCode: String
+  , origin: String
+  , sharingSupported: Bool
   }
 
 init : Flags -> Url -> Key -> Model
 init flags url key =
+  let
+      apiUrlsInQuery =
+          not <| List.isEmpty (getApiUrlsFromQueryString url)
+  in
+
   { url = url
-    , key = key
-    , apiBaseUrl = flags.apiBaseUrl
-    , storedApiUrls = flags.storedApiUrls
-    , newApiUrlFormError = Nothing
-    , apiConnecting = True
-    , selectedApiUrl = Nothing
-    , apiDefaultProtocol = flags.apiDefaultProtocol
-    , basePath = flags.basePath
-    , basePathList = List.filter (\val -> not (String.isEmpty val)) (String.split "/" flags.basePath)
-    , title = "Var:Pivo"
-    , value = 0
-    , weight = 0
-    , temperature = 0
-    , heating = False
-    , remainingBoilTime = Nothing
-    , availableRecipes = []
-    , loading = True
-    , snackbarQueue = Snackbar.initialQueue
-    , dialogVariant = Nothing
-    , recipeSteps = Dict.empty
-    , stepsOrder = []
-    , selectedRecipe = Nothing
-    , timezone = Nothing
-    , menuOpened = False
-    , calibrationValue = -1
-    , route = Home
-    , boilStartedAt = Nothing
-    , security = defaultSecurity url flags
-    }
+  , key = key
+  , apiBaseUrl = flags.apiBaseUrl
+  , storedApiUrls = flags.storedApiUrls
+  , newApiUrlFormError = Nothing
+  , apiConnecting = if apiUrlsInQuery then True else False
+  , selectedApiUrl = Nothing
+  , apiDefaultProtocol = flags.apiDefaultProtocol
+  , basePath = flags.basePath
+  , basePathList = List.filter (\val -> not (String.isEmpty val)) (String.split "/" flags.basePath)
+  , origin = flags.origin
+  , title = "Var:Pivo"
+  , value = 0
+  , weight = 0
+  , temperature = 0
+  , heating = False
+  , remainingBoilTime = Nothing
+  , availableRecipes = []
+  , loading = True
+  , snackbarQueue = Snackbar.initialQueue
+  , dialogVariant = Nothing
+  , recipeSteps = Dict.empty
+  , stepsOrder = []
+  , selectedRecipe = Nothing
+  , timezone = Nothing
+  , menuOpened = False
+  , calibrationValue = -1
+  , route = Home
+  , boilStartedAt = Nothing
+  , security = defaultSecurity url flags
+  , sharingSupported = flags.sharingSupported
+  }
 
 defaultSecurityFormState =
   { value = ""
@@ -121,6 +134,7 @@ defaultSecurity url flags =
       Nothing ->
         False
   , form = defaultSecurityFormState
+  , shareSecurityCode = False
   }
 
 
@@ -132,3 +146,17 @@ getBrewSessionKeyFromUrl url =
 
    Nothing ->
      Nothing
+
+
+getApiUrlsFromQueryString : Url -> List String
+getApiUrlsFromQueryString url =
+  let
+    queryParser =
+      Parser.query (QueryParser.string "connections")
+  in
+  case Parser.parse queryParser {url | path = ""} of
+    Just urls ->
+      Result.withDefault [] (decodeString (list string) (Maybe.withDefault "[]" urls))
+
+    Nothing ->
+      []

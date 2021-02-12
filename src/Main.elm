@@ -7,8 +7,9 @@ import Api.Request.Info as InfoApi
 import Api.Request.RecipeSteps as RecipeStepsApi
 import Api.Request.Recipes as RecipesApi
 import Api.Request.Scale as ScaleApi
+import ConnectionsManagement exposing (brewSessionLink)
 import Menu exposing (menuDrawer)
-import SnackbarTools exposing (apiErrorMessage, brewSessionKeyRejectedMessage)
+import SnackbarTools exposing (simpleMessage, brewSessionKeyRejectedMessage)
 import BottomToolbar exposing (bottomToolbar)
 import Browser exposing (Document)
 import Browser.Navigation as Navigation exposing (Key)
@@ -19,7 +20,6 @@ import Dict exposing (Dict)
 import Duration exposing (Duration)
 import Html exposing (Html)
 import Http exposing (Error(..))
-import Json.Decode exposing (decodeString, list, string)
 import KegMessage exposing (handleKegMessage)
 import Material.Typography as Typography
 import Material.Snackbar as Snackbar
@@ -28,7 +28,7 @@ import Bootstrap.Utilities.Spacing as Spacing
 import Bootstrap.Grid.Row as Row
 import Maybe exposing (withDefault)
 import Messages exposing (..)
-import Model exposing (Flags, Model, defaultSecurityFormState)
+import Model exposing (Flags, Model, defaultSecurityFormState, getApiUrlsFromQueryString)
 import Navbar exposing (navbar)
 import Notification exposing (Notification)
 import Page exposing (page)
@@ -38,8 +38,6 @@ import Router exposing (Route(..), navigate, route)
 import Task
 import Time exposing (Posix, Zone)
 import Url exposing (Url)
-import Url.Parser as Parser
-import Url.Parser.Query as QueryParser
 
 
 
@@ -71,6 +69,7 @@ port connect : String -> Cmd msg
 port notification: Notification -> Cmd msg
 port notificationClick: (List String -> msg) -> Sub msg
 port console : String -> Cmd msg
+port shareLink: String -> Cmd msg
 port messageReceiver : (String -> msg) -> Sub msg
 
 
@@ -85,7 +84,7 @@ init flags url key =
     ( [ fetchBrewSession model.security.code flags.apiBaseUrl
       , Task.perform SetTimeZone Time.here
       , Task.perform SetTime Time.now
-      ] ++ getApiUrlsFromQueryString flags.apiDefaultProtocol url
+      ] ++ checkApiUrlsFromQueryString flags.apiDefaultProtocol url
     )
   )
 
@@ -122,7 +121,7 @@ update msg model =
     SetSteps (recipeSteps, stepOrder) ->
       ( { model | recipeSteps = recipeSteps, stepsOrder = stepOrder,loading = False }, navigate model ["brew-session"] [])
     ShowSnackbar string ->
-      ({model | snackbarQueue = (Snackbar.addMessage (apiErrorMessage string) model.snackbarQueue), loading = False }, Cmd.none)
+      ({model | snackbarQueue = (Snackbar.addMessage (simpleMessage string) model.snackbarQueue), loading = False }, Cmd.none)
 
     ShowRecipeDetail recipeListEntry ->
       ( { model | selectedRecipe = Just recipeListEntry}, navigate model ["recipe"] [])
@@ -235,12 +234,7 @@ update msg model =
     NewApiUrl string ->
       let
           address =
-            String.dropRight 1 ( ( if String.startsWith "http://" string || String.startsWith "https://" string
-            then string
-            else model.apiDefaultProtocol ++ string ) ++
-            ( if String.endsWith "/api" string || String.endsWith "/" string
-            then ""
-            else "/api/"))
+              prepareAddress model.apiDefaultProtocol string
       in
       case Url.fromString address of
         Just _ ->
@@ -319,24 +313,41 @@ update msg model =
         , snackbarQueue = (Snackbar.addMessage (brewSessionKeyRejectedMessage rejectionMessage) model.snackbarQueue)
         }, Cmd.none )
 
+    CheckingUrlsFromQuery ->
+      ( {model | apiConnecting = True}, Cmd.none )
 
-getApiUrlsFromQueryString : String -> Url -> List (Cmd Msg)
-getApiUrlsFromQueryString protocol url =
-  let
-    queryParser =
-      Parser.query (QueryParser.string "connections")
-  in
-  case Parser.parse queryParser {url | path = ""} of
-    Just urls ->
+    ToggleCodeSharing ->
       let
-        decodedUrls =
-          Result.withDefault [] (decodeString (list string) (Maybe.withDefault "[]" urls))
+        oldSecurity =
+          model.security
       in
-      List.map (\address -> checkApiUrl (protocol ++ address ++ "/api") True) decodedUrls
+      ( { model | security = { oldSecurity | shareSecurityCode = (not oldSecurity.shareSecurityCode)}}, Cmd.none )
 
-    Nothing ->
-      [Cmd.none]
-      
+    ShareLink ->
+      ( if model.sharingSupported
+        then model
+        else { model | snackbarQueue = (Snackbar.addMessage (simpleMessage "Link copied.") model.snackbarQueue)}
+      , shareLink <| brewSessionLink model )
+
+prepareAddress protocol address =
+    String.dropRight 1 ( ( if String.startsWith "http://" address || String.startsWith "https://" address
+    then address
+    else protocol ++ address ) ++
+    ( if String.endsWith "/api" address || String.endsWith "/" address
+    then (if String.endsWith "/" address then "" else " ")
+    else "/api/"))
+
+
+checkApiUrlsFromQueryString : String -> Url -> List (Cmd Msg)
+checkApiUrlsFromQueryString protocol url =
+  let
+    decodedUrls =
+      getApiUrlsFromQueryString url
+  in
+  if List.isEmpty decodedUrls
+  then [Cmd.none]
+  else List.map (\address -> checkApiUrl (prepareAddress protocol address) True) decodedUrls
+
 
 verifyBrewSessionCode : String -> String -> Cmd Msg
 verifyBrewSessionCode brewSessionCode basePath =

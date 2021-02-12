@@ -4,8 +4,8 @@ import Material.Snackbar as Snackbar
 import Messages exposing (DialogVariant(..), Msg(..))
 
 
-apiErrorMessage : String -> Snackbar.Message msg
-apiErrorMessage message =
+simpleMessage : String -> Snackbar.Message msg
+simpleMessage message =
   Snackbar.message message
     |> Snackbar.setActionIcon ( Just (Snackbar.icon "close" ) )
 

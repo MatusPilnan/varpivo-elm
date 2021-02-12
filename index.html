@@ -63,10 +63,15 @@
   var apiDefaultProtocol = `${window.location.protocol}//`
 
   var basePath = config.BASE_PATH
+  var origin = window.location.origin
+  var sharingSupported = false
+  if (navigator.share) {
+    sharingSupported = true
+  }
 
   var app = Elm.Main.init({
     node: document.querySelector('main'),
-    flags: {apiBaseUrl, basePath, storedApiUrls, apiDefaultProtocol, brewSessionCode}
+    flags: {apiBaseUrl, basePath, storedApiUrls, apiDefaultProtocol, brewSessionCode, origin, sharingSupported}
   })
 
   if ('serviceWorker' in navigator) {
@@ -125,6 +130,24 @@
       socket.send(message);
     }
   });
+
+  app.ports.shareLink.subscribe(function (link) {
+    if (navigator.share) {
+      navigator.share({
+        title: 'Var:Pivo',
+        text: 'Come brew something!',
+        url: link,
+      })
+              .then(() => console.log('Successful share'))
+              .catch((error) => console.log('Error sharing', error));
+    } else {
+      navigator.clipboard.writeText(link).then(function () {
+        console.log('Async: Copying to clipboard was successful!');
+      }, function (err) {
+        console.error('Async: Could not copy text: ', err);
+      });
+    }
+  })
 
   app.ports.notification.subscribe(function ({title, subtitle, time}) {
     if (Notification.permission === 'granted') {

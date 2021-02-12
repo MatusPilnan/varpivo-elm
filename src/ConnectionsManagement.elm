@@ -8,6 +8,7 @@ import Bootstrap.Utilities.Size as Size
 import Bootstrap.Utilities.Spacing as Spacing
 import Html exposing (Html, text)
 import Html.Attributes as Attributes
+import Json.Encode exposing (list, string)
 import Material.Button as Button
 import Material.CircularProgress as CircularProgress
 import Material.HelperText as HelperText
@@ -145,3 +146,22 @@ urlNotSelected model =
       False
     Nothing ->
       True
+
+brewSessionLink : Model -> String
+brewSessionLink model =
+  let
+      base =
+          model.origin ++ model.basePath
+  in
+
+    case model.apiBaseUrl of
+      "" ->
+        base
+
+      url ->
+        base ++ "?connections=" ++ Json.Encode.encode 0 ( list string [ url ] ) ++ (
+        if model.security.valid && model.security.shareSecurityCode
+        then "&brewSessionCode=" ++ model.security.code
+        else ""
+        )
+
