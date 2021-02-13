@@ -1,6 +1,7 @@
 module Router exposing (..)
 
 import Browser.Navigation as Navigation
+import Data.BFImport exposing (defaultBFImport)
 import Dict
 import Url
 import Url.Builder
@@ -8,12 +9,13 @@ import Url.Parser as Parser exposing ((<?>), Parser, map, oneOf, s, top)
 import Url.Parser.Query as Query
 
 
-type Route = Recipe | Home | BrewSession | Scale (Maybe String) | Connections
+type Route = Recipe | Home | BrewSession | Scale (Maybe String) | Connections | RecipeImport
 
 routeParser : Parser (Route -> a) a
 routeParser =
   oneOf
-    [ map Recipe (s "recipe")
+    [ map RecipeImport (s "import")
+    , map Recipe (s "recipe")
     , map BrewSession (s "brew-session")
     , map Home top
     , map Scale (s "scale" <?> Query.string "step")
@@ -55,6 +57,9 @@ route url model console =
 
         Connections ->
           ( { model | url = url, route = currentPage, newApiUrlFormError = Nothing}, Cmd.none )
+
+        RecipeImport ->
+          ( { model | url = url, route = currentPage, bfImport = defaultBFImport }, Cmd.none )
 
 
 navigate : { a | basePathList : List String, key : Navigation.Key } -> List String -> List Url.Builder.QueryParameter -> Cmd msg

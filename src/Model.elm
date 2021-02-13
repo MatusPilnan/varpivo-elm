@@ -2,6 +2,7 @@ module Model exposing (..)
 
 
 import Browser.Navigation exposing (Key)
+import Data.BFImport exposing (BFImport, defaultBFImport)
 import Data.Recipe exposing (RecipeListEntry)
 import Data.Step exposing (RecipeStep)
 import Dict exposing (Dict)
@@ -48,6 +49,7 @@ type alias Model =
     , route: Route
     , security : BrewSessionSecurity
     , sharingSupported : Bool
+    , bfImport : BFImport
     }
 
 type alias BrewSessionSecurity =
@@ -110,6 +112,7 @@ init flags url key =
   , boilStartedAt = Nothing
   , security = defaultSecurity url flags
   , sharingSupported = flags.sharingSupported
+  , bfImport = defaultBFImport
   }
 
 defaultSecurityFormState =

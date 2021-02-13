@@ -55,3 +55,9 @@ type Msg = Increment
   | CheckingUrlsFromQuery
   | ToggleCodeSharing
   | ShareLink
+  | BFImportInput String
+  | ToggleRecipeReplace
+  | ToggleRecipeAdd
+  | ImportRecipe String
+  | ImportRecipeSuccess RecipeListEntry
+  | ImportRecipeFailure String

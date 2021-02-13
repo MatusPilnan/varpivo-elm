@@ -14,6 +14,7 @@ import Material.Typography as Typography
 import Maybe
 import Messages exposing (Msg(..))
 import Model exposing (Model)
+import RecipeImport exposing (brewersFriendImport)
 import Recipes exposing (recipeDetail, recipeSelection)
 import Router
 import Scale exposing (scale)
@@ -38,6 +39,8 @@ page model =
       scale model stepId
     ( Router.Connections, _) ->
       noApiUrl model
+    ( Router.RecipeImport, _ ) ->
+      brewersFriendImport model
 
 
 

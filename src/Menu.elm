@@ -80,7 +80,15 @@ brewSessionGroup activeBrewSession =
         [ text "Invite friends"
         , ListItem.meta [] [ Icon.icon [] "person_add" ]
         ]
-      )
+      ) <|
+      [ ListItem.listItem
+        ( ListItem.config
+          |> ListItem.setOnClick (NavigateTo (["import"], []))
+        )
+        [ text "Import recipe"
+        , ListItem.meta [] [ Icon.icon [] "assignment_returned" ]
+        ]
+      ] ++
       (if activeBrewSession
         then [ ListItem.listItem (ListItem.config |> ListItem.setOnClick
            ( ShowDialog (Confirm ("Do you really want to discard current brew session? This can't be undone!", CancelBrewSession))

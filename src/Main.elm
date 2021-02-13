@@ -1,25 +1,19 @@
 port module Main exposing (..)
 
-import Api exposing (send)
-import Api.Data exposing (BrewSession, Recipe, RecipeList, StepsList)
-import Api.Request.BrewSessionStatus as BrewStatusApi
-import Api.Request.Info as InfoApi
-import Api.Request.RecipeSteps as RecipeStepsApi
-import Api.Request.Recipes as RecipesApi
-import Api.Request.Scale as ScaleApi
+import ApiFunctions exposing (..)
+import Char exposing (isDigit)
 import ConnectionsManagement exposing (brewSessionLink)
+import Data.BFImport exposing (defaultBFImport)
 import Menu exposing (menuDrawer)
 import SnackbarTools exposing (simpleMessage, brewSessionKeyRejectedMessage)
 import BottomToolbar exposing (bottomToolbar)
 import Browser exposing (Document)
 import Browser.Navigation as Navigation exposing (Key)
-import Data.Conversions exposing (apiRecipeToRecipe, apiStepListToStepList, apiStepToRecipeStep)
 import Data.Step exposing (RecipeStep, StepKind(..))
 import Dialog exposing (dialog, showDialog)
 import Dict exposing (Dict)
 import Duration exposing (Duration)
 import Html exposing (Html)
-import Http exposing (Error(..))
 import KegMessage exposing (handleKegMessage)
 import Material.Typography as Typography
 import Material.Snackbar as Snackbar
@@ -33,7 +27,6 @@ import Navbar exposing (navbar)
 import Notification exposing (Notification)
 import Page exposing (page)
 import Data.Recipe exposing (BrewSessionData, RecipeListEntry)
-import Result
 import Router exposing (Route(..), navigate, route)
 import Task
 import Time exposing (Posix, Zone)
@@ -329,6 +322,79 @@ update msg model =
         else { model | snackbarQueue = (Snackbar.addMessage (simpleMessage "Link copied.") model.snackbarQueue)}
       , shareLink <| brewSessionLink model )
 
+    BFImportInput string ->
+      let
+        bfUrlCheck =
+          String.startsWith (String.left (String.length string) "https://brewersfriend.com") string ||
+          String.startsWith (String.left (String.length string) "http://brewersfriend.com") string ||
+          String.startsWith (String.left (String.length string) "brewersfriend.com") string ||
+          String.startsWith (String.left (String.length string) "https://www.brewersfriend.com") string ||
+          String.startsWith (String.left (String.length string) "http://www.brewersfriend.com") string ||
+          String.startsWith (String.left (String.length string) "www.brewersfriend.com") string
+        oldImport =
+          model.bfImport
+        (valid, error, hint) =
+          if String.length string >= 1
+          then
+            if String.all isDigit string
+            then (True, "", "Entering Brewer's Friend ID")
+            else
+              if bfUrlCheck
+              then (True, "", "Entering Brewer's Friend URL" )
+              else (False, "Not a Brewer's Friend URL/ID", "")
+          else (True, "", "Enter the ID or URL of your recipe from Brewer's Friend")
+      in
+      ( { model | bfImport = { oldImport | form = { value = string, valid = valid, error = error, hint = hint } } }, Cmd.none )
+
+    ToggleRecipeReplace ->
+      let
+        oldImport = model.bfImport
+      in
+      ( { model | bfImport = { oldImport | replace = not oldImport.replace, add = False } }, Cmd.none )
+
+    ToggleRecipeAdd ->
+      let
+        oldImport = model.bfImport
+      in
+      ( { model | bfImport = { oldImport | add = not oldImport.add, replace = False } }, Cmd.none )
+
+    ImportRecipe idOrUrl ->
+      let
+        bfUrlCheck =
+          String.startsWith  "https://brewersfriend.com" idOrUrl ||
+          String.startsWith  "http://brewersfriend.com" idOrUrl ||
+          String.startsWith  "brewersfriend.com" idOrUrl ||
+          String.startsWith  "https://www.brewersfriend.com" idOrUrl ||
+          String.startsWith  "http://www.brewersfriend.com" idOrUrl ||
+          String.startsWith  "www.brewersfriend.com" idOrUrl ||
+          String.all isDigit idOrUrl
+        oldImport = model.bfImport
+        (id, url) =
+          if String.all isDigit idOrUrl
+          then (Just idOrUrl, Nothing)
+          else (Nothing, Just idOrUrl)
+      in
+      if bfUrlCheck
+      then ({model | bfImport = { oldImport | importing = True } }, importBrewersFriend model.apiBaseUrl id url model.bfImport.replace model.bfImport.add)
+      else ( {model | bfImport = { oldImport | form = { value = oldImport.form.value, valid = False, error = "Invalid input", hint = "" } } } , Cmd.none)
+
+    ImportRecipeSuccess recipeListEntry ->
+      ( { model
+        | bfImport =
+          { defaultBFImport
+          | successMessage = "Recipe " ++ recipeListEntry.name ++ " imported successfully."
+          , importing = False
+          }
+        , availableRecipes = model.availableRecipes ++ [ recipeListEntry ]
+        }, Cmd.none )
+
+    ImportRecipeFailure reason ->
+      let
+        oldImport = model.bfImport
+      in
+      ( { model | bfImport = { oldImport | errorMessage = reason, successMessage = "", importing = False } }, Cmd.none )
+
+
 prepareAddress protocol address =
     String.dropRight 1 ( ( if String.startsWith "http://" address || String.startsWith "https://" address
     then address
@@ -347,171 +413,6 @@ checkApiUrlsFromQueryString protocol url =
   if List.isEmpty decodedUrls
   then [Cmd.none]
   else List.map (\address -> checkApiUrl (prepareAddress protocol address) True) decodedUrls
-
-
-verifyBrewSessionCode : String -> String -> Cmd Msg
-verifyBrewSessionCode brewSessionCode basePath =
-  send
-  ( \response ->
-    case response of
-      Ok _ ->
-        BrewSessionCodeVerified brewSessionCode
-      Err e ->
-        case e of
-          BadStatus code ->
-            case code of
-              401 ->
-                BrewSessionCodeRejected ("Invalid code", False)
-              _ ->
-                BrewSessionCodeRejected ("Code couldn't be verified", False)
-          _ ->
-            BrewSessionCodeRejected ("Code couldn't be verified", False)
-
-  ) (Api.withBasePath basePath (InfoApi.getAuth ( Just brewSessionCode ) ) )
-
-
-checkApiUrl : String -> Bool -> Cmd Msg
-checkApiUrl basePath autoCheck =
-  send (\response -> case response of
-                       Ok _ ->
-                         SaveApiUrl (basePath, autoCheck)
-                       Err e ->
-                         case e of
-                           BadStatus code ->
-                             case code of
-                               404 ->
-                                 RejectApiUrl ("No Var:Pivo server found on that address", autoCheck)
-                               _ ->
-                                 RejectApiUrl ("Unknown error " ++ Debug.toString e, autoCheck)
-                           NetworkError ->
-                             RejectApiUrl ("Could not connect to that address", autoCheck)
-                           _ ->
-                             RejectApiUrl ("Unknown error " ++ Debug.toString e, autoCheck)
-
-                      ) (Api.withBasePath basePath (InfoApi.getDiscover))
-
-handleSteps: Result Http.Error StepsList -> (Dict String RecipeStep, List String)
-handleSteps res = case res of
-                Ok value ->
-                  apiStepListToStepList value
-                Err _ ->
-                  (Dict.empty, [])
-
-handleRecipes: Result Http.Error RecipeList -> List RecipeListEntry
-handleRecipes res = case res of
-                Ok value -> List.map apiRecipeToRecipe value.recipes
-                Err _ -> []
-
-
-
-fetchRecipeSteps: String -> String -> Cmd Msg
-fetchRecipeSteps recipeId basePath = send ( \msg ->
-  let
-      (steps, order) =
-          handleSteps msg
-  in
-    if Dict.isEmpty steps then
-      ShowSnackbar "Couldn't get recipe steps!"
-    else
-      SetSteps (steps, order)) (Api.withBasePath basePath (RecipesApi.postRecipe recipeId))
-
-fetchRecipes: String -> Cmd Msg
-fetchRecipes basePath = send (\msg -> SetAvailableRecipes (handleRecipes msg)) (Api.withBasePath basePath RecipesApi.getRecipeList)
-
-
-handleBrewSession: Result Http.Error BrewSession -> Maybe (BrewSessionData)
-handleBrewSession response =
-  case response of
-    Ok value ->
-      Just ( { recipeListEntry = Just (apiRecipeToRecipe value.recipe)
-           , steps = Dict.fromList (List.map (\step -> (step.id, apiStepToRecipeStep step)) value.steps)
-           , stepIds = List.map (\step -> step.id) value.steps
-           , boilStartedAt = Maybe.map round value.boilStartedAt
-           , brewSessionCodeValid = value.bsCodeValid
-           })
-    Err _ ->
-      Nothing
-
-
-fetchBrewSession brewSessionCode basePath =
-  send (\response -> case (handleBrewSession response) of
-                       Nothing ->
-                         FetchRecipes
-                       Just result ->
-                         SetBrewSession result
-                     ) (Api.withBasePath basePath (BrewStatusApi.getBrewStatus (Just brewSessionCode)))
-
-cancelBrewSession brewSessionCode basePath =
-  send (\response -> case response of
-                              Ok _ ->
-                                SetBrewSession ({ recipeListEntry = Nothing
-                                                , steps = Dict.empty
-                                                , stepIds = []
-                                                , boilStartedAt = Nothing
-                                                , brewSessionCodeValid = True
-                                                })
-                              Err e ->
-                                handleApiError e
-                            ) (Api.withBasePath basePath (BrewStatusApi.deleteBrewStatus (Just brewSessionCode)))
-
-handleStep : Result.Result Error Api.Data.RecipeStep -> Msg
-handleStep response =
-  case response of
-    Ok value ->
-      UpdateStep (apiStepToRecipeStep value)
-    Err e ->
-      handleApiError e
-
-handleApiError e =
-  case e of
-    BadStatus code ->
-      case code of
-        401 ->
-          BrewSessionCodeRejected ("You are in spectator mode! Add brew session key to gain control.", True)
-        _ ->
-          ShowSnackbar (Debug.toString e)
-    _ ->
-      ShowSnackbar (Debug.toString e)
-
-startStep : String -> String -> String -> Cmd Msg
-startStep stepId brewSessionCode basePath =
-  send handleStep (Api.withBasePath basePath (RecipeStepsApi.postStepStart stepId (Just brewSessionCode)))
-
-finishStep : String -> String -> String -> Cmd Msg
-finishStep stepId brewSessionCode basePath =
-    send handleStep (Api.withBasePath basePath (RecipeStepsApi.deleteStepStart stepId (Just brewSessionCode)))
-
-startCalibration : Int -> String -> String -> Cmd Msg
-startCalibration grams brewSessionCode basePath=
-  send (\response ->
-         case response of
-           Ok _ ->
-             ShowSnackbar "Scale calibration started"
-           Err e ->
-             handleApiError e
-       ) (Api.withBasePath basePath (ScaleApi.patchScaleRes grams (Just brewSessionCode)))
-
-
-calibrate : String -> String -> Cmd Msg
-calibrate brewSessionCode basePath =
-  send (\response ->
-          case response of
-            Ok _ ->
-              ShowSnackbar "Calibration in progress. Do not move the weight."
-            Err e ->
-              handleApiError e
-        ) (Api.withBasePath basePath (ScaleApi.putScaleRes (Just brewSessionCode) ))
-
-
-tareScale : String -> String -> Cmd Msg
-tareScale brewSessionCode basePath =
-  send (\response ->
-          case response of
-            Ok _ ->
-              ShowSnackbar "Tare done"
-            Err e ->
-              handleApiError e
-        ) (Api.withBasePath basePath (ScaleApi.deleteScaleRes (Just brewSessionCode)))
 
 
 -- VIEW
