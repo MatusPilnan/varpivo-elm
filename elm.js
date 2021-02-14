@@ -7715,6 +7715,51 @@ var $aforemny$material_components_web_elm$Material$Snackbar$close = F2(
 	});
 var $author$project$Main$connect = _Platform_outgoingPort('connect', $elm$json$Json$Encode$string);
 var $author$project$Main$console = _Platform_outgoingPort('console', $elm$json$Json$Encode$string);
+var $author$project$Messages$DeleteRecipeSuccess = function (a) {
+	return {$: 'DeleteRecipeSuccess', a: a};
+};
+var $author$project$Api$Request$Recipes$deleteRecipe = F2(
+	function (recipeId_path, authorization_header) {
+		return A7(
+			$author$project$Api$request,
+			'DELETE',
+			'/recipe/{recipeId}',
+			_List_fromArray(
+				[
+					_Utils_Tuple2(
+					'recipeId',
+					$elm$core$Basics$identity(recipeId_path))
+				]),
+			_List_Nil,
+			_List_fromArray(
+				[
+					_Utils_Tuple2(
+					'Authorization',
+					A2($elm$core$Maybe$map, $elm$core$Basics$identity, authorization_header))
+				]),
+			$elm$core$Maybe$Nothing,
+			$elm$json$Json$Decode$succeed(_Utils_Tuple0));
+	});
+var $author$project$ApiFunctions$deleteRecipe = F3(
+	function (brewSessionCode, basePath, recipeId) {
+		return A2(
+			$author$project$Api$send,
+			function (response) {
+				if (response.$ === 'Ok') {
+					return $author$project$Messages$DeleteRecipeSuccess(recipeId);
+				} else {
+					var e = response.a;
+					return $author$project$ApiFunctions$handleApiError(e);
+				}
+			},
+			A2(
+				$author$project$Api$withBasePath,
+				basePath,
+				A2(
+					$author$project$Api$Request$Recipes$deleteRecipe,
+					recipeId,
+					$elm$core$Maybe$Just(brewSessionCode))));
+	});
 var $author$project$Messages$SetSteps = function (a) {
 	return {$: 'SetSteps', a: a};
 };
@@ -9468,7 +9513,7 @@ var $author$project$Main$update = F2(
 									{importing: false, successMessage: 'Recipe ' + (recipeListEntry.name + ' imported successfully.')})
 							}),
 						$elm$core$Platform$Cmd$none);
-				default:
+				case 'ImportRecipeFailure':
 					var reason = msg.a;
 					var oldImport = model.bfImport;
 					return _Utils_Tuple2(
@@ -9478,6 +9523,25 @@ var $author$project$Main$update = F2(
 								bfImport: _Utils_update(
 									oldImport,
 									{errorMessage: reason, importing: false, successMessage: ''})
+							}),
+						$elm$core$Platform$Cmd$none);
+				case 'DeleteRecipe':
+					var recipeId = msg.a;
+					return _Utils_Tuple2(
+						model,
+						A3($author$project$ApiFunctions$deleteRecipe, model.security.code, model.apiBaseUrl, recipeId));
+				default:
+					var recipeId = msg.a;
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								availableRecipes: A2(
+									$elm$core$List$filter,
+									function (recipeListEntry) {
+										return !_Utils_eq(recipeListEntry.id, recipeId);
+									},
+									model.availableRecipes)
 							}),
 						$elm$core$Platform$Cmd$none);
 			}
@@ -13776,6 +13840,9 @@ var $aforemny$material_components_web_elm$Material$List$setTwoLine = F2(
 				config_,
 				{twoLine: twoLine}));
 	});
+var $author$project$Messages$DeleteRecipe = function (a) {
+	return {$: 'DeleteRecipe', a: a};
+};
 var $author$project$Messages$ShowRecipeDetail = function (a) {
 	return {$: 'ShowRecipeDetail', a: a};
 };
@@ -13836,7 +13903,33 @@ var $author$project$Recipes$viewRecipeListEntry = function (recipeListEntry) {
 						[
 							$elm$html$Html$text(recipeListEntry.style_name + (' - ' + recipeListEntry.style_type))
 						])
-				})
+				}),
+				A2(
+				$aforemny$material_components_web_elm$Material$List$Item$meta,
+				_List_Nil,
+				_List_fromArray(
+					[
+						A2(
+						$aforemny$material_components_web_elm$Material$IconButton$iconButton,
+						A2(
+							$aforemny$material_components_web_elm$Material$IconButton$setAttributes,
+							_List_fromArray(
+								[
+									A2(
+									$elm$html$Html$Events$stopPropagationOn,
+									'click',
+									$elm$json$Json$Decode$succeed(
+										_Utils_Tuple2(
+											$author$project$Messages$ShowDialog(
+												$author$project$Messages$Confirm(
+													_Utils_Tuple2(
+														'Are you sure you want to permanently remove ' + (recipeListEntry.name + '? This can\'t be undone!'),
+														$author$project$Messages$DeleteRecipe(recipeListEntry.id)))),
+											true)))
+								]),
+							$aforemny$material_components_web_elm$Material$IconButton$config),
+						$aforemny$material_components_web_elm$Material$IconButton$icon('delete'))
+					]))
 			]));
 };
 var $author$project$Recipes$recipeSelection = function (recipes) {
