@@ -61,3 +61,5 @@ type Msg = Increment
   | ImportRecipe String
   | ImportRecipeSuccess RecipeListEntry
   | ImportRecipeFailure String
+  | DeleteRecipe String
+  | DeleteRecipeSuccess String

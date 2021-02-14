@@ -11,8 +11,11 @@ import Bootstrap.Utilities.Size as Size
 import Data.Recipe exposing (RecipeListEntry)
 import Html exposing (Html)
 import Html.Attributes as Attributes exposing (style)
+import Html.Events
+import Json.Decode as Decode
 import Material.DataTable as DataTable exposing (Cell)
 import Material.Fab.Extended as ExtendedFab
+import Material.IconButton as IconButton
 import Material.List as MatList
 import Material.List.Item as ListItem
 import Material.Theme as Theme
@@ -28,6 +31,14 @@ viewRecipeListEntry recipeListEntry =
       { primary = [ Html.text recipeListEntry.name ]
       , secondary = [ Html.text (recipeListEntry.style_name ++ " - " ++ recipeListEntry.style_type) ]
       }
+    , ListItem.meta []
+      [ IconButton.iconButton
+        ( IconButton.config
+          |> IconButton.setAttributes
+                 [ Html.Events.stopPropagationOn "click" (Decode.succeed
+                 ( ShowDialog <| Confirm ( "Are you sure you want to permanently remove " ++ recipeListEntry.name ++ "? This can't be undone!" , DeleteRecipe recipeListEntry.id), True))]
+          )
+        ( IconButton.icon "delete") ]
     ]
 
 recipeSelection : List RecipeListEntry -> Html Msg

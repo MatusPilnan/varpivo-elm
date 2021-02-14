@@ -218,3 +218,14 @@ importBrewersFriend basePath recipeId recipeUrl replace add =
             )
 
        ) (Api.withBasePath basePath (RecipesApi.postBrewersFriendRecipe (Just requestBody)))
+
+
+deleteRecipe brewSessionCode basePath recipeId =
+  send
+  (\response ->
+    case response of
+      Ok _ ->
+        DeleteRecipeSuccess recipeId
+      Err e ->
+        handleApiError e
+  ) (Api.withBasePath basePath (RecipesApi.deleteRecipe recipeId (Just brewSessionCode) ))

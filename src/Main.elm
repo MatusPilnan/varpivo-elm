@@ -394,6 +394,12 @@ update msg model =
       in
       ( { model | bfImport = { oldImport | errorMessage = reason, successMessage = "", importing = False } }, Cmd.none )
 
+    DeleteRecipe recipeId ->
+      ( model, deleteRecipe model.security.code model.apiBaseUrl recipeId )
+
+    DeleteRecipeSuccess recipeId ->
+      ( { model | availableRecipes = List.filter (\recipeListEntry -> recipeListEntry.id /= recipeId) model.availableRecipes }, Cmd.none )
+
 
 prepareAddress protocol address =
     String.dropRight 1 ( ( if String.startsWith "http://" address || String.startsWith "https://" address
